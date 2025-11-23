@@ -1,19 +1,19 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { List, BarChart3, Target, Sparkles, FileText, Lightbulb, Flame } from 'lucide-react'
 import { hapticFeedback } from '@/lib/utils'
+import { motion } from 'framer-motion'
+import { BarChart3, Flame, Lightbulb, List, Target } from 'lucide-react'
 
 interface BottomNavProps {
-  activeView: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories'
-  onViewChange: (view: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories') => void
+  activeView: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'recurring'
+  onViewChange: (view: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'recurring') => void
 }
 
 const NAV_ITEMS = [
   { id: 'expenses' as const, label: 'Expenses', icon: List },
   { id: 'calories' as const, label: 'Calories', icon: Flame },
-  { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
   { id: 'budget' as const, label: 'Budget', icon: Target },
+  { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
   { id: 'insights' as const, label: 'Insights', icon: Lightbulb },
 ]
 
@@ -28,12 +28,7 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-      className="fixed bottom-0 left-0 right-0 z-50"
-      style={{
-        backgroundColor: 'rgba(var(--card) / 0.8)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      }}
+      className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50"
     >
       {/* iOS hairline border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-border/30" />
@@ -86,10 +81,9 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
 
       {/* Safe area padding for iOS home indicator */}
       <div
-        className="w-full"
+        className="w-full bg-background/80"
         style={{
           height: 'max(env(safe-area-inset-bottom), 8px)',
-          backgroundColor: 'rgba(var(--card) / 0.8)',
         }}
       />
     </motion.nav>

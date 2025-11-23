@@ -5,3 +5,4 @@ export { GoalsView } from './goals-view';
 export { SummaryView } from './summary-view';
 export { InsightsView } from './insights-view';
 export { CaloriesView } from './calories-view';
+export { RecurringView } from './recurring-view';

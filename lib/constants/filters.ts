@@ -24,4 +24,4 @@ export const VIEW_ORDER: Array<'expenses' | 'analytics' | 'budget' | 'insights'>
 ];
 
 export type QuickFilterType = 'all' | 'today' | 'week' | 'month';
-export type ViewType = 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories';
+export type ViewType = 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'recurring';

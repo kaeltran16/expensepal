@@ -22,6 +22,7 @@ import {
   ExpensesView,
   GoalsView,
   InsightsView,
+  RecurringView,
   SummaryView,
 } from '@/components/views';
 import type { ViewType } from '@/lib/constants/filters';
@@ -403,6 +404,8 @@ export default function Home() {
             <SummaryView expenses={expenses} loading={loading} />
           ) : activeView === 'insights' ? (
             <InsightsView expenses={expenses} loading={loading} />
+          ) : activeView === 'recurring' ? (
+            <RecurringView expenses={expenses} />
           ) : activeView === 'calories' ? (
             <CaloriesView
               meals={meals}

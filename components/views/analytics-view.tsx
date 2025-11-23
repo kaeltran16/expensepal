@@ -1,6 +1,7 @@
 'use client'
 
 import { AnalyticsCharts } from '@/components/analytics-charts';
+import { CategoryInsights } from '@/components/category-insights';
 import { ChartSkeleton } from '@/components/skeleton-loader';
 import type { Expense } from '@/lib/supabase';
 
@@ -19,5 +20,10 @@ export function AnalyticsView({ expenses, loading }: AnalyticsViewProps) {
     );
   }
 
-  return <AnalyticsCharts expenses={expenses} />;
+  return (
+    <div className="space-y-4 pb-24">
+      <AnalyticsCharts expenses={expenses} />
+      <CategoryInsights expenses={expenses} />
+    </div>
+  );
 }

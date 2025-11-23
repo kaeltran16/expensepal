@@ -1,9 +1,18 @@
 'use client'
 
-import { CategoryInsights } from '@/components/category-insights';
+import { useMemo } from 'react'
+import { motion } from 'framer-motion'
+import { Lightbulb, TrendingUp, TrendingDown, Award, AlertTriangle, Target } from 'lucide-react'
 import { InsightsCards } from '@/components/insights-cards';
 import { SpendingAdvisor } from '@/components/spending-advisor';
 import { InsightCardSkeleton } from '@/components/skeleton-loader';
+import {
+  getComprehensiveInsights,
+  analyzeCategoryTrends,
+  type SpendingPattern,
+  type CategoryTrend,
+} from '@/lib/analytics/spending-insights'
+import { getMerchantInsights, type MerchantInsight } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase';
 
 interface InsightsViewProps {
@@ -12,6 +21,10 @@ interface InsightsViewProps {
 }
 
 export function InsightsView({ expenses, loading }: InsightsViewProps) {
+  const patterns = useMemo(() => getComprehensiveInsights(expenses), [expenses])
+  const categoryTrends = useMemo(() => analyzeCategoryTrends(expenses), [expenses])
+  const merchantInsights = useMemo(() => getMerchantInsights(expenses, 5), [expenses])
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -23,10 +36,138 @@ export function InsightsView({ expenses, loading }: InsightsViewProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24">
+      {/* Quick Insights Cards */}
       <InsightsCards expenses={expenses} />
+
+      {/* Spending Patterns */}
+      {patterns.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="ios-headline px-1">Patterns & Streaks</h4>
+          <div className="ios-list-group">
+            {patterns.slice(0, 3).map((pattern, index) => (
+              <PatternCard key={`${pattern.type}-${index}`} pattern={pattern} index={index} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Top Merchants - More prominent */}
+      {merchantInsights.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="ios-headline px-1">Top Spending</h4>
+          <div className="ios-list-group">
+            {merchantInsights.slice(0, 3).map((merchant, index) => (
+              <CompactMerchantCard key={merchant.merchant} merchant={merchant} index={index} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Category Trends - Simplified */}
+      {categoryTrends.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="ios-headline px-1">This Month vs Last Month</h4>
+          <div className="ios-list-group">
+            {categoryTrends.slice(0, 3).map((trend, index) => (
+              <SimpleTrendCard key={trend.category} trend={trend} index={index} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Advisor */}
       <SpendingAdvisor expenses={expenses} />
-      <CategoryInsights expenses={expenses} />
     </div>
   );
+}
+
+function PatternCard({ pattern, index }: { pattern: SpendingPattern; index: number }) {
+  const Icon = pattern.impact === 'positive' ? Award : pattern.impact === 'negative' ? AlertTriangle : Lightbulb
+  const bgColor = pattern.impact === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : pattern.impact === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : 'bg-blue-100 dark:bg-blue-900/20'
+  const iconColor = pattern.impact === 'positive' ? 'text-green-600 dark:text-green-400' : pattern.impact === 'negative' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.2 }}
+      className="ios-list-item"
+    >
+      <div className="flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-full ${bgColor} flex items-center justify-center flex-shrink-0`}>
+          <Icon className={`h-5 w-5 ${iconColor}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="ios-headline mb-1">{pattern.title}</h4>
+          <p className="ios-caption text-muted-foreground">{pattern.description}</p>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Simplified trend card
+function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number }) {
+  const TrendIcon = trend.trend === 'up' ? TrendingUp : trend.trend === 'down' ? TrendingDown : Target
+  const trendColor = trend.trend === 'up' ? 'text-red-500' : trend.trend === 'down' ? 'text-green-500' : 'text-muted-foreground'
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="ios-list-item"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 flex-1">
+          <TrendIcon className={`h-5 w-5 ${trendColor} flex-shrink-0`} />
+          <div className="flex-1 min-w-0">
+            <h4 className="ios-headline">{trend.category}</h4>
+            <p className="ios-caption text-muted-foreground">
+              ₫{(trend.currentMonth / 1000).toFixed(0)}k this month
+            </p>
+          </div>
+        </div>
+        <p className={`text-lg font-semibold ${trendColor}`}>
+          {trend.changePercent > 0 ? '+' : ''}{trend.changePercent.toFixed(0)}%
+        </p>
+      </div>
+    </motion.div>
+  )
+}
+
+// Compact merchant card
+function CompactMerchantCard({ merchant, index }: { merchant: MerchantInsight; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="ios-list-item"
+    >
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h4 className="ios-headline truncate">{merchant.merchant}</h4>
+            <p className="ios-caption text-muted-foreground">
+              {merchant.transactionCount} visits • ₫{(merchant.averageAmount / 1000).toFixed(0)}k avg
+            </p>
+          </div>
+          <div className="text-right flex-shrink-0">
+            <p className="font-semibold">₫{(merchant.totalSpent / 1000).toFixed(0)}k</p>
+            <p className="ios-caption text-muted-foreground">{merchant.percentOfTotal.toFixed(0)}%</p>
+          </div>
+        </div>
+        <div className="h-1 bg-secondary rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(100, merchant.percentOfTotal)}%` }}
+            transition={{ duration: 0.6 }}
+            className="h-full bg-primary rounded-full"
+          />
+        </div>
+      </div>
+    </motion.div>
+  )
 }

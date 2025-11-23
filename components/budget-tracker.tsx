@@ -204,9 +204,12 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
                         setEditing(category)
                         setEditValue(budget.toString())
                       }}
-                      className="h-9 px-3 ios-touch text-primary"
+                      className="h-9 px-3 ios-touch bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <Edit2 className="h-4 w-4 mr-1.5" />
+                      <span className="text-sm font-medium">
+                        {budget > 0 ? 'Edit' : 'Set'}
+                      </span>
                     </Button>
                   )}
                 </div>

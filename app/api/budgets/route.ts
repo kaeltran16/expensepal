@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 
 // GET budgets for a specific month
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createClient()
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const month = searchParams.get('month') || new Date().toISOString().slice(0, 7)
 
     const { data, error } = await supabase
       .from('budgets')
       .select('*')
+      .eq('user_id', user.id)
       .eq('month', month)
 
     if (error) {
@@ -26,12 +36,22 @@ export async function GET(request: NextRequest) {
 // POST create new budget
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createClient()
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     const { data, error } = await supabase
       .from('budgets')
       .insert([
         {
+          user_id: user.id,
           category: body.category,
           amount: body.amount,
           month: body.month,
