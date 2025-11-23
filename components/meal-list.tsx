@@ -1,24 +1,18 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SwipeableCard } from '@/components/ui/swipeable-card'
-import {
-  Coffee,
-  Sun,
-  Moon,
-  Apple,
-  Trash2,
-  TrendingUp,
-  Sparkles,
-  ShoppingBag
-} from 'lucide-react'
-import type { Meal } from '@/lib/supabase'
 import { useDeleteMealOptimistic } from '@/lib/hooks'
+import type { Meal } from '@/lib/supabase'
 import { formatTimeGMT7 } from '@/lib/timezone'
 import { hapticFeedback } from '@/lib/utils'
+import {
+  Apple,
+  Coffee,
+  Moon,
+  Sun
+} from 'lucide-react'
 
 interface MealListProps {
   meals: (Meal & { expenses?: any })[]
@@ -79,7 +73,7 @@ export function MealList({ meals, onMealDeleted, showAll = false }: MealListProp
   }
 
   // Display first 10 meals or all based on showAll prop
-  const displayedMeals = showAll ? meals : meals.slice(0, 10)
+  const displayedMeals = showAll ? meals : meals.slice(0, 5)
 
   return (
     <div className="space-y-3">

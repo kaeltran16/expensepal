@@ -27,7 +27,7 @@ export interface LLMResponse {
 export class LLMService {
   private apiKey: string
   private baseUrl = 'https://openrouter.ai/api/v1/chat/completions'
-  private defaultModel = 'google/gemini-2.0-flash-001' // Fast and free model
+  private defaultModel = 'google/gemini-2.5-flash' 
   private appUrl: string
 
   constructor(apiKey?: string) {

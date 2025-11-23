@@ -77,6 +77,7 @@ export {
   useSpendingPatterns,
   useBudgetAdjustmentCheck,
 } from './use-budget-recommendations'
+export { useAIInsights } from './use-ai-insights'
 
 // Offline Mode
 export { useOfflineQueue } from './use-offline-queue'

@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { useBudgets } from '@/lib/hooks'
+import { useBudgets, useAIInsights } from '@/lib/hooks'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -13,27 +13,31 @@ import {
   Lightbulb,
   Sparkles,
   Target,
-  TrendingUp
+  TrendingUp,
+  Zap
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 interface Recommendation {
   id: string
-  type: 'savings' | 'warning' | 'optimization' | 'goal'
+  type: 'savings' | 'warning' | 'optimization' | 'goal' | 'opportunity' | 'pattern'
   title: string
   description: string
   impact: 'high' | 'medium' | 'low'
   action?: string
   amount?: number
+  isAI?: boolean
 }
 
 interface SpendingAdvisorProps {
   expenses: Expense[]
+  onNavigate?: (view: 'budget' | 'analytics' | 'expenses') => void
 }
 
-export function SpendingAdvisor({ expenses }: SpendingAdvisorProps) {
+export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) {
   const currentMonth = new Date().toISOString().slice(0, 7)
   const { data: budgets = [] } = useBudgets({ month: currentMonth })
+  const { data: aiInsights, isLoading: aiLoading } = useAIInsights(expenses)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const recommendations: Recommendation[] = useMemo(() => {
@@ -182,7 +186,16 @@ export function SpendingAdvisor({ expenses }: SpendingAdvisorProps) {
     return recs.sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact]).slice(0, 6)
   }, [expenses, budgets])
 
-  if (recommendations.length === 0) {
+  // Merge rule-based and AI recommendations
+  const allRecommendations = useMemo(() => {
+    const aiRecs = aiInsights?.insights || []
+    // Combine: AI insights first (they're special), then rule-based
+    const combined = [...aiRecs, ...recommendations]
+    // Limit to 6 total
+    return combined.slice(0, 6)
+  }, [recommendations, aiInsights])
+
+  if (allRecommendations.length === 0 && !aiLoading) {
     return (
       <Card className="frosted-card">
         <CardContent className="p-8 text-center">
@@ -196,15 +209,20 @@ export function SpendingAdvisor({ expenses }: SpendingAdvisorProps) {
     )
   }
 
-  const getIcon = (type: Recommendation['type']) => {
-    switch (type) {
+  const getIcon = (rec: Recommendation) => {
+    // AI insights get special icon
+    if (rec.isAI) return Zap
+
+    switch (rec.type) {
       case 'savings':
         return TrendingUp
       case 'warning':
         return AlertTriangle
       case 'optimization':
+      case 'opportunity':
         return Lightbulb
       case 'goal':
+      case 'pattern':
         return Target
       default:
         return Lightbulb
@@ -241,91 +259,100 @@ export function SpendingAdvisor({ expenses }: SpendingAdvisorProps) {
           text: 'text-purple-600 dark:text-purple-400',
           badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
         }
+      case 'opportunity':
+        return {
+          bg: 'bg-amber-50 dark:bg-amber-950/20',
+          border: 'border-l-amber-500',
+          text: 'text-amber-600 dark:text-amber-400',
+          badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+        }
+      case 'pattern':
+        return {
+          bg: 'bg-indigo-50 dark:bg-indigo-950/20',
+          border: 'border-l-indigo-500',
+          text: 'text-indigo-600 dark:text-indigo-400',
+          badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+        }
     }
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center gap-2 px-1">
         <Sparkles className="w-5 h-5 text-primary" />
-        <h2 className="font-semibold text-base">AI Recommendations</h2>
-        <Badge variant="secondary" className="text-xs">
-          {recommendations.length}
-        </Badge>
+        <h2 className="ios-headline">Recommendations</h2>
       </div>
 
-      <div className="space-y-3">
-        {recommendations.map((rec, index) => {
-          const Icon = getIcon(rec.type)
+      <div className="ios-list-group">
+        {allRecommendations.map((rec, index) => {
+          const Icon = getIcon(rec)
           const colors = getColor(rec.type)
           const isExpanded = expandedId === rec.id
 
           return (
             <motion.div
               key={rec.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
-                delay: index * 0.05,
-                duration: 0.3,
-                ease: [0.4, 0, 0.2, 1],
+                delay: index * 0.03,
+                duration: 0.2,
               }}
+              className="ios-list-item cursor-pointer"
+              onClick={() => setExpandedId(isExpanded ? null : rec.id)}
             >
-              <Card className={`frosted-card border-l-4 ${colors.border} ${colors.bg} cursor-pointer`}
-                onClick={() => setExpandedId(isExpanded ? null : rec.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-full ${colors.bg} flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10 flex-shrink-0`}>
-                      <Icon className={`w-5 h-5 ${colors.text}`} />
-                    </div>
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0`}>
+                  <Icon className={`w-5 h-5 ${colors.text}`} />
+                </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-semibold text-sm leading-tight">
-                          {rec.title}
-                        </h3>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge className={`text-xs ${colors.badge} border-0`}>
-                            {rec.impact}
-                          </Badge>
-                          <ChevronRight
-                            className={`w-4 h-4 text-muted-foreground transition-transform ${
-                              isExpanded ? 'rotate-90' : ''
-                            }`}
-                          />
-                        </div>
-                      </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="ios-headline">
+                      {rec.title}
+                    </h3>
+                    <ChevronRight
+                      className={`w-4 h-4 text-muted-foreground transition-transform flex-shrink-0 ${
+                        isExpanded ? 'rotate-90' : ''
+                      }`}
+                    />
+                  </div>
 
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <p className="text-sm text-muted-foreground mb-3">
-                              {rec.description}
-                            </p>
-                            {rec.action && (
-                              <Button size="sm" variant="outline" className="h-8 text-xs">
-                                {rec.action}
-                              </Button>
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {!isExpanded && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <p className="ios-caption text-muted-foreground mb-3">
                           {rec.description}
                         </p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                        {rec.action && onNavigate && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onNavigate('budget')
+                            }}
+                          >
+                            {rec.action}
+                          </Button>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {!isExpanded && (
+                    <p className="ios-caption text-muted-foreground line-clamp-2">
+                      {rec.description}
+                    </p>
+                  )}
+                </div>
+              </div>
             </motion.div>
           )
         })}

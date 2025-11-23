@@ -401,7 +401,7 @@ export default function Home() {
           ) : activeView === 'summary' ? (
             <SummaryView expenses={expenses} loading={loading} />
           ) : activeView === 'insights' ? (
-            <InsightsView expenses={expenses} loading={loading} />
+            <InsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
           ) : activeView === 'calories' ? (
             <CaloriesView
               meals={meals}

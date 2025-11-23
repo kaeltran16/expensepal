@@ -18,9 +18,10 @@ import type { Expense } from '@/lib/supabase';
 interface InsightsViewProps {
   expenses: Expense[];
   loading: boolean;
+  onNavigate?: (view: 'budget' | 'analytics' | 'expenses') => void;
 }
 
-export function InsightsView({ expenses, loading }: InsightsViewProps) {
+export function InsightsView({ expenses, loading, onNavigate }: InsightsViewProps) {
   const patterns = useMemo(() => getComprehensiveInsights(expenses), [expenses])
   const categoryTrends = useMemo(() => analyzeCategoryTrends(expenses), [expenses])
   const merchantInsights = useMemo(() => getMerchantInsights(expenses, 5), [expenses])
@@ -77,7 +78,7 @@ export function InsightsView({ expenses, loading }: InsightsViewProps) {
       )}
 
       {/* AI Advisor */}
-      <SpendingAdvisor expenses={expenses} />
+      <SpendingAdvisor expenses={expenses} onNavigate={onNavigate} />
     </div>
   );
 }
