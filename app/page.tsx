@@ -22,8 +22,7 @@ import {
   ExpensesView,
   GoalsView,
   InsightsView,
-  RecurringView,
-  SummaryView,
+  SummaryView
 } from '@/components/views';
 import type { ViewType } from '@/lib/constants/filters';
 import {
@@ -42,7 +41,6 @@ import { hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Filter, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
 
 export default function Home() {
   // TanStack Query hooks for server state
@@ -404,8 +402,6 @@ export default function Home() {
             <SummaryView expenses={expenses} loading={loading} />
           ) : activeView === 'insights' ? (
             <InsightsView expenses={expenses} loading={loading} />
-          ) : activeView === 'recurring' ? (
-            <RecurringView expenses={expenses} />
           ) : activeView === 'calories' ? (
             <CaloriesView
               meals={meals}
