@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import {
   useCreateExpenseOptimistic,
-  useUpdateExpense,
   useDeleteExpenseOptimistic,
+  useUpdateExpense,
 } from './index';
 
 export function useExpenseOperations(expenses: Expense[]) {
@@ -64,8 +64,6 @@ export function useExpenseOperations(expenses: Expense[]) {
         category: deletedExpense.expense.category,
         notes: deletedExpense.expense.notes,
         transaction_date: deletedExpense.expense.transaction_date,
-        card_number: deletedExpense.expense.card_number,
-        cardholder: deletedExpense.expense.cardholder,
         transaction_type: deletedExpense.expense.transaction_type,
         currency: deletedExpense.expense.currency,
         source: deletedExpense.expense.source,
@@ -90,8 +88,6 @@ export function useExpenseOperations(expenses: Expense[]) {
             category: expense.category,
             notes: expense.notes,
             transaction_date: expense.transaction_date,
-            card_number: expense.card_number,
-            cardholder: expense.cardholder,
             transaction_type: expense.transaction_type,
             currency: expense.currency,
           },

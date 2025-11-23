@@ -6,8 +6,18 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/ui/empty-state'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
-import { Plus, Edit2, Trash2, Save, X, Target, Calendar as CalendarIcon } from 'lucide-react'
+import { Plus, Edit2, Trash2, Save, X, Target, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react'
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from '@/lib/hooks'
 import type { Tables } from '@/lib/supabase/database.types'
 import { getNowInGMT7 } from '@/lib/timezone'
@@ -25,6 +35,8 @@ export function SavingsGoals() {
 
   const [showForm, setShowForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [goalToDelete, setGoalToDelete] = useState<SavingsGoal | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     targetAmount: '',
@@ -80,11 +92,20 @@ export function SavingsGoals() {
     setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this goal?')) return
+  const handleDeleteClick = (goal: SavingsGoal) => {
+    hapticFeedback('light')
+    setGoalToDelete(goal)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!goalToDelete) return
 
     try {
-      await deleteGoalMutation.mutateAsync(id)
+      hapticFeedback('heavy')
+      await deleteGoalMutation.mutateAsync(goalToDelete.id)
+      setDeleteDialogOpen(false)
+      setGoalToDelete(null)
     } catch (error) {
       console.error('Error deleting goal:', error)
     }
@@ -318,10 +339,7 @@ export function SavingsGoals() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        hapticFeedback('medium')
-                        handleDelete(goal.id)
-                      }}
+                      onClick={() => handleDeleteClick(goal)}
                       className="h-9 w-9 text-destructive ios-touch"
                       disabled={deleteGoalMutation.isPending}
                     >
@@ -392,6 +410,55 @@ export function SavingsGoals() {
           })}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="ios-card">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/30 border-4 border-destructive/10">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+            <AlertDialogTitle className="text-center ios-title text-xl">
+              Delete Savings Goal?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center ios-body text-muted-foreground">
+              {goalToDelete && (
+                <>
+                  Are you sure you want to delete the goal{' '}
+                  <span className="font-semibold text-foreground">"{goalToDelete.name}"</span>?
+                  <br />
+                  Current progress:{' '}
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(goalToDelete.current_amount || 0, 'VND')}
+                  </span>{' '}
+                  of{' '}
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(goalToDelete.target_amount, 'VND')}
+                  </span>
+                  .
+                  <br />
+                  <span className="text-destructive font-medium">This action cannot be undone.</span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="w-full touch-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 ios-press order-1 h-12 font-semibold"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Goal
+            </AlertDialogAction>
+            <AlertDialogCancel
+              onClick={() => hapticFeedback('light')}
+              className="w-full touch-lg ios-press order-2 mt-0 h-12"
+            >
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

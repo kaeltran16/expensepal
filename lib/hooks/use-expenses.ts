@@ -1,9 +1,9 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { queryKeys, type ExpenseFilters } from './query-keys'
-import type { Tables, TablesInsert, TablesUpdate } from '../supabase/database.types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import type { Tables, TablesInsert, TablesUpdate } from '../supabase/database.types'
+import { queryKeys, type ExpenseFilters } from './query-keys'
 
 // Type aliases from database
 type Expense = Tables<'expenses'>
@@ -149,8 +149,6 @@ export function useCreateExpenseOptimistic() {
         source: newExpense.source || 'manual',
         category: newExpense.category,
         notes: newExpense.notes,
-        card_number: newExpense.card_number,
-        cardholder: newExpense.cardholder,
         transaction_type: newExpense.transaction_type,
         email_subject: newExpense.email_subject,
         created_at: new Date().toISOString(),

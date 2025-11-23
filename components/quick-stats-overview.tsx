@@ -2,7 +2,7 @@
 
 import { AnimatedCounter } from '@/components/animated-counter';
 import { motion } from 'framer-motion';
-import { TrendingDown, TrendingUp, Wallet, Calendar, Activity, Sparkles, ArrowUp, ArrowDown } from 'lucide-react';
+import { Activity, ArrowDown, Calendar, Sparkles, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { useMemo } from 'react';
 
 interface QuickStatsOverviewProps {
@@ -82,7 +82,7 @@ export function QuickStatsOverview({
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <p className="text-6xl font-black tracking-tighter leading-none mb-1">
-                <AnimatedCounter value={todayTotal} prefix="₫ " duration={1200} />
+                <AnimatedCounter value={todayTotal} duration={1200} />
               </p>
               {hasSpentToday && (
                 <motion.p

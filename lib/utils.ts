@@ -6,9 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency: string = 'VND'): string {
+  // Format number with thousands separator, no currency symbol
   return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: currency,
+    style: 'decimal',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount)
 }
 

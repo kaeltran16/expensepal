@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { BottomNavigation } from '@/components/bottom-navigation';
 import { BudgetAlerts } from '@/components/budget-alerts';
 import { FilterSheet } from '@/components/filter-sheet';

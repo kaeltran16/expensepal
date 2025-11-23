@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
 
 // GET /api/calorie-stats - Get calorie statistics
 export async function GET(request: Request) {
@@ -60,9 +62,9 @@ export async function GET(request: Request) {
 
     meals?.forEach((meal) => {
       stats.totalCalories += meal.calories
-      stats.totalProtein += meal.protein
-      stats.totalCarbs += meal.carbs
-      stats.totalFat += meal.fat
+      stats.totalProtein += meal.protein || 0
+      stats.totalCarbs += meal.carbs || 0
+      stats.totalFat += meal.fat || 0 
 
       // By meal time
       const mealTime = (meal.meal_time || 'other') as 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other'
@@ -75,9 +77,9 @@ export async function GET(request: Request) {
         stats.byDate[date] = { calories: 0, protein: 0, carbs: 0, fat: 0, meals: 0 }
       }
       stats.byDate[date].calories += meal.calories
-      stats.byDate[date].protein += meal.protein
-      stats.byDate[date].carbs += meal.carbs
-      stats.byDate[date].fat += meal.fat
+      stats.byDate[date].protein += meal.protein || 0
+      stats.byDate[date].carbs += meal.carbs || 0
+      stats.byDate[date].fat += meal.fat || 0
       stats.byDate[date].meals++
     })
 

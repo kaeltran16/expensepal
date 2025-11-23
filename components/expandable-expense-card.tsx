@@ -338,12 +338,6 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
                       <span className="text-muted-foreground">Time</span>
                       <span className="font-medium">{formattedTime}</span>
                     </div>
-                    {expense.card_number && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Card</span>
-                        <span className="font-mono text-xs">{expense.card_number}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

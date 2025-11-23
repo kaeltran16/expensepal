@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { formatCurrency, hapticFeedback } from '@/lib/utils'
-import { AlertCircle, CheckCircle, Edit2, Save, X, Target } from 'lucide-react'
-import type { Expense } from '@/lib/supabase'
 import { useBudgets, useCreateBudget, useUpdateBudget } from '@/lib/hooks'
+import type { Expense } from '@/lib/supabase'
+import { formatCurrency, hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { AlertCircle, CheckCircle, Edit2, Save, Target, X } from 'lucide-react'
+import { useState } from 'react'
 
 const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Health', 'Other']
 
@@ -70,11 +70,12 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
   }
 
   const getBudgetForCategory = (category: string) => {
-    return budgets.find((b) => b.category === category)?.amount || 0
+    const budget = budgets.find((b) => b.category === category)
+    return budget ? budget.amount : null
   }
 
-  const getStatus = (spent: number, budget: number) => {
-    if (budget === 0) return 'none'
+  const getStatus = (spent: number, budget: number | null) => {
+    if (budget === null || budget === 0) return 'none'
     const percentage = (spent / budget) * 100
     if (percentage >= 100) return 'exceeded'
     if (percentage >= 80) return 'warning'
@@ -114,7 +115,7 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
         {CATEGORIES.map((category, index) => {
           const budget = getBudgetForCategory(category)
           const spent = getCategorySpent(category)
-          const percentage = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0
+          const percentage = budget !== null && budget > 0 ? Math.min((spent / budget) * 100, 100) : 0
           const status = getStatus(spent, budget)
           const isEditing = editing === category
 
@@ -139,9 +140,9 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="ios-headline">{category}</span>
-                        {budget > 0 && (
+                        {budget !== null && budget > 0 && (
                           <>
-                            {status === 'good' && (
+                                {status === 'good' && (
                               <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                             )}
                             {status === 'warning' && (
@@ -154,8 +155,15 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
                         )}
                       </div>
                       <p className="ios-caption text-muted-foreground">
-                        {formatCurrency(spent, 'VND')} spent
-                        {budget > 0 && ` of ${formatCurrency(budget, 'VND')}`}
+                        {budget !== null && budget > 0 ? (
+                          <>
+                            {formatCurrency(spent, 'VND')} of {formatCurrency(budget, 'VND')}
+                          </>
+                        ) : (
+                          <>
+                            {formatCurrency(spent, 'VND')} spent • No budget set
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -168,7 +176,7 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
                         className="w-24 h-9 text-sm ios-body"
-                        placeholder="0"
+                        placeholder="Amount"
                         autoFocus
                       />
                       <Button
@@ -202,20 +210,20 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
                       onClick={() => {
                         hapticFeedback('light')
                         setEditing(category)
-                        setEditValue(budget.toString())
+                        setEditValue(budget !== null ? budget.toString() : '')
                       }}
                       className="h-9 px-3 ios-touch bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
                     >
                       <Edit2 className="h-4 w-4 mr-1.5" />
                       <span className="text-sm font-medium">
-                        {budget > 0 ? 'Edit' : 'Set'}
+                        {budget !== null && budget > 0 ? 'Edit' : 'Set'}
                       </span>
                     </Button>
                   )}
                 </div>
 
                 {/* Progress Bar */}
-                {budget > 0 && (
+                {budget !== null && budget > 0 && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="ios-caption text-muted-foreground">

@@ -1,9 +1,9 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { queryKeys, type MealFilters } from './query-keys'
-import type { Meal } from '../supabase'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import type { Meal } from '../supabase'
+import { queryKeys, type MealFilters } from './query-keys'
 
 // Re-export Meal type for use in components
 export type { Meal }
@@ -179,6 +179,7 @@ export function useCreateMealOptimistic() {
         expense_id: null,
         llm_reasoning: null,
         notes: newMeal.notes || null,
+        user_id: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }

@@ -1,5 +1,5 @@
-import { supabaseAdmin } from './supabase'
 import type { SavedFood } from './supabase'
+import { supabaseAdmin } from './supabase'
 
 export interface CalorieEstimate {
   calories: number
@@ -38,9 +38,9 @@ export class CalorieEstimator {
     if (saved) {
       return {
         calories: saved.calories,
-        protein: saved.protein,
-        carbs: saved.carbs,
-        fat: saved.fat,
+        protein: saved.protein || 0,
+        carbs: saved.carbs || 0,
+        fat: saved.fat || 0,
         confidence: 'high',
         reasoning: `Using saved food entry: "${saved.name}"`,
         source: 'saved',
@@ -116,7 +116,7 @@ export class CalorieEstimator {
         await supabaseAdmin
           .from('saved_foods')
           .update({
-            use_count: food.use_count + 1,
+            use_count: (food.use_count || 0) + 1,
             last_used_at: new Date().toISOString(),
           })
           .eq('id', foodId)

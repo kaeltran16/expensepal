@@ -56,14 +56,12 @@ export async function PUT(
     const { data, error } = await supabase
       .from('expenses')
       .update({
-        card_number: body.cardNumber,
-        cardholder: body.cardholder,
-        transaction_type: body.transactionType,
+        transaction_type: body.transactionType || 'Expense',
         amount: body.amount,
-        currency: body.currency,
+        currency: body.currency || 'VND',
         transaction_date: body.transactionDate,
         merchant: body.merchant,
-        category: body.category,
+        category: body.category || 'Other',
         notes: body.notes,
       })
       .eq('id', id)

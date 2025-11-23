@@ -90,11 +90,9 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
         category: formData.category || 'Other',
         notes: formData.notes,
         transactionDate: submitDate.toISOString(),
-        // Backend will fill these from email or use defaults
-        cardNumber: expense?.card_number || 'N/A',
-        cardholder: expense?.cardholder || 'Manual',
         transactionType: 'Expense',
         currency: 'VND',
+        source: 'manual',
       })
     } finally {
       setLoading(false)

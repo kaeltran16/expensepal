@@ -76,14 +76,12 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           user_id: user.id,
-          card_number: body.cardNumber,
-          cardholder: body.cardholder,
-          transaction_type: body.transactionType,
+          transaction_type: body.transactionType || 'Expense',
           amount: body.amount,
           currency: body.currency || 'VND',
           transaction_date: body.transactionDate,
           merchant: body.merchant,
-          category: body.category,
+          category: body.category || 'Other',
           notes: body.notes,
           source: body.source || 'manual',
           email_subject: body.emailSubject,

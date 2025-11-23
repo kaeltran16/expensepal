@@ -78,13 +78,13 @@ export function MealList({ meals, onMealDeleted, showAll = false }: MealListProp
   return (
     <div className="space-y-3">
       {displayedMeals.map((meal) => {
-        const Icon = MEAL_TIME_ICONS[meal.meal_time] || Apple
-        const colorClass = MEAL_TIME_COLORS[meal.meal_time] || MEAL_TIME_COLORS.other
 
         return (
           <SwipeableCard
             key={meal.id}
             onDelete={() => handleDelete(meal.id)}
+            confirmTitle="Delete Meal?"
+            confirmMessage={`Are you sure you want to delete "${meal.name}"? This will remove ${meal.calories} calories from your daily log. This action cannot be undone.`}
           >
             <Card
               className={`frosted-card border-l-4 ${
@@ -116,9 +116,9 @@ export function MealList({ meals, onMealDeleted, showAll = false }: MealListProp
 
                 {/* Macros - removed delete button since swipe handles it */}
                 <div className="flex items-center gap-3 text-xs">
-                  <span className="text-blue-600 dark:text-blue-400 font-medium">P: {Math.round(meal.protein)}g</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-medium">C: {Math.round(meal.carbs)}g</span>
-                  <span className="text-green-600 dark:text-green-400 font-medium">F: {Math.round(meal.fat)}g</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-medium">P: {Math.round(meal.protein || 0)}g</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">C: {Math.round(meal.carbs || 0)}g</span>
+                  <span className="text-green-600 dark:text-green-400 font-medium">F: {Math.round(meal.fat || 0)}g</span>
                 </div>
               </CardContent>
             </Card>

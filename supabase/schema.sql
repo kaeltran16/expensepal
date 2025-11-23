@@ -1,8 +1,7 @@
 -- Create expenses table
 CREATE TABLE IF NOT EXISTS expenses (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    card_number TEXT,  -- Optional: only filled from email notifications
-    cardholder TEXT,   -- Optional: only filled from email notifications
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     transaction_type TEXT DEFAULT 'Expense',  -- Optional: defaults to 'Expense'
     amount DECIMAL(15, 2) NOT NULL,
     currency TEXT NOT NULL DEFAULT 'VND',
@@ -17,6 +16,7 @@ CREATE TABLE IF NOT EXISTS expenses (
 );
 
 -- Create index for faster queries
+CREATE INDEX IF NOT EXISTS idx_expenses_user_id ON expenses(user_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_transaction_date ON expenses(transaction_date DESC);
 CREATE INDEX IF NOT EXISTS idx_expenses_merchant ON expenses(merchant);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
@@ -58,9 +58,19 @@ ON CONFLICT (name) DO NOTHING;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 
--- Create policies (for now, allow all operations - you can add auth later)
-CREATE POLICY "Allow all operations on expenses" ON expenses
-    FOR ALL USING (true) WITH CHECK (true);
+-- Create policies for expenses (users can only access their own expenses)
+CREATE POLICY "Users can view their own expenses" ON expenses
+    FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Allow all operations on categories" ON categories
-    FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Users can insert their own expenses" ON expenses
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own expenses" ON expenses
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own expenses" ON expenses
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Create policies for categories (allow all authenticated users to read)
+CREATE POLICY "Anyone can view categories" ON categories
+    FOR SELECT USING (true);

@@ -17,9 +17,7 @@ interface ExpenseFormProps {
 export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    cardNumber: expense?.card_number || '',
-    cardholder: expense?.cardholder || '',
-    transactionType: expense?.transaction_type || 'Payment for services and goods',
+    transactionType: expense?.transaction_type || 'Expense',
     amount: expense?.amount?.toString() || '',
     currency: expense?.currency || 'VND',
     transactionDate: expense?.transaction_date
@@ -111,28 +109,6 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                   required
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cardholder">Cardholder</Label>
-              <Input
-                id="cardholder"
-                name="cardholder"
-                value={formData.cardholder}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cardNumber">Card Number</Label>
-              <Input
-                id="cardNumber"
-                name="cardNumber"
-                value={formData.cardNumber}
-                onChange={handleChange}
-                required
-              />
             </div>
 
             <div className="space-y-2">

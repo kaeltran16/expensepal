@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Sparkles, Utensils } from 'lucide-react'
-import { toast } from 'sonner'
 import { useCreateMealOptimistic } from '@/lib/hooks'
 import { getCurrentISOInGMT7 } from '@/lib/timezone'
+import { Loader2, Sparkles, Utensils } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 export function QuickMealForm() {
   const [name, setName] = useState('')
