@@ -1,19 +1,19 @@
 'use client'
 
-import { motion, useMotionValue, useTransform, PanInfo, useAnimation } from 'framer-motion'
-import { Trash2, AlertTriangle } from 'lucide-react'
-import { ReactNode, useRef, useState } from 'react'
-import { hapticFeedback } from '@/lib/utils'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { hapticFeedback } from '@/lib/utils'
+import { motion, PanInfo, useAnimation, useMotionValue, useTransform } from 'framer-motion'
+import { AlertTriangle, Trash2 } from 'lucide-react'
+import { ReactNode, useRef, useState } from 'react'
 
 interface SwipeableCardProps {
   children: ReactNode
@@ -127,28 +127,19 @@ export function SwipeableCard({
 
     // Card fade and scale animation
     cardControls.start({
-      opacity: [1, 1, 0.7, 0],
-      scale: [1, 0.98, 0.95, 0.9],
+      opacity: 0,
+      scale: 0.95,
       transition: {
-        duration: 0.7,
+        duration: 0.3,
         ease: [0.4, 0, 0.2, 1]
       }
     })
 
-    // Smooth slide out animation with spring physics
-    setTimeout(() => {
-      x.set(-window.innerWidth, {
-        type: 'spring',
-        stiffness: 300,
-        damping: 30,
-        mass: 0.8
-      } as any)
-    }, 200)
-
-    // Delete after animation completes
+    // Trigger delete immediately after the internal animation starts
+    // The parent component will handle the actual removal and layout animation
     setTimeout(() => {
       onDelete()
-    }, 700)
+    }, 300)
   }
 
   return (

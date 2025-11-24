@@ -104,9 +104,10 @@ export function ExpensesView({
         {displayedExpenses.map((expense, index) => (
           <motion.div
             key={expense.id}
+            layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, x: -100 }}
+            exit={{ opacity: 0, scale: 0.9, filter: 'blur(4px)' }}
             transition={{
               duration: 0.3,
               delay: index < 10 ? index * 0.05 : 0,

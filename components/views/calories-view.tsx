@@ -30,18 +30,7 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
     );
   }
 
-  // Empty state
-  if (meals.length === 0 && !calorieStats) {
-    return (
-      <EmptyState
-        icon="🍔"
-        title="No meals tracked yet"
-        description="Start logging your meals to track calories and nutrition"
-        size="lg"
-        animationVariant="bounce"
-      />
-    );
-  }
+
 
   // Content view
   return (

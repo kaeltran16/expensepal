@@ -95,14 +95,14 @@ export async function POST() {
         successful++
         insertResults.push({ success: true, data, expense })
 
-        // Auto-create meal entry for GrabFood orders
-        if (expense.transactionType?.toLowerCase().includes('grabfood')) {
-          console.log(`🍔 Detected GrabFood order, estimating calories...`)
+        // Auto-create meal entry for Food expenses only
+        if (expense.category === 'Food') {
+          console.log(`🍔 Detected Food expense (${expense.merchant}), estimating calories...`)
           try {
             // Estimate calories for this meal
             const mealDescription = `${expense.merchant}`
             const estimate = await calorieEstimator.estimate(mealDescription, {
-              additionalInfo: `GrabFood order from ${expense.merchant}`,
+              additionalInfo: `Food order from ${expense.merchant}. Amount: ${expense.amount} ${expense.currency}. Subject: ${expense.emailSubject}`,
             })
 
             // Determine meal time based on transaction time in GMT+7
@@ -120,9 +120,9 @@ export async function POST() {
               mealTime = 'snack'
             }
 
-            // Create meal entry linked to expense (IMPORTANT: Include user_id!)
+            // Create meal entry linked to expense
             const { error: mealError } = await supabaseAdmin.from('meals').insert({
-              user_id: user.id, // Fix: Add user_id to associate meal with user
+              user_id: user.id,
               name: mealDescription,
               calories: estimate.calories,
               protein: estimate.protein,
@@ -134,7 +134,7 @@ export async function POST() {
               confidence: estimate.confidence,
               expense_id: data[0]?.id,
               llm_reasoning: estimate.reasoning,
-              notes: `Auto-tracked from GrabFood order`,
+              notes: `Auto-tracked from ${expense.merchant} (${expense.amount} ${expense.currency})`,
             })
 
             if (mealError) {
@@ -144,7 +144,7 @@ export async function POST() {
               mealsCreated++
             }
           } catch (mealEstimateError) {
-            console.error(`Error estimating calories for GrabFood:`, mealEstimateError)
+            console.error(`Error estimating calories for Food expense:`, mealEstimateError)
             // Don't fail the whole sync if calorie estimation fails
           }
         }
