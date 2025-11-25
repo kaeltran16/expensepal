@@ -93,6 +93,8 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           color?: string | null
@@ -100,6 +102,8 @@ export type Database = {
           icon?: string | null
           id?: string
           name: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           color?: string | null
@@ -107,6 +111,8 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -155,6 +161,45 @@ export type Database = {
           transaction_type?: string | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      llm_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          id: string
+          model: string
+          prompt: string | null
+          response: string | null
+          status: string | null
+          tokens_completion: number | null
+          tokens_prompt: number | null
+          tokens_total: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          model: string
+          prompt?: string | null
+          response?: string | null
+          status?: string | null
+          tokens_completion?: number | null
+          tokens_prompt?: number | null
+          tokens_total?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          model?: string
+          prompt?: string | null
+          response?: string | null
+          status?: string | null
+          tokens_completion?: number | null
+          tokens_prompt?: number | null
+          tokens_total?: number | null
         }
         Relationships: []
       }

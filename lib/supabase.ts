@@ -45,3 +45,6 @@ export type SavedFoodUpdate = Database['public']['Tables']['saved_foods']['Updat
 export type PushSubscription = Database['public']['Tables']['push_subscriptions']['Row']
 export type PushSubscriptionInsert = Database['public']['Tables']['push_subscriptions']['Insert']
 export type PushSubscriptionUpdate = Database['public']['Tables']['push_subscriptions']['Update']
+export type LLMLog = Database['public']['Tables']['llm_logs']['Row']
+export type LLMLogInsert = Database['public']['Tables']['llm_logs']['Insert']
+export type LLMLogUpdate = Database['public']['Tables']['llm_logs']['Update']
