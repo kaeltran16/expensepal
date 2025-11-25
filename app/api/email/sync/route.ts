@@ -61,6 +61,9 @@ export async function POST() {
     let duplicates = 0
     let mealsCreated = 0
 
+    // First pass: Insert all expenses
+    const successfulExpenses: Array<{ expense: any; expenseId: string }> = []
+
     for (const expense of expenses) {
       console.log(`Attempting to insert: ${expense.amount} ${expense.currency} at ${expense.merchant}`)
 
@@ -95,59 +98,80 @@ export async function POST() {
         successful++
         insertResults.push({ success: true, data, expense })
 
-        // Auto-create meal entry for Food expenses only
+        // Track successful Food expenses for batch meal estimation
         if (expense.category === 'Food') {
-          console.log(`🍔 Detected Food expense (${expense.merchant}), estimating calories...`)
-          try {
-            // Estimate calories for this meal
-            const mealDescription = `${expense.merchant}`
-            const estimate = await calorieEstimator.estimate(mealDescription, {
-              additionalInfo: `Food order from ${expense.merchant}. Amount: ${expense.amount} ${expense.currency}. Subject: ${expense.emailSubject}`,
-            })
-
-            // Determine meal time based on transaction time in GMT+7
-            const transactionDate = new Date(expense.transactionDate)
-            const hour = transactionDate.getHours()
-            let mealTime: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other' = 'other'
-
-            if (hour >= 6 && hour < 11) {
-              mealTime = 'breakfast'
-            } else if (hour >= 11 && hour < 16) {
-              mealTime = 'lunch'
-            } else if (hour >= 16 && hour < 22) {
-              mealTime = 'dinner'
-            } else {
-              mealTime = 'snack'
-            }
-
-            // Create meal entry linked to expense
-            const { error: mealError } = await supabaseAdmin.from('meals').insert({
-              user_id: user.id,
-              name: mealDescription,
-              calories: estimate.calories,
-              protein: estimate.protein,
-              carbs: estimate.carbs,
-              fat: estimate.fat,
-              meal_time: mealTime,
-              meal_date: expense.transactionDate,
-              source: 'email',
-              confidence: estimate.confidence,
-              expense_id: data[0]?.id,
-              llm_reasoning: estimate.reasoning,
-              notes: `Auto-tracked from ${expense.merchant} (${expense.amount} ${expense.currency})`,
-            })
-
-            if (mealError) {
-              console.error(`Failed to create meal entry:`, mealError)
-            } else {
-              console.log(`✓ Created meal entry: ${estimate.calories} cal from ${expense.merchant}`)
-              mealsCreated++
-            }
-          } catch (mealEstimateError) {
-            console.error(`Error estimating calories for Food expense:`, mealEstimateError)
-            // Don't fail the whole sync if calorie estimation fails
-          }
+          successfulExpenses.push({ expense, expenseId: data[0]?.id })
         }
+      }
+    }
+
+    // Second pass: Batch process meal estimations for all Food expenses
+    if (successfulExpenses.length > 0) {
+      console.log(`🍔 Batch processing ${successfulExpenses.length} Food expense(s) for meal tracking...`)
+
+      try {
+        // Prepare food descriptions for batch estimation
+        const foodDescriptions = successfulExpenses.map((item) => item.expense.merchant)
+
+        // Make a SINGLE batch LLM call for all foods
+        const estimates = await calorieEstimator.estimateBatch(
+          foodDescriptions,
+          {
+            additionalInfo: 'Food orders from email sync (GrabFood/delivery)',
+          }
+        )
+
+        // Create meal entries for each estimate
+        const mealInserts = successfulExpenses.map((item, index) => {
+          const estimate = estimates[index]
+          const { expense, expenseId } = item
+
+          // Determine meal time based on transaction time
+          const transactionDate = new Date(expense.transactionDate)
+          const hour = transactionDate.getHours()
+          let mealTime: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other' = 'other'
+
+          if (hour >= 6 && hour < 11) {
+            mealTime = 'breakfast'
+          } else if (hour >= 11 && hour < 16) {
+            mealTime = 'lunch'
+          } else if (hour >= 16 && hour < 22) {
+            mealTime = 'dinner'
+          } else {
+            mealTime = 'snack'
+          }
+
+          return {
+            user_id: user.id,
+            name: expense.merchant,
+            calories: estimate.calories,
+            protein: estimate.protein,
+            carbs: estimate.carbs,
+            fat: estimate.fat,
+            meal_time: mealTime,
+            meal_date: expense.transactionDate,
+            source: 'email' as const,
+            confidence: estimate.confidence,
+            expense_id: expenseId,
+            llm_reasoning: estimate.reasoning,
+            notes: `Auto-tracked from ${expense.merchant} (${expense.amount} ${expense.currency})`,
+          }
+        })
+
+        // Batch insert all meals
+        const { data: mealDataArray, error: mealError } = await supabaseAdmin
+          .from('meals')
+          .insert(mealInserts)
+
+        if (mealError) {
+          console.error(`Failed to create meal entries:`, mealError)
+        } else {
+          mealsCreated = (mealDataArray as unknown as { length: number }[])?.length ?? 0
+          console.log(`✓ Created ${mealsCreated} meal entries in a single batch`)
+        }
+      } catch (batchError) {
+        console.error(`Error in batch meal estimation:`, batchError)
+        // Don't fail the whole sync if meal tracking fails
       }
     }
 

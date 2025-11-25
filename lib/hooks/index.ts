@@ -79,6 +79,17 @@ export {
 } from './use-budget-recommendations'
 export { useAIInsights } from './use-ai-insights'
 
+// Budget Predictions & Alerts
+export {
+  useBudgetPredictions,
+  useCategories,
+  useCreateCategory,
+  useDismissAlert,
+  getDismissedAlerts,
+  clearDismissedAlerts,
+} from './use-budget-predictions'
+export type { BudgetPredictionsResponse, Category } from './use-budget-predictions'
+
 // Offline Mode
 export { useOfflineQueue } from './use-offline-queue'
 export type { PendingMutation } from './use-offline-queue'

@@ -2,12 +2,13 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useBudgets, useCreateBudget, useUpdateBudget } from '@/lib/hooks'
+import { useBudgets, useCreateBudget, useUpdateBudget, useCategories } from '@/lib/hooks'
+import { AddCategoryDialog } from '@/components/add-category-dialog'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { AlertCircle, CheckCircle, Edit2, Save, Target, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Health', 'Other']
 
@@ -30,6 +31,21 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
 
   // Fetch budgets using TanStack Query
   const { data: budgets = [], isLoading: loading } = useBudgets({ month: currentMonth })
+
+  // Fetch categories (default + custom)
+  const { data: categoriesData } = useCategories()
+
+  // Combine default categories with custom ones
+  const allCategories = useMemo(() => {
+    if (!categoriesData) return CATEGORIES
+    return categoriesData.map((c) => c.name)
+  }, [categoriesData])
+
+  const getCategoryEmoji = (categoryName: string) => {
+    if (CATEGORY_EMOJI[categoryName]) return CATEGORY_EMOJI[categoryName]
+    const customCat = categoriesData?.find((c) => c.name === categoryName)
+    return customCat?.icon || '📦'
+  }
 
   // Mutation hooks
   const createBudgetMutation = useCreateBudget()
@@ -107,12 +123,13 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
               </p>
             </div>
           </div>
+          <AddCategoryDialog />
         </div>
       </div>
 
       {/* Budget List */}
       <div className="ios-list-group">
-        {CATEGORIES.map((category, index) => {
+        {allCategories.map((category, index) => {
           const budget = getBudgetForCategory(category)
           const spent = getCategorySpent(category)
           const percentage = budget !== null && budget > 0 ? Math.min((spent / budget) * 100, 100) : 0
@@ -133,7 +150,7 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {/* Emoji Icon */}
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-lg flex-shrink-0">
-                      {CATEGORY_EMOJI[category]}
+                      {getCategoryEmoji(category)}
                     </div>
 
                     {/* Category Info */}

@@ -35,9 +35,12 @@ vi.mock('@/lib/email-service', () => ({
   }]),
 }))
 
+const mockCalorieEstimateBatch = vi.fn()
+
 vi.mock('@/lib/calorie-estimator', () => ({
   calorieEstimator: {
     estimate: mockCalorieEstimate,
+    estimateBatch: mockCalorieEstimateBatch,
   },
 }))
 
@@ -79,9 +82,10 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
     })
     
     mockMealInsert.mockReturnValue({
+      data: [],
       error: null,
     })
-    
+
     mockCalorieEstimate.mockResolvedValue({
       calories: 850,
       protein: 35.5,
@@ -91,7 +95,28 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       reasoning: 'Mock estimate',
       source: 'llm',
     })
-    
+
+    mockCalorieEstimateBatch.mockResolvedValue([
+      {
+        calories: 850,
+        protein: 35.5,
+        carbs: 95.0,
+        fat: 28.5,
+        confidence: 'high',
+        reasoning: 'Mock estimate 1',
+        source: 'llm',
+      },
+      {
+        calories: 600,
+        protein: 25.0,
+        carbs: 70.0,
+        fat: 18.5,
+        confidence: 'medium',
+        reasoning: 'Mock estimate 2',
+        source: 'llm',
+      },
+    ])
+
     mockFetchUnreadExpenses.mockResolvedValue([])
   })
 
@@ -109,6 +134,21 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       })
 
       mockFetchUnreadExpenses.mockResolvedValue([foodExpense])
+      mockCalorieEstimateBatch.mockResolvedValue([
+        {
+          calories: 850,
+          protein: 35.5,
+          carbs: 95.0,
+          fat: 28.5,
+          confidence: 'high',
+          reasoning: 'Mock estimate',
+          source: 'llm',
+        },
+      ])
+      mockMealInsert.mockReturnValue({
+        data: [{ id: 'meal-1' }],
+        error: null,
+      })
 
       // Act
       const { POST } = await import('@/app/api/email/sync/route')
@@ -118,20 +158,22 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       // Assert
       expect(data.newExpenses).toBe(1)
       expect(data.mealsCreated).toBe(1)
-      expect(mockCalorieEstimate).toHaveBeenCalledWith(
-        'Phở 24',
+      expect(mockCalorieEstimateBatch).toHaveBeenCalledWith(
+        ['Phở 24'],
         expect.objectContaining({
-          additionalInfo: expect.stringContaining('85000 VND'),
+          additionalInfo: expect.stringContaining('Food orders'),
         })
       )
       expect(mockMealInsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          user_id: 'test-user-id',
-          name: 'Phở 24',
-          calories: 850,
-          meal_time: 'lunch',
-          source: 'email',
-        })
+        expect.arrayContaining([
+          expect.objectContaining({
+            user_id: 'test-user-id',
+            name: 'Phở 24',
+            calories: 850,
+            meal_time: 'lunch',
+            source: 'email',
+          }),
+        ])
       )
     })
 
@@ -186,12 +228,29 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       })
 
       mockFetchUnreadExpenses.mockResolvedValue([breakfastExpense])
+      mockCalorieEstimateBatch.mockResolvedValue([
+        {
+          calories: 400,
+          protein: 15.0,
+          carbs: 50.0,
+          fat: 12.0,
+          confidence: 'high',
+          reasoning: 'Breakfast estimate',
+          source: 'llm',
+        },
+      ])
+      mockMealInsert.mockReturnValue({
+        data: [{ id: 'meal-1' }],
+        error: null,
+      })
 
       const { POST } = await import('@/app/api/email/sync/route')
       await POST()
 
       expect(mockMealInsert).toHaveBeenCalledWith(
-        expect.objectContaining({ meal_time: 'breakfast' })
+        expect.arrayContaining([
+          expect.objectContaining({ meal_time: 'breakfast' })
+        ])
       )
     })
 
@@ -202,12 +261,29 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       })
 
       mockFetchUnreadExpenses.mockResolvedValue([lunchExpense])
+      mockCalorieEstimateBatch.mockResolvedValue([
+        {
+          calories: 650,
+          protein: 30.0,
+          carbs: 75.0,
+          fat: 20.0,
+          confidence: 'high',
+          reasoning: 'Lunch estimate',
+          source: 'llm',
+        },
+      ])
+      mockMealInsert.mockReturnValue({
+        data: [{ id: 'meal-1' }],
+        error: null,
+      })
 
       const { POST } = await import('@/app/api/email/sync/route')
       await POST()
 
       expect(mockMealInsert).toHaveBeenCalledWith(
-        expect.objectContaining({ meal_time: 'lunch' })
+        expect.arrayContaining([
+          expect.objectContaining({ meal_time: 'lunch' })
+        ])
       )
     })
 
@@ -218,12 +294,29 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       })
 
       mockFetchUnreadExpenses.mockResolvedValue([dinnerExpense])
+      mockCalorieEstimateBatch.mockResolvedValue([
+        {
+          calories: 750,
+          protein: 35.0,
+          carbs: 80.0,
+          fat: 25.0,
+          confidence: 'high',
+          reasoning: 'Dinner estimate',
+          source: 'llm',
+        },
+      ])
+      mockMealInsert.mockReturnValue({
+        data: [{ id: 'meal-1' }],
+        error: null,
+      })
 
       const { POST } = await import('@/app/api/email/sync/route')
       await POST()
 
       expect(mockMealInsert).toHaveBeenCalledWith(
-        expect.objectContaining({ meal_time: 'dinner' })
+        expect.arrayContaining([
+          expect.objectContaining({ meal_time: 'dinner' })
+        ])
       )
     })
 
@@ -234,12 +327,29 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       })
 
       mockFetchUnreadExpenses.mockResolvedValue([snackExpense])
+      mockCalorieEstimateBatch.mockResolvedValue([
+        {
+          calories: 250,
+          protein: 8.0,
+          carbs: 30.0,
+          fat: 10.0,
+          confidence: 'medium',
+          reasoning: 'Snack estimate',
+          source: 'llm',
+        },
+      ])
+      mockMealInsert.mockReturnValue({
+        data: [{ id: 'meal-1' }],
+        error: null,
+      })
 
       const { POST } = await import('@/app/api/email/sync/route')
       await POST()
 
       expect(mockMealInsert).toHaveBeenCalledWith(
-        expect.objectContaining({ meal_time: 'snack' })
+        expect.arrayContaining([
+          expect.objectContaining({ meal_time: 'snack' })
+        ])
       )
     })
   })
@@ -285,6 +395,30 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       ]
 
       mockFetchUnreadExpenses.mockResolvedValue(expenses)
+      mockCalorieEstimateBatch.mockResolvedValue([
+        {
+          calories: 750,
+          protein: 30.0,
+          carbs: 80.0,
+          fat: 25.0,
+          confidence: 'high',
+          reasoning: 'Restaurant A estimate',
+          source: 'llm',
+        },
+        {
+          calories: 600,
+          protein: 25.0,
+          carbs: 70.0,
+          fat: 18.5,
+          confidence: 'medium',
+          reasoning: 'Restaurant B estimate',
+          source: 'llm',
+        },
+      ])
+      mockMealInsert.mockReturnValue({
+        data: [{ id: 'meal-1' }, { id: 'meal-2' }],
+        error: null,
+      })
 
       const { POST } = await import('@/app/api/email/sync/route')
       const response = await POST()
@@ -292,7 +426,161 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
 
       expect(data.newExpenses).toBe(3)
       expect(data.mealsCreated).toBe(2)
-      expect(mockCalorieEstimate).toHaveBeenCalledTimes(2)
+      expect(mockCalorieEstimate).not.toHaveBeenCalled()
+      expect(mockCalorieEstimateBatch).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Batch meal estimation', () => {
+    it('should use batch estimation for multiple Food expenses (single LLM call)', async () => {
+      // Arrange
+      const foodExpenses = [
+        createMockExpense({
+          category: 'Food',
+          merchant: 'KFC',
+          transactionDate: '2025-11-24T12:00:00+07:00',
+        }),
+        createMockExpense({
+          category: 'Food',
+          merchant: 'Starbucks',
+          transactionDate: '2025-11-24T14:30:00+07:00',
+        }),
+        createMockExpense({
+          category: 'Food',
+          merchant: 'Phở 24',
+          transactionDate: '2025-11-24T18:00:00+07:00',
+        }),
+      ]
+
+      mockFetchUnreadExpenses.mockResolvedValue(foodExpenses)
+      mockCalorieEstimateBatch.mockResolvedValue([
+        {
+          calories: 950,
+          protein: 40.0,
+          carbs: 100.0,
+          fat: 35.0,
+          confidence: 'high',
+          reasoning: 'KFC fried chicken meal',
+          source: 'llm',
+        },
+        {
+          calories: 400,
+          protein: 10.0,
+          carbs: 60.0,
+          fat: 15.0,
+          confidence: 'medium',
+          reasoning: 'Starbucks latte and pastry',
+          source: 'llm',
+        },
+        {
+          calories: 450,
+          protein: 25.0,
+          carbs: 65.0,
+          fat: 8.0,
+          confidence: 'high',
+          reasoning: 'Vietnamese pho bowl',
+          source: 'llm',
+        },
+      ])
+      mockMealInsert.mockReturnValue({
+        data: [{ id: 'meal-1' }, { id: 'meal-2' }, { id: 'meal-3' }],
+        error: null,
+      })
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      const response = await POST()
+      const data = await response.json()
+
+      // Assert - Should make ONLY ONE batch call instead of 3 individual calls
+      expect(data.newExpenses).toBe(3)
+      expect(data.mealsCreated).toBe(3)
+      expect(mockCalorieEstimate).not.toHaveBeenCalled()
+      expect(mockCalorieEstimateBatch).toHaveBeenCalledTimes(1)
+      expect(mockCalorieEstimateBatch).toHaveBeenCalledWith(
+        ['KFC', 'Starbucks', 'Phở 24'],
+        expect.objectContaining({
+          additionalInfo: expect.stringContaining('Food orders'),
+        })
+      )
+
+      // Verify batch insert was called with all meals at once
+      expect(mockMealInsert).toHaveBeenCalledTimes(1)
+      expect(mockMealInsert).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'KFC',
+            calories: 950,
+            meal_time: 'lunch',
+          }),
+          expect.objectContaining({
+            name: 'Starbucks',
+            calories: 400,
+            meal_time: 'lunch',
+          }),
+          expect.objectContaining({
+            name: 'Phở 24',
+            calories: 450,
+            meal_time: 'dinner',
+          }),
+        ])
+      )
+    })
+
+    it('should handle batch estimation failure gracefully', async () => {
+      // Arrange
+      const foodExpenses = [
+        createMockExpense({ category: 'Food', merchant: 'Restaurant A' }),
+        createMockExpense({ category: 'Food', merchant: 'Restaurant B' }),
+      ]
+
+      mockFetchUnreadExpenses.mockResolvedValue(foodExpenses)
+      mockCalorieEstimateBatch.mockRejectedValue(new Error('LLM API rate limit'))
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      const response = await POST()
+      const data = await response.json()
+
+      // Assert - Should still insert expenses, just fail meal creation
+      expect(data.newExpenses).toBe(2)
+      expect(data.mealsCreated).toBe(0)
+      expect(response.status).toBe(200)
+      expect(mockMealInsert).not.toHaveBeenCalled()
+    })
+
+    it('should use single call for 1 Food expense, batch for multiple', async () => {
+      // Single food expense
+      const singleExpense = [
+        createMockExpense({ category: 'Food', merchant: 'Single Restaurant' }),
+      ]
+
+      mockFetchUnreadExpenses.mockResolvedValue(singleExpense)
+      mockCalorieEstimateBatch.mockResolvedValue([
+        {
+          calories: 500,
+          protein: 20.0,
+          carbs: 60.0,
+          fat: 15.0,
+          confidence: 'high',
+          reasoning: 'Single meal',
+          source: 'llm',
+        },
+      ])
+      mockMealInsert.mockReturnValue({
+        data: [{ id: 'meal-1' }],
+        error: null,
+      })
+
+      const { POST } = await import('@/app/api/email/sync/route')
+      const response = await POST()
+      const data = await response.json()
+
+      expect(data.mealsCreated).toBe(1)
+      expect(mockCalorieEstimateBatch).toHaveBeenCalledWith(
+        ['Single Restaurant'],
+        expect.any(Object)
+      )
     })
   })
 })

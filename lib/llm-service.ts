@@ -145,6 +145,51 @@ export class LLMService {
 
     return response?.content || null
   }
+
+  /**
+   * Batch completion - make a single LLM call for multiple items
+   * More efficient than multiple sequential calls
+   */
+  async batchCompletion<T = any>(
+    items: string[],
+    promptBuilder: (items: string[]) => string,
+    options?: {
+      model?: string
+      temperature?: number
+      maxTokens?: number
+      systemPrompt?: string
+    }
+  ): Promise<T[] | null> {
+    if (!this.isConfigured()) {
+      console.warn('LLM service not configured (missing OPENROUTER_API_KEY)')
+      return null
+    }
+
+    if (items.length === 0) {
+      return []
+    }
+
+    const messages: LLMMessage[] = []
+
+    if (options?.systemPrompt) {
+      messages.push({ role: 'system', content: options.systemPrompt })
+    }
+
+    messages.push({ role: 'user', content: promptBuilder(items) })
+
+    const response = await this.completion({
+      messages,
+      model: options?.model,
+      temperature: options?.temperature,
+      maxTokens: options?.maxTokens || 2000, // Higher default for batch requests
+    })
+
+    if (!response?.content) {
+      return null
+    }
+
+    return this.parseJSON<T[]>(response.content)
+  }
 }
 
 // Singleton instance

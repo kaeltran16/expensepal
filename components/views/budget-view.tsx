@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Target, Repeat } from 'lucide-react'
 import { BudgetTracker } from '@/components/budget-tracker';
+import { BudgetPredictionsPanel } from '@/components/budget-predictions-panel';
 import { BudgetCardSkeleton } from '@/components/skeleton-loader';
 import { detectRecurringExpenses } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase';
@@ -81,7 +82,13 @@ export function BudgetView({ expenses, loading }: BudgetViewProps) {
         transition={{ duration: 0.2 }}
       >
         {activeTab === 'budgets' ? (
-          <BudgetTracker expenses={expenses} />
+          <div className="space-y-4">
+            {/* Smart Predictions & Alerts */}
+            <BudgetPredictionsPanel />
+
+            {/* Budget Tracker */}
+            <BudgetTracker expenses={expenses} />
+          </div>
         ) : (
           <RecurringExpensesSection expenses={expenses} />
         )}

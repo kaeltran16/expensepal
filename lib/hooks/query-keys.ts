@@ -41,6 +41,12 @@ export const queryKeys = {
     list: (filters?: BudgetFilters) => [...queryKeys.budgets.lists(), filters] as const,
     details: () => [...queryKeys.budgets.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.budgets.details(), id] as const,
+    predictions: (month?: string) => [...queryKeys.budgets.all, 'predictions', month] as const,
+  },
+
+  // Categories
+  categories: {
+    all: ['categories'] as const,
   },
 
   // Goals

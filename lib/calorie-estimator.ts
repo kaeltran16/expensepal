@@ -361,15 +361,243 @@ Your estimate:`
 
   /**
    * Batch estimation for multiple foods (e.g., from Grab order with item list)
+   * Uses a SINGLE LLM API call for efficiency
    */
   async estimateBatch(
     foodDescriptions: string[],
     context?: EstimationContext
   ): Promise<CalorieEstimate[]> {
-    const estimates = await Promise.all(
-      foodDescriptions.map((food) => this.estimate(food, context))
+    if (foodDescriptions.length === 0) {
+      return []
+    }
+
+    // If only one item, use the standard estimate method
+    if (foodDescriptions.length === 1) {
+      const estimate = await this.estimate(foodDescriptions[0], context)
+      return [estimate]
+    }
+
+    console.log(`Batch estimating ${foodDescriptions.length} foods with a single LLM call...`)
+
+    // Check saved foods first for all items
+    const results: (CalorieEstimate | null)[] = await Promise.all(
+      foodDescriptions.map(async (food) => {
+        const saved = await this.checkSavedFoods(food)
+        if (saved) {
+          return {
+            calories: saved.calories,
+            protein: saved.protein || 0,
+            carbs: saved.carbs || 0,
+            fat: saved.fat || 0,
+            confidence: 'high' as const,
+            reasoning: `Using saved food entry: "${saved.name}"`,
+            source: 'saved' as const,
+          }
+        }
+        return null
+      })
     )
-    return estimates
+
+    // Identify which foods need LLM estimation
+    const needsEstimation: Array<{ index: number; food: string }> = []
+    foodDescriptions.forEach((food, index) => {
+      if (!results[index]) {
+        needsEstimation.push({ index, food })
+      }
+    })
+
+    // If all foods were found in saved_foods, return early
+    if (needsEstimation.length === 0) {
+      console.log('✓ All foods found in saved_foods database')
+      return results as CalorieEstimate[]
+    }
+
+    console.log(`${needsEstimation.length} food(s) need LLM estimation, making batch request...`)
+
+    // Make a single LLM call for all foods that need estimation
+    const llmEstimates = await this.batchEstimateWithLLM(
+      needsEstimation.map((item) => item.food),
+      context
+    )
+
+    // Fill in the LLM estimates
+    needsEstimation.forEach((item, i) => {
+      results[item.index] = llmEstimates[i]
+    })
+
+    // Save all LLM estimates to database for future use
+    await Promise.all(
+      needsEstimation.map((item, i) =>
+        this.saveToDatabase(item.food, llmEstimates[i], context)
+      )
+    )
+
+    return results as CalorieEstimate[]
+  }
+
+  /**
+   * Batch LLM estimation - single API call for multiple foods
+   */
+  private async batchEstimateWithLLM(
+    foodDescriptions: string[],
+    context?: EstimationContext
+  ): Promise<CalorieEstimate[]> {
+    const apiKey = process.env.OPENROUTER_API_KEY
+
+    if (!apiKey) {
+      console.warn('OPENROUTER_API_KEY not configured, using fallback estimation')
+      return foodDescriptions.map((food) => this.fallbackEstimate(food))
+    }
+
+    try {
+      const prompt = this.buildBatchPrompt(foodDescriptions, context)
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+          'X-Title': 'Expense Tracker Calorie Estimator',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash', // Fast and free model
+          max_tokens: 2000, // Higher limit for batch requests
+          temperature: 0.1, // Low temperature for consistent estimates
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('OpenRouter API error:', response.status, errorText)
+        return foodDescriptions.map((food) => this.fallbackEstimate(food))
+      }
+
+      const data = await response.json()
+      const content = data.choices?.[0]?.message?.content?.trim()
+
+      if (!content) {
+        console.error('No content in OpenRouter response')
+        return foodDescriptions.map((food) => this.fallbackEstimate(food))
+      }
+
+      // Parse JSON array response
+      const parsed = this.parseBatchResponse(content, foodDescriptions.length)
+      console.log(`✓ LLM batch estimated ${foodDescriptions.length} foods`)
+
+      return parsed
+    } catch (error) {
+      console.error('Error in batch LLM estimation:', error)
+      return foodDescriptions.map((food) => this.fallbackEstimate(food))
+    }
+  }
+
+  /**
+   * Build prompt for batch estimation
+   */
+  private buildBatchPrompt(
+    foodDescriptions: string[],
+    context?: EstimationContext
+  ): string {
+    let contextInfo = ''
+    if (context?.portionSize) {
+      contextInfo += `\nPortion size: ${context.portionSize}`
+    }
+    if (context?.mealTime) {
+      contextInfo += `\nMeal time: ${context.mealTime}`
+    }
+    if (context?.additionalInfo) {
+      contextInfo += `\nAdditional context: ${context.additionalInfo}`
+    }
+
+    const foodList = foodDescriptions.map((food, i) => `${i + 1}. "${food}"`).join('\n')
+
+    return `Estimate the nutritional information for these ${foodDescriptions.length} food items:
+
+${foodList}${contextInfo}
+
+Context for estimation:
+- This is for a Vietnamese user tracking personal calorie intake
+- Use typical Vietnamese portion sizes unless specified otherwise
+- If the food name includes a merchant/restaurant, consider their typical portions
+- For GrabFood/delivery orders, assume restaurant-sized portions
+- Be conservative but realistic with estimates
+
+Provide your response as a JSON array with ${foodDescriptions.length} objects in the EXACT order listed above.
+Each object should use this format:
+{
+  "calories": <integer>,
+  "protein": <number with 1 decimal>,
+  "carbs": <number with 1 decimal>,
+  "fat": <number with 1 decimal>,
+  "confidence": "<high|medium|low>",
+  "reasoning": "<brief explanation of your estimate>"
+}
+
+Confidence levels:
+- "high": Common food with well-known nutrition (rice, chicken, eggs, etc.)
+- "medium": Restaurant food or prepared dishes (phở, bánh mì, etc.)
+- "low": Ambiguous description or highly variable food (salad, stir-fry, etc.)
+
+Return ONLY the JSON array, no markdown code blocks, no additional text:`
+  }
+
+  /**
+   * Parse batch response
+   */
+  private parseBatchResponse(content: string, expectedLength: number): CalorieEstimate[] {
+    try {
+      // Remove markdown code blocks if present
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [
+        null,
+        content,
+      ]
+      const jsonStr = jsonMatch[1] || content
+      const parsed = JSON.parse(jsonStr.trim())
+
+      // Ensure it's an array
+      if (!Array.isArray(parsed)) {
+        throw new Error('Response is not an array')
+      }
+
+      // Validate we got the expected number of results
+      if (parsed.length !== expectedLength) {
+        console.warn(
+          `Expected ${expectedLength} results but got ${parsed.length}`
+        )
+      }
+
+      // Validate and normalize each estimate
+      return parsed.map((item, index) => {
+        if (
+          typeof item.calories !== 'number' ||
+          typeof item.protein !== 'number' ||
+          typeof item.carbs !== 'number' ||
+          typeof item.fat !== 'number'
+        ) {
+          throw new Error(`Invalid response format at index ${index}`)
+        }
+
+        return {
+          calories: Math.round(item.calories),
+          protein: parseFloat(item.protein.toFixed(1)),
+          carbs: parseFloat(item.carbs.toFixed(1)),
+          fat: parseFloat(item.fat.toFixed(1)),
+          confidence: item.confidence || 'medium',
+          reasoning: item.reasoning || 'LLM estimate',
+          source: 'llm' as const,
+        }
+      })
+    } catch (error) {
+      console.error('Failed to parse batch LLM response:', content, error)
+      throw error
+    }
   }
 
   /**
