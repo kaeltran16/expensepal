@@ -17,11 +17,14 @@ export class EmailService {
     this.config = config
   }
 
+
   /**
-   * Fetch unread emails and parse expense information
-   * Only processes emails from trusted VIB sender: info@card.vib.com.vn
+   * Fetch emails and parse expense information
+   * Fetches ALL emails (read or unread) from trusted senders within the last 7 days
+   * Uses database UID tracking to skip already-processed emails
+   * @param processedUids Set of already-processed UIDs to skip (format: "email@example.com:12345")
    */
-  async fetchUnreadExpenses(): Promise<ParsedExpense[]> {
+  async fetchUnreadExpenses(processedUids: Set<string> = new Set()): Promise<ParsedExpense[]> {
     return new Promise((resolve, reject) => {
       const imap = new Imap({
         user: this.config.user,
@@ -42,7 +45,6 @@ export class EmailService {
 
       const expenses: ParsedExpense[] = []
       const TRUSTED_SENDERS = ['info@card.vib.com.vn', 'no-reply@grab.com']
-      const processedUids: number[] = [] // Track UIDs to mark as read
 
       imap.once('ready', () => {
         imap.openBox('INBOX', false, (err, box) => {
@@ -51,20 +53,21 @@ export class EmailService {
             return
           }
 
-          // Search for unread emails from trusted senders only
-          // Only emails from the last 7 days
+          // Search for ALL emails from trusted senders (regardless of read/unread status)
+          // Only emails from the last 7 days (to prevent overwhelming)
           const sevenDaysAgo = new Date()
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
           const sinceDate = sevenDaysAgo.toISOString().split('T')[0].replace(/-/g, '-')
 
-          // IMAP search criteria: UNSEEN, from trusted senders, since 7 days ago
+          // IMAP search criteria: ALL emails (not UNSEEN), from trusted senders, since 7 days ago
+          // Database UID tracking handles duplicate detection, not read/unread status
           const searchCriteria = [
-            'UNSEEN',
             ['SINCE', sinceDate],
             ['OR', ...TRUSTED_SENDERS.map(sender => ['FROM', sender])]
           ]
 
           console.log(`Searching for emails since: ${sinceDate} (last 7 days)`)
+          console.log(`Already processed ${processedUids.size} emails (will skip)`)
 
           imap.search(searchCriteria, (err, results) => {
             if (err) {
@@ -73,13 +76,13 @@ export class EmailService {
             }
 
             if (results.length === 0) {
-              console.log(`No unread emails from trusted senders: ${TRUSTED_SENDERS.join(', ')}`)
+              console.log(`No emails found from trusted senders: ${TRUSTED_SENDERS.join(', ')}`)
               imap.end()
               resolve([])
               return
             }
 
-            console.log(`Found ${results.length} unread emails from trusted senders`)
+            console.log(`Found ${results.length} emails from trusted senders (checking database for duplicates...)`)
 
             // Map to track UIDs for marking as read
             const uidMap = new Map<number, number>() // seqno -> UID
@@ -99,6 +102,14 @@ export class EmailService {
               msg.once('attributes', (attrs) => {
                 messageUid = attrs.uid
                 uidMap.set(seqno, attrs.uid)
+                
+                // Check if already processed
+                const uidKey = `${this.config.user}:${attrs.uid}`
+                if (processedUids.has(uidKey)) {
+                  console.log(`Skipping already-processed UID: ${attrs.uid}`)
+                  return // Skip this message
+                }
+                
                 console.log(`Message UID: ${attrs.uid}, Seqno: ${seqno}`)
               })
 
@@ -134,22 +145,21 @@ export class EmailService {
                       const expense = await emailParser.parseEmail(subject, body)
                       if (expense) {
                         console.log(`✓ Parsed expense: ${expense.amount} ${expense.currency} at ${expense.merchant}`)
-                        expenses.push(expense)
-                        // Track UID for marking as read (avoid duplicates if AI fails)
+                        
+                        // Attach UID and email account for database tracking
                         const uid = uidMap.get(seqno)
-                        if (uid) processedUids.push(uid)
+                        if (uid) {
+                          expense.emailUid = String(uid)
+                          expense.emailAccount = this.config.user
+                        }
+                        
+                        expenses.push(expense)
                       } else {
                         console.log(`✗ Email parsing returned null (likely skipped or failed)`)
-                        // Still mark as read to avoid re-processing promotional/pending emails
-                        const uid = uidMap.get(seqno)
-                        if (uid) processedUids.push(uid)
                       }
                       // Silently skip emails that don't parse (pending orders, confirmations, etc.)
                     } catch (parseError) {
                       console.error('Error parsing email:', parseError)
-                      // Mark as read anyway to avoid infinite retry
-                      const uid = uidMap.get(seqno)
-                      if (uid) processedUids.push(uid)
                     }
 
                     resolveMsg()
@@ -172,25 +182,10 @@ export class EmailService {
               await Promise.all(parsingPromises)
 
               console.log(`✓ All emails parsed. Found ${expenses.length} valid expense(s)`)
-
-              // Mark processed emails as read to avoid re-parsing
-              if (processedUids.length > 0) {
-                console.log(`Marking ${processedUids.length} email(s) as read (UIDs: ${processedUids.join(', ')})...`)
-
-                // Use UID-based addFlags
-                imap.addFlags(processedUids, ['\\Seen'], (err) => {
-                  if (err) {
-                    console.error('Failed to mark emails as read:', err)
-                    // Don't fail the whole operation, just log it
-                  } else {
-                    console.log(`✓ Successfully marked ${processedUids.length} email(s) as read`)
-                  }
-                  imap.end()
-                })
-              } else {
-                console.log('No emails to mark as read')
-                imap.end()
-              }
+              console.log('Emails will NOT be marked as read (using database UID tracking instead)')
+              
+              // Close connection without marking as read
+              imap.end()
             })
           })
         })
@@ -205,51 +200,6 @@ export class EmailService {
         resolve(expenses)
       })
 
-      imap.connect()
-    })
-  }
-
-  /**
-   * Mark emails as read
-   */
-  async markAsRead(uids: number[]): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const imap = new Imap({
-        user: this.config.user,
-        password: this.config.password,
-        host: this.config.host,
-        port: this.config.port,
-        tls: this.config.tls,
-        tlsOptions: { rejectUnauthorized: false },
-        // Increase timeouts for serverless environments
-        authTimeout: 30000, // 30 seconds for authentication
-        connTimeout: 20000, // 20 seconds for connection
-        keepalive: {
-          interval: 10000, // Send keepalive every 10 seconds
-          idleInterval: 300000, // 5 minutes idle interval
-          forceNoop: true
-        }
-      })
-
-      imap.once('ready', () => {
-        imap.openBox('INBOX', false, (err) => {
-          if (err) {
-            reject(err)
-            return
-          }
-
-          imap.addFlags(uids, ['\\Seen'], (err) => {
-            if (err) {
-              reject(err)
-            } else {
-              resolve()
-            }
-            imap.end()
-          })
-        })
-      })
-
-      imap.once('error', reject)
       imap.connect()
     })
   }

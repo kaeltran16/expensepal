@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // Setup mocks
 const mockExpenseInsert = vi.fn()
 const mockMealInsert = vi.fn()
+const mockProcessedEmailsSelect = vi.fn()
+const mockProcessedEmailsInsert = vi.fn()
 const mockCalorieEstimate = vi.fn()
+// Note: fetchUnreadExpenses is a legacy name - it now fetches ALL emails (read or unread)
+// and relies on database UID tracking for duplicate detection
 const mockFetchUnreadExpenses = vi.fn()
 
 // Mock modules before imports
@@ -18,6 +22,14 @@ vi.mock('@/lib/supabase', () => ({
       if (table === 'meals') {
         return {
           insert: mockMealInsert,
+        }
+      }
+      if (table === 'processed_emails') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => mockProcessedEmailsSelect()),
+          })),
+          insert: mockProcessedEmailsInsert,
         }
       }
       return {
@@ -65,6 +77,8 @@ const createMockExpense = (overrides = {}) => ({
   category: 'Food',
   source: 'email',
   emailSubject: 'Test receipt',
+  emailUid: '12345',
+  emailAccount: 'test@gmail.com',
   ...overrides,
 })
 
@@ -83,6 +97,17 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
     
     mockMealInsert.mockReturnValue({
       data: [],
+      error: null,
+    })
+
+    // Reset processed_emails mocks
+    mockProcessedEmailsSelect.mockResolvedValue({
+      data: [],
+      error: null,
+    })
+    
+    mockProcessedEmailsInsert.mockResolvedValue({
+      data: [{ id: 'processed-123' }],
       error: null,
     })
 
@@ -118,6 +143,17 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
     ])
 
     mockFetchUnreadExpenses.mockResolvedValue([])
+    
+    // Setup default for processed_emails
+    mockProcessedEmailsSelect.mockResolvedValue({
+      data: [],
+      error: null,
+    })
+    
+    mockProcessedEmailsInsert.mockResolvedValue({
+      data: [{ id: 'processed-123' }],
+      error: null,
+    })
   })
 
   afterEach(() => {
@@ -580,6 +616,189 @@ describe('Email Sync - Auto-Calorie Tracking', () => {
       expect(mockCalorieEstimateBatch).toHaveBeenCalledWith(
         ['Single Restaurant'],
         expect.any(Object)
+      )
+    })
+  })
+
+  describe('Database UID tracking', () => {
+    it('should query processed_emails table before syncing', async () => {
+      // Arrange
+      mockProcessedEmailsSelect.mockResolvedValue({
+        data: [
+          { email_uid: '11111', email_account: 'test@gmail.com' },
+          { email_uid: '22222', email_account: 'test@gmail.com' },
+        ],
+        error: null,
+      })
+      mockFetchUnreadExpenses.mockResolvedValue([])
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      await POST()
+
+      // Assert - Should query processed_emails
+      expect(mockProcessedEmailsSelect).toHaveBeenCalled()
+      // Should pass processed UIDs to fetchUnreadExpenses
+      expect(mockFetchUnreadExpenses).toHaveBeenCalledWith(
+        expect.any(Set)
+      )
+    })
+
+    it('should store email UID in processed_emails after successful expense insert', async () => {
+      // Arrange
+      const expense = createMockExpense({
+        emailUid: '12345',
+        emailAccount: 'test@gmail.com',
+      })
+      mockFetchUnreadExpenses.mockResolvedValue([expense])
+      mockProcessedEmailsSelect.mockResolvedValue({ data: [], error: null })
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      await POST()
+
+      // Assert - Should store processed UID
+      expect(mockProcessedEmailsInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'test-user-id',
+          email_account: 'test@gmail.com',
+          email_uid: '12345',
+          subject: 'Test receipt',
+        })
+      )
+    })
+
+    it('should pass processed UIDs to email service to skip already-processed emails', async () => {
+      // Arrange - Already processed 2 emails
+      mockProcessedEmailsSelect.mockResolvedValue({
+        data: [
+          { email_uid: '11111', email_account: 'user@gmail.com' },
+          { email_uid: '22222', email_account: 'user@gmail.com' },
+        ],
+        error: null,
+      })
+      mockFetchUnreadExpenses.mockResolvedValue([])
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      await POST()
+
+      // Assert - Should create Set with processed UIDs
+      expect(mockFetchUnreadExpenses).toHaveBeenCalledWith(
+        expect.objectContaining({
+          size: 2,
+        })
+      )
+    })
+
+    it('should handle duplicate UID constraint violations gracefully', async () => {
+      // Arrange - UID already exists in database
+      const expense = createMockExpense({
+        emailUid: '12345',
+        emailAccount: 'test@gmail.com',
+      })
+      mockFetchUnreadExpenses.mockResolvedValue([expense])
+      mockProcessedEmailsSelect.mockResolvedValue({ data: [], error: null })
+      
+      // Simulate duplicate UID constraint violation
+      mockProcessedEmailsInsert.mockResolvedValue({
+        error: { code: '23505', message: 'duplicate key value' },
+      })
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      const response = await POST()
+      const data = await response.json()
+
+      // Assert - Should still succeed (graceful handling)
+      expect(response.status).toBe(200)
+      expect(data.newExpenses).toBe(1)
+    })
+
+    it('should NOT store UID if expense insert fails', async () => {
+      // Arrange
+      const expense = createMockExpense()
+      mockFetchUnreadExpenses.mockResolvedValue([expense])
+      mockExpenseInsert.mockReturnValue({
+        select: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Insert failed' },
+        }),
+      })
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      await POST()
+
+      // Assert - Should NOT store UID if expense failed
+      expect(mockProcessedEmailsInsert).not.toHaveBeenCalled()
+    })
+
+    it('should handle processed_emails query failure gracefully', async () => {
+      // Arrange - Database query fails
+      mockProcessedEmailsSelect.mockResolvedValue({
+        data: null,
+        error: { message: 'Database error' },
+      })
+      mockFetchUnreadExpenses.mockResolvedValue([
+        createMockExpense(),
+      ])
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      const response = await POST()
+
+      // Assert - Should continue syncing despite query error
+      expect(response.status).toBe(200)
+      expect(mockFetchUnreadExpenses).toHaveBeenCalled()
+    })
+
+    it('should create unique UID key for multiple email accounts', async () => {
+      // Arrange - Processed emails from different accounts
+      mockProcessedEmailsSelect.mockResolvedValue({
+        data: [
+          { email_uid: '111', email_account: 'account1@gmail.com' },
+          { email_uid: '222', email_account: 'account2@gmail.com' },
+        ],
+        error: null,
+      })
+      mockFetchUnreadExpenses.mockResolvedValue([])
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      await POST()
+
+      // Assert - Should pass Set containing both account:uid combinations
+      const passedSet = mockFetchUnreadExpenses.mock.calls[0][0]
+      expect(passedSet).toBeInstanceOf(Set)
+      expect(passedSet.size).toBe(2)
+      expect(passedSet.has('account1@gmail.com:111')).toBe(true)
+      expect(passedSet.has('account2@gmail.com:222')).toBe(true)
+    })
+
+    it('should include expense_id when storing processed UID', async () => {
+      // Arrange
+      const expense = createMockExpense({
+        emailUid: '99999',
+        emailAccount: 'test@gmail.com',
+      })
+      mockFetchUnreadExpenses.mockResolvedValue([expense])
+      mockExpenseInsert.mockReturnValue({
+        select: vi.fn().mockResolvedValue({
+          data: [{ id: 'expense-abc-123' }],
+          error: null,
+        }),
+      })
+
+      // Act
+      const { POST } = await import('@/app/api/email/sync/route')
+      await POST()
+
+      // Assert - Should include expense_id in processed_emails
+      expect(mockProcessedEmailsInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          expense_id: 'expense-abc-123',
+        })
       )
     })
   })

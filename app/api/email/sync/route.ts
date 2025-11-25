@@ -31,10 +31,28 @@ export async function POST() {
     console.log(`Syncing from ${emailServices.length} email account(s)...`)
     console.log(`Associating expenses with user: ${user.id} (${user.email})`)
 
+    // Get already-processed email UIDs from database to avoid duplicates
+    console.log('Fetching already-processed email UIDs from database...')
+    const { data: processedRecords, error: fetchError } = await supabaseAdmin
+      .from('processed_emails')
+      .select('email_uid, email_account')
+      .eq('user_id', user.id)
+
+    if (fetchError) {
+      console.error('Error fetching processed emails:', fetchError)
+      // Continue anyway - worst case we might get duplicates
+    }
+
+    // Create a Set for fast lookup: "email@example.com:12345"
+    const processedUids = new Set<string>(
+      (processedRecords || []).map(r => `${r.email_account}:${r.email_uid}`)
+    )
+    console.log(`Found ${processedUids.size} already-processed emails`)
+
     // Fetch expenses from all configured email accounts
     const fetchPromises = emailServices.map((service, index) => {
       console.log(`Fetching from email account ${index + 1}...`)
-      return service.fetchUnreadExpenses()
+      return service.fetchUnreadExpenses(processedUids)
     })
 
     const allExpensesArrays = await Promise.all(fetchPromises)
@@ -98,6 +116,29 @@ export async function POST() {
         console.log(`✓ Successfully inserted expense with ID: ${data[0]?.id}`)
         successful++
         insertResults.push({ success: true, data, expense })
+
+        // Store processed email UID in database to prevent future duplicates
+        if (expense.emailUid && expense.emailAccount) {
+          const { error: uidError } = await supabaseAdmin
+            .from('processed_emails')
+            .insert({
+              user_id: user.id,
+              email_account: expense.emailAccount,
+              email_uid: expense.emailUid,
+              subject: expense.emailSubject,
+              expense_id: data[0]?.id,
+            })
+
+          if (uidError) {
+            // Don't fail the whole sync, just log it
+            // Duplicate UID constraint violations are expected (23505)
+            if (uidError.code !== '23505') {
+              console.error('Failed to store processed email UID:', uidError)
+            }
+          } else {
+            console.log(`✓ Stored processed UID: ${expense.emailUid}`)
+          }
+        }
 
         // Track successful Food expenses for batch meal estimation
         if (expense.category === 'Food') {

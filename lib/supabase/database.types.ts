@@ -301,6 +301,51 @@ export type Database = {
         }
         Relationships: []
       }
+      processed_emails: {
+        Row: {
+          id: string
+          user_id: string
+          email_account: string
+          email_uid: string
+          subject: string | null
+          processed_at: string
+          expense_id: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email_account: string
+          email_uid: string
+          subject?: string | null
+          processed_at?: string
+          expense_id?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email_account?: string
+          email_uid?: string
+          subject?: string | null
+          processed_at?: string
+          expense_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processed_emails_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "processed_emails_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_foods: {
         Row: {
           calories: number

@@ -9,6 +9,8 @@ export interface ParsedExpense {
   category: string
   source: 'email'
   emailSubject: string
+  emailUid?: string      // IMAP UID for database tracking
+  emailAccount?: string  // Email address that received this email
 }
 
 export class EmailParser {
