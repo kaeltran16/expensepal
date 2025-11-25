@@ -1,5 +1,6 @@
 import { calorieEstimator } from '@/lib/calorie-estimator'
 import { getEmailServices } from '@/lib/email-service'
+import { getMealTimeFromDate } from '@/lib/meal-utils'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
@@ -126,20 +127,8 @@ export async function POST() {
           const estimate = estimates[index]
           const { expense, expenseId } = item
 
-          // Determine meal time based on transaction time
-          const transactionDate = new Date(expense.transactionDate)
-          const hour = transactionDate.getHours()
-          let mealTime: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other' = 'other'
-
-          if (hour >= 6 && hour < 11) {
-            mealTime = 'breakfast'
-          } else if (hour >= 11 && hour < 16) {
-            mealTime = 'lunch'
-          } else if (hour >= 16 && hour < 22) {
-            mealTime = 'dinner'
-          } else {
-            mealTime = 'snack'
-          }
+          // Determine meal time based on transaction time (GMT+7)
+          const mealTime = getMealTimeFromDate(expense.transactionDate)
 
           return {
             user_id: user.id,
