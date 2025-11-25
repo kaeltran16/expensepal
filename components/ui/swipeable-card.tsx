@@ -187,7 +187,7 @@ export function SwipeableCard({
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="ios-card">
+        <AlertDialogContent className="ios-alert">
           <AlertDialogHeader>
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/30 border-4 border-destructive/10">
               <AlertTriangle className="h-8 w-8 text-destructive" />

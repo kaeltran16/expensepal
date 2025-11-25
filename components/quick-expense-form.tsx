@@ -1,22 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Sparkles } from 'lucide-react'
 import type { Expense } from '@/lib/supabase'
+import { motion } from 'framer-motion'
+import { Sparkles, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-const CATEGORIES = [
-  { name: 'Food', emoji: '🍔' },
-  { name: 'Transport', emoji: '🚗' },
-  { name: 'Shopping', emoji: '🛍️' },
-  { name: 'Entertainment', emoji: '🎬' },
-  { name: 'Bills', emoji: '💡' },
-  { name: 'Health', emoji: '🏥' },
-  { name: 'Other', emoji: '📦' },
-]
+import { useCategories } from '@/lib/hooks'
 
 interface QuickExpenseFormProps {
   expense?: Expense
@@ -25,6 +17,8 @@ interface QuickExpenseFormProps {
 }
 
 export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFormProps) {
+  const { data: categories = [] } = useCategories()
+  
   const [loading, setLoading] = useState(false)
   const [dateOption, setDateOption] = useState<'today' | 'yesterday'>('today')
   const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null)
@@ -180,7 +174,8 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
                 <button
                   key={cat.name}
                   type="button"
@@ -191,7 +186,7 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
                       : 'bg-secondary hover:bg-secondary/80'
                   }`}
                 >
-                  <span className="mr-1">{cat.emoji}</span>
+                  <span className="mr-1">{cat.icon}</span>
                   {cat.name}
                   {suggestedCategory === cat.name && formData.category !== cat.name && (
                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -201,6 +196,7 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
                   )}
                 </button>
               ))}
+            </div>
             </div>
           </div>
 

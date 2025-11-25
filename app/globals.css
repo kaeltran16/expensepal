@@ -145,6 +145,24 @@
     transform: scale(0.995);
   }
 
+  /* iOS alert dialog (same as card but no active scale to prevent transform conflicts) */
+  .ios-alert {
+    @apply bg-card rounded-2xl;
+    border: none !important;
+    box-shadow:
+      0 0 0 0.5px rgba(0, 0, 0, 0.04),
+      0 1px 3px rgba(0, 0, 0, 0.05),
+      0 2px 8px -2px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark .ios-alert {
+    box-shadow:
+      0 0 0 0.5px rgba(255, 255, 255, 0.06),
+      0 1px 3px rgba(0, 0, 0, 0.3),
+      0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  }
+
   /* iOS grouped list */
   .ios-list-group {
     @apply bg-card rounded-xl overflow-hidden;
