@@ -1,3 +1,5 @@
+import { supabaseAdmin } from './supabase'
+
 /**
  * Reusable LLM Service for OpenRouter API
  * Supports multiple models and configurable parameters
@@ -51,6 +53,13 @@ export class LLMService {
       return null
     }
 
+    const startTime = Date.now()
+    const model = options.model || this.defaultModel
+    const prompt = JSON.stringify(options.messages)
+    let responseContent: string | null = null
+    let usage: LLMResponse['usage'] | undefined
+    let status = 'error'
+
     try {
       const response = await fetch(this.baseUrl, {
         method: 'POST',
@@ -61,7 +70,7 @@ export class LLMService {
           'X-Title': 'Expense Tracker',
         },
         body: JSON.stringify({
-          model: options.model || this.defaultModel,
+          model: model,
           messages: options.messages,
           temperature: options.temperature ?? 0.1,
           max_tokens: options.maxTokens ?? 500,
@@ -71,6 +80,7 @@ export class LLMService {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('LLM API error:', response.status, errorText)
+        responseContent = `Error ${response.status}: ${errorText}`
         return null
       }
 
@@ -79,22 +89,71 @@ export class LLMService {
 
       if (!content) {
         console.error('No content in LLM response')
+        responseContent = 'No content in response'
         return null
       }
 
+      responseContent = content
+      usage = data.usage
+        ? {
+            promptTokens: data.usage.prompt_tokens,
+            completionTokens: data.usage.completion_tokens,
+            totalTokens: data.usage.total_tokens,
+          }
+        : undefined
+      
+      status = 'success'
+
       return {
         content,
-        usage: data.usage
-          ? {
-              promptTokens: data.usage.prompt_tokens,
-              completionTokens: data.usage.completion_tokens,
-              totalTokens: data.usage.total_tokens,
-            }
-          : undefined,
+        usage,
       }
     } catch (error) {
       console.error('LLM service error:', error)
+      responseContent = error instanceof Error ? error.message : String(error)
       return null
+    } finally {
+      // Log to database (fire and forget)
+      const durationMs = Date.now() - startTime
+      this.logToDatabase({
+        model,
+        prompt,
+        response: responseContent,
+        tokens_prompt: usage?.promptTokens,
+        tokens_completion: usage?.completionTokens,
+        tokens_total: usage?.totalTokens,
+        duration_ms: durationMs,
+        status,
+      }).catch(err => console.error('Failed to log LLM call:', err))
+    }
+  }
+
+  /**
+   * Log LLM call to Supabase
+   */
+  private async logToDatabase(log: {
+    model: string
+    prompt: string
+    response: string | null
+    tokens_prompt?: number
+    tokens_completion?: number
+    tokens_total?: number
+    duration_ms: number
+    status: string
+  }) {
+    try {
+      await supabaseAdmin.from('llm_logs').insert({
+        model: log.model,
+        prompt: log.prompt,
+        response: log.response,
+        tokens_prompt: log.tokens_prompt,
+        tokens_completion: log.tokens_completion,
+        tokens_total: log.tokens_total,
+        duration_ms: log.duration_ms,
+        status: log.status,
+      })
+    } catch (error) {
+      console.error('Error writing to llm_logs:', error)
     }
   }
 
