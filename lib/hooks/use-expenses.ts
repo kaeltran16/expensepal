@@ -177,6 +177,9 @@ export function useCreateExpenseOptimistic() {
       // Always refetch after error or success to sync with server
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all })
+      // Invalidate meals queries since Food expenses auto-create meals
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.calorieStats.all })
     },
   })
 }

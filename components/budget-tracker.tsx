@@ -1,14 +1,14 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useBudgets, useCreateBudget, useUpdateBudget, useCategories } from '@/lib/hooks'
+import { useBudgets, useCategories } from '@/lib/hooks'
 import { AddCategoryDialog } from '@/components/add-category-dialog'
+import { SetBudgetDialog } from '@/components/set-budget-dialog'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { AlertCircle, CheckCircle, Edit2, Save, Target, X } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { AlertCircle, CheckCircle, Edit2, Target } from 'lucide-react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 
 const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Health', 'Other']
 
@@ -24,9 +24,11 @@ const CATEGORY_EMOJI: Record<string, string> = {
 
 interface BudgetTrackerProps {
   expenses: Expense[]
+  initialEditCategory?: string
+  initialEditValue?: number
 }
 
-export function BudgetTracker({ expenses }: BudgetTrackerProps) {
+export function BudgetTracker({ expenses, initialEditCategory, initialEditValue }: BudgetTrackerProps) {
   const currentMonth = new Date().toISOString().slice(0, 7)
 
   // Fetch budgets using TanStack Query
@@ -47,34 +49,33 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
     return customCat?.icon || '📦'
   }
 
-  // Mutation hooks
-  const createBudgetMutation = useCreateBudget()
-  const updateBudgetMutation = useUpdateBudget()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [dialogSuggestedAmount, setDialogSuggestedAmount] = useState<number | undefined>(undefined)
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
-  const [editing, setEditing] = useState<string | null>(null)
-  const [editValue, setEditValue] = useState('')
+  // Open dialog if initialEditCategory is provided
+  useEffect(() => {
+    if (initialEditCategory && initialEditValue !== undefined) {
+      setSelectedCategory(initialEditCategory)
+      setDialogSuggestedAmount(initialEditValue)
+      setDialogOpen(true)
 
-  const saveBudget = async (category: string, amount: number) => {
-    try {
-      const existing = budgets.find((b) => b.category === category)
-
-      if (existing) {
-        await updateBudgetMutation.mutateAsync({
-          id: existing.id,
-          updates: { amount },
+      // Scroll to the category after a short delay to ensure rendering
+      setTimeout(() => {
+        categoryRefs.current[initialEditCategory]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
         })
-      } else {
-        await createBudgetMutation.mutateAsync({
-          category,
-          amount,
-          month: currentMonth,
-        })
-      }
-
-      setEditing(null)
-    } catch (error) {
-      console.error('Error saving budget:', error)
+      }, 100)
     }
+  }, [initialEditCategory, initialEditValue])
+
+  const openBudgetDialog = (category: string, suggestedAmount?: number) => {
+    hapticFeedback('light')
+    setSelectedCategory(category)
+    setDialogSuggestedAmount(suggestedAmount)
+    setDialogOpen(true)
   }
 
   const getCategorySpent = (category: string) => {
@@ -134,11 +135,11 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
           const spent = getCategorySpent(category)
           const percentage = budget !== null && budget > 0 ? Math.min((spent / budget) * 100, 100) : 0
           const status = getStatus(spent, budget)
-          const isEditing = editing === category
 
           return (
             <motion.div
               key={category}
+              ref={(el) => { categoryRefs.current[category] = el }}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05, duration: 0.2 }}
@@ -159,7 +160,7 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
                         <span className="ios-headline">{category}</span>
                         {budget !== null && budget > 0 && (
                           <>
-                                {status === 'good' && (
+                            {status === 'good' && (
                               <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                             )}
                             {status === 'warning' && (
@@ -185,58 +186,18 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
                     </div>
                   </div>
 
-                  {/* Edit Button or Input */}
-                  {isEditing ? (
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Input
-                        type="number"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        className="w-24 h-9 text-sm ios-body"
-                        placeholder="Amount"
-                        autoFocus
-                      />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          hapticFeedback('medium')
-                          saveBudget(category, parseFloat(editValue))
-                        }}
-                        disabled={createBudgetMutation.isPending || updateBudgetMutation.isPending}
-                        className="h-9 w-9 p-0 ios-touch"
-                      >
-                        <Save className="h-4 w-4 text-primary" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          hapticFeedback('light')
-                          setEditing(null)
-                        }}
-                        className="h-9 w-9 p-0 ios-touch"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        hapticFeedback('light')
-                        setEditing(category)
-                        setEditValue(budget !== null ? budget.toString() : '')
-                      }}
-                      className="h-9 px-3 ios-touch bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
-                    >
-                      <Edit2 className="h-4 w-4 mr-1.5" />
-                      <span className="text-sm font-medium">
-                        {budget !== null && budget > 0 ? 'Edit' : 'Set'}
-                      </span>
-                    </Button>
-                  )}
+                  {/* Set/Edit Button */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => openBudgetDialog(category)}
+                    className="h-9 px-3 ios-touch bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+                  >
+                    <Edit2 className="h-4 w-4 mr-1.5" />
+                    <span className="text-sm font-medium">
+                      {budget !== null && budget > 0 ? 'Edit' : 'Set'}
+                    </span>
+                  </Button>
                 </div>
 
                 {/* Progress Bar */}
@@ -272,6 +233,18 @@ export function BudgetTracker({ expenses }: BudgetTrackerProps) {
           )
         })}
       </div>
+
+      {/* Budget Dialog */}
+      {selectedCategory && (
+        <SetBudgetDialog
+          isOpen={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          category={selectedCategory}
+          categoryIcon={getCategoryEmoji(selectedCategory)}
+          suggestedAmount={dialogSuggestedAmount}
+          currentSpent={getCategorySpent(selectedCategory)}
+        />
+      )}
     </div>
   )
 }

@@ -15,7 +15,11 @@ import {
 } from 'lucide-react'
 import { useMemo } from 'react'
 
-export function BudgetPredictionsPanel() {
+interface BudgetPredictionsPanelProps {
+  onSetBudget?: (category: string, suggestedAmount: number) => void
+}
+
+export function BudgetPredictionsPanel({ onSetBudget }: BudgetPredictionsPanelProps) {
   const {
     data,
     isLoading,
@@ -30,6 +34,17 @@ export function BudgetPredictionsPanel() {
     if (!data?.alerts) return []
     return data.alerts.filter((alert) => !dismissedAlerts.includes(alert.id))
   }, [data?.alerts, dismissedAlerts])
+
+  // Handle budget action - open edit mode with pre-filled value
+  const handleBudgetAction = (alert: any) => {
+    if (!alert.action || !onSetBudget) return
+
+    // Call the parent callback to open edit mode with pre-filled value
+    onSetBudget(alert.category, Math.round(alert.action.value))
+
+    // Dismiss the alert after triggering the edit
+    dismissMutation.mutate(alert.id)
+  }
 
   if (isLoading) {
     return (
@@ -98,6 +113,7 @@ export function BudgetPredictionsPanel() {
                           variant="outline"
                           size="sm"
                           className="mt-3 h-8 text-xs"
+                          onClick={() => handleBudgetAction(alert)}
                         >
                           {alert.action.label}
                         </Button>

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase'
+import { getMealTimeFromDate } from '@/lib/meal-utils'
+import { calorieEstimator } from '@/lib/calorie-estimator'
 
 // GET single expense
 export async function GET(
@@ -53,6 +56,14 @@ export async function PUT(
 
     const body = await request.json()
 
+    // Get the old expense to check if category changed
+    const { data: oldExpense } = await supabase
+      .from('expenses')
+      .select('category')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single()
+
     const { data, error } = await supabase
       .from('expenses')
       .update({
@@ -76,7 +87,96 @@ export async function PUT(
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ expense: data[0] })
+    const updatedExpense = data[0]
+
+    // Handle meal sync when category changes
+    const wasFood = oldExpense?.category === 'Food'
+    const isNowFood = body.category === 'Food'
+
+    if (wasFood && !isNowFood) {
+      // Category changed FROM Food to something else - delete associated meal
+      try {
+        console.log(`🗑️ Category changed from Food, deleting associated meal for expense ${id}`)
+        await supabaseAdmin
+          .from('meals')
+          .delete()
+          .eq('expense_id', id)
+          .eq('user_id', user.id)
+      } catch (err) {
+        console.error('Error deleting meal:', err)
+      }
+    } else if (!wasFood && isNowFood) {
+      // Category changed TO Food - create new meal
+      try {
+        console.log(`🍔 Category changed to Food, creating meal entry for "${body.merchant}"`)
+
+        const mealTime = getMealTimeFromDate(body.transactionDate)
+        const estimation = await calorieEstimator.estimate(body.merchant, {
+          mealTime,
+          additionalInfo: body.notes,
+        })
+
+        await supabaseAdmin
+          .from('meals')
+          .insert({
+            user_id: user.id,
+            name: body.merchant,
+            calories: estimation.calories,
+            protein: estimation.protein,
+            carbs: estimation.carbs,
+            fat: estimation.fat,
+            meal_time: mealTime,
+            meal_date: body.transactionDate,
+            source: estimation.source,
+            confidence: estimation.confidence,
+            expense_id: id,
+            notes: body.notes,
+            llm_reasoning: estimation.reasoning,
+          })
+      } catch (err) {
+        console.error('Error creating meal:', err)
+      }
+    } else if (isNowFood) {
+      // Still Food category - update existing meal if it exists
+      try {
+        console.log(`🔄 Updating associated meal for expense ${id}`)
+
+        const mealTime = getMealTimeFromDate(body.transactionDate)
+        const estimation = await calorieEstimator.estimate(body.merchant, {
+          mealTime,
+          additionalInfo: body.notes,
+        })
+
+        // Try to update existing meal
+        const { data: existingMeal } = await supabaseAdmin
+          .from('meals')
+          .select('id')
+          .eq('expense_id', id)
+          .eq('user_id', user.id)
+          .single()
+
+        if (existingMeal) {
+          await supabaseAdmin
+            .from('meals')
+            .update({
+              name: body.merchant,
+              calories: estimation.calories,
+              protein: estimation.protein,
+              carbs: estimation.carbs,
+              fat: estimation.fat,
+              meal_time: mealTime,
+              meal_date: body.transactionDate,
+              notes: body.notes,
+              llm_reasoning: estimation.reasoning,
+            })
+            .eq('id', existingMeal.id)
+        }
+      } catch (err) {
+        console.error('Error updating meal:', err)
+      }
+    }
+
+    return NextResponse.json({ expense: updatedExpense })
   } catch (error) {
     console.error('Error updating expense:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -97,6 +197,19 @@ export async function DELETE(
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Delete associated meals first (if any)
+    try {
+      console.log(`🗑️ Deleting associated meals for expense ${id}`)
+      await supabaseAdmin
+        .from('meals')
+        .delete()
+        .eq('expense_id', id)
+        .eq('user_id', user.id)
+    } catch (err) {
+      console.error('Error deleting associated meals:', err)
+      // Continue with expense deletion even if meal deletion fails
     }
 
     const { error } = await supabase

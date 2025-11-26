@@ -1,13 +1,13 @@
 'use client'
 
 import { useAuth } from '@/components/auth-provider'
-import { UserMenu } from '@/components/user-menu'
 import { Button } from '@/components/ui/button'
-import { Wallet, Moon, Sun, LogIn } from 'lucide-react'
-import { useTheme } from 'next-themes'
-import { useRouter } from 'next/navigation'
+import { UserMenu } from '@/components/user-menu'
 import { motion } from 'framer-motion'
+import { LogIn, Moon, Sun, Wallet } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface NavbarProps {
   onSyncEmails?: () => void
@@ -49,8 +49,8 @@ export function Navbar({ onSyncEmails, isSyncing }: NavbarProps = {}) {
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-md group-hover:blur-lg transition-all" />
               <Wallet className="h-6 w-6 text-primary relative z-10" />
             </motion.div>
-            <span className="font-bold text-lg bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-              Expense Tracker
+            <span className="font-bold text-lg text-black dark:text-white">
+              ExpensePal
             </span>
           </Link>
 

@@ -16,10 +16,27 @@ interface BudgetViewProps {
 
 export function BudgetView({ expenses, loading }: BudgetViewProps) {
   const [activeTab, setActiveTab] = useState<'budgets' | 'recurring'>('budgets')
+  const [editBudgetCategory, setEditBudgetCategory] = useState<string | undefined>(undefined)
+  const [editBudgetValue, setEditBudgetValue] = useState<number | undefined>(undefined)
 
   const recurringExpenses = useMemo(() => {
     return detectRecurringExpenses(expenses)
   }, [expenses])
+
+  const handleSetBudget = (category: string, suggestedAmount: number) => {
+    // Switch to budgets tab if not already there
+    setActiveTab('budgets')
+
+    // Set the edit state
+    setEditBudgetCategory(category)
+    setEditBudgetValue(suggestedAmount)
+
+    // Clear after a short delay to allow the effect to trigger
+    setTimeout(() => {
+      setEditBudgetCategory(undefined)
+      setEditBudgetValue(undefined)
+    }, 500)
+  }
 
   if (loading) {
     return (
@@ -84,10 +101,14 @@ export function BudgetView({ expenses, loading }: BudgetViewProps) {
         {activeTab === 'budgets' ? (
           <div className="space-y-4">
             {/* Smart Predictions & Alerts */}
-            <BudgetPredictionsPanel />
+            <BudgetPredictionsPanel onSetBudget={handleSetBudget} />
 
             {/* Budget Tracker */}
-            <BudgetTracker expenses={expenses} />
+            <BudgetTracker
+              expenses={expenses}
+              initialEditCategory={editBudgetCategory}
+              initialEditValue={editBudgetValue}
+            />
           </div>
         ) : (
           <RecurringExpensesSection expenses={expenses} />

@@ -2,27 +2,11 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Apple, Calendar, Check, Coffee, Moon, Plus, Sun, Trash2 } from 'lucide-react'
+import { Apple, Calendar, Check, Coffee, Moon, Plus, Sun, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -130,73 +114,155 @@ export function MealPlanner() {
           <Calendar className="w-5 h-5 text-primary" />
           <h2 className="font-semibold text-base">Meal Plan</h2>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Plan Meal
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Plan a Meal</DialogTitle>
-              <DialogDescription>
-                Add a meal to your plan for tracking later
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="meal-name">Meal Name</Label>
-                <Input
-                  id="meal-name"
-                  value={mealName}
-                  onChange={(e) => setMealName(e.target.value)}
-                  placeholder="e.g., Grilled Chicken Salad"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="meal-time">Meal Time</Label>
-                <Select value={mealTime} onValueChange={(value) => setMealTime(value as PlannedMeal['mealTime'])}>
-                  <SelectTrigger id="meal-time">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="breakfast">Breakfast</SelectItem>
-                    <SelectItem value="lunch">Lunch</SelectItem>
-                    <SelectItem value="dinner">Dinner</SelectItem>
-                    <SelectItem value="snack">Snack</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="meal-date">Date</Label>
-                <Input
-                  id="meal-date"
-                  type="date"
-                  value={mealDate}
-                  onChange={(e) => setMealDate(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="calories">Estimated Calories (optional)</Label>
-                <Input
-                  id="calories"
-                  type="number"
-                  value={estimatedCalories}
-                  onChange={(e) => setEstimatedCalories(e.target.value)}
-                  placeholder="500"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddMeal}>Add to Plan</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" className="gap-2" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="w-4 h-4" />
+          Plan Meal
+        </Button>
       </div>
+
+      {/* Custom Dialog */}
+      <AnimatePresence>
+        {isDialogOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDialogOpen(false)}
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md"
+            />
+
+            {/* Dialog */}
+            <div
+              className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none"
+              onClick={() => setIsDialogOpen(false)}
+            >
+              <motion.div
+                initial={{ y: '100%', opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: '100%', opacity: 0 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                className="bg-background w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[calc(100vh-80px)] sm:max-h-[85vh] flex flex-col pointer-events-auto sm:mb-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b">
+                  <div>
+                    <h2 className="text-2xl font-bold">Plan a Meal</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Add a meal to your plan for tracking later
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsDialogOpen(false)}
+                    className="h-9 w-9"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={(e) => { e.preventDefault(); handleAddMeal(); }} className="flex flex-col flex-1 min-h-0">
+                  <div className="p-6 space-y-5 overflow-y-auto flex-1">
+                    {/* Meal Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="meal-name" className="text-sm font-medium">
+                        Meal Name
+                      </Label>
+                      <Input
+                        id="meal-name"
+                        value={mealName}
+                        onChange={(e) => setMealName(e.target.value)}
+                        placeholder="e.g., Grilled Chicken Salad"
+                        className="text-lg h-12"
+                        required
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Meal Time Pills */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Meal Time</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((time) => {
+                          const Icon = MEAL_TIME_ICONS[time]
+                          return (
+                            <button
+                              key={time}
+                              type="button"
+                              onClick={() => setMealTime(time)}
+                              className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                                mealTime === time
+                                  ? 'bg-primary text-primary-foreground shadow-lg scale-105'
+                                  : 'bg-secondary hover:bg-secondary/80'
+                              }`}
+                            >
+                              <Icon className="w-4 h-4" />
+                              <span className="capitalize">{time}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Date */}
+                    <div className="space-y-2">
+                      <Label htmlFor="meal-date" className="text-sm font-medium">
+                        Date
+                      </Label>
+                      <Input
+                        id="meal-date"
+                        type="date"
+                        value={mealDate}
+                        onChange={(e) => setMealDate(e.target.value)}
+                        className="h-12"
+                      />
+                    </div>
+
+                    {/* Calories */}
+                    <div className="space-y-2">
+                      <Label htmlFor="calories" className="text-sm font-medium">
+                        Estimated Calories (optional)
+                      </Label>
+                      <Input
+                        id="calories"
+                        type="number"
+                        value={estimatedCalories}
+                        onChange={(e) => setEstimatedCalories(e.target.value)}
+                        placeholder="500"
+                        className="h-12"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Footer */}
+                  <div className="border-t bg-background p-4 sm:p-6 flex-shrink-0">
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                        className="flex-1 h-12 sm:h-14 text-base font-medium"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="flex-1 h-12 sm:h-14 text-base font-bold shadow-lg"
+                      >
+                        Add to Plan
+                      </Button>
+                    </div>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Planned Meals */}
       {sortedDates.length === 0 ? (

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase'
+import { getMealTimeFromDate } from '@/lib/meal-utils'
+import { calorieEstimator } from '@/lib/calorie-estimator'
 
 // GET all expenses
 export async function GET(request: NextRequest) {
@@ -93,7 +96,65 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ expense: data[0] }, { status: 201 })
+    const createdExpense = data[0]
+
+    // Auto-create meal entry if category is Food
+    if (body.category === 'Food') {
+      try {
+        console.log(`🍔 Food expense detected, auto-creating meal entry for "${body.merchant}"...`)
+
+        // Determine meal time based on transaction date
+        const mealTime = getMealTimeFromDate(body.transactionDate)
+        console.log(`⏰ Determined meal time: ${mealTime}`)
+
+        // Use merchant name as meal name
+        const mealName = body.merchant
+
+        // Estimate calories using the calorie estimator
+        console.log(`🤖 Estimating calories for "${mealName}"...`)
+        const estimation = await calorieEstimator.estimate(mealName, {
+          mealTime,
+          additionalInfo: body.notes,
+        })
+
+        // Create meal entry
+        const { data: mealData, error: mealError } = await supabaseAdmin
+          .from('meals')
+          .insert({
+            user_id: user.id,
+            name: mealName,
+            calories: estimation.calories,
+            protein: estimation.protein,
+            carbs: estimation.carbs,
+            fat: estimation.fat,
+            meal_time: mealTime,
+            meal_date: body.transactionDate,
+            source: estimation.source,
+            confidence: estimation.confidence,
+            expense_id: createdExpense.id,
+            notes: body.notes,
+            llm_reasoning: estimation.reasoning,
+          })
+          .select()
+          .single()
+
+        if (mealError) {
+          console.error('❌ Error creating meal entry:', mealError)
+          // Don't fail the expense creation if meal creation fails
+        } else {
+          console.log(`✅ Meal entry created successfully:`, {
+            name: mealData.name,
+            calories: mealData.calories,
+            mealTime: mealData.meal_time,
+          })
+        }
+      } catch (mealCreationError) {
+        console.error('❌ Error in meal auto-creation:', mealCreationError)
+        // Don't fail the expense creation if meal creation fails
+      }
+    }
+
+    return NextResponse.json({ expense: createdExpense }, { status: 201 })
   } catch (error) {
     console.error('Error creating expense:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
