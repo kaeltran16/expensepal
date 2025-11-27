@@ -98,19 +98,30 @@ export class EmailService {
             fetch.on('message', (msg, seqno) => {
               // Get the UID for this message
               let messageUid: number | undefined
+              let attributesProcessed = false
+              let shouldSkip = false
+
+              // promise that resolves when attributes are ready
+              let resolveAttributes: () => void
+              const attributesReady = new Promise<void>((resolve) => {
+                resolveAttributes = resolve
+              })
 
               msg.once('attributes', (attrs) => {
                 messageUid = attrs.uid
                 uidMap.set(seqno, attrs.uid)
-                
-                // Check if already processed
+
+                // check if already processed
                 const uidKey = `${this.config.user}:${attrs.uid}`
                 if (processedUids.has(uidKey)) {
                   console.log(`Skipping already-processed UID: ${attrs.uid}`)
-                  return // Skip this message
+                  shouldSkip = true
+                } else {
+                  console.log(`Message UID: ${attrs.uid}, Seqno: ${seqno}`)
                 }
-                
-                console.log(`Message UID: ${attrs.uid}, Seqno: ${seqno}`)
+
+                attributesProcessed = true
+                resolveAttributes() // signal that attributes are ready
               })
 
               msg.on('body', (stream) => {
@@ -118,6 +129,16 @@ export class EmailService {
                   simpleParser(stream as any, async (err, parsed) => {
                     if (err) {
                       console.error('Error parsing email:', err)
+                      resolveMsg()
+                      return
+                    }
+
+                    // wait for attributes to be processed
+                    await attributesReady
+
+                    // check if should skip after attributes are ready
+                    if (shouldSkip) {
+                      console.log(`Skipping body for already-processed seqno: ${seqno}`)
                       resolveMsg()
                       return
                     }
@@ -145,14 +166,14 @@ export class EmailService {
                       const expense = await emailParser.parseEmail(subject, body)
                       if (expense) {
                         console.log(`✓ Parsed expense: ${expense.amount} ${expense.currency} at ${expense.merchant}`)
-                        
+
                         // Attach UID and email account for database tracking
                         const uid = uidMap.get(seqno)
                         if (uid) {
                           expense.emailUid = String(uid)
                           expense.emailAccount = this.config.user
                         }
-                        
+
                         expenses.push(expense)
                       } else {
                         console.log(`✗ Email parsing returned null (likely skipped or failed)`)

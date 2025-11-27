@@ -18,40 +18,72 @@ export class EmailParser {
    * Map transaction type to category
    */
   private mapToCategory(transactionType: string, merchant: string): string {
-    const type = transactionType.toLowerCase()
-    const merch = merchant.toLowerCase()
+    const type = transactionType.toLowerCase();
+    const merch = merchant.toLowerCase();
 
     // Food-related
-    if (type.includes('food') || type.includes('restaurant') || merch.includes('cafe') || merch.includes('coffee')) {
-      return 'Food'
+    if (
+      type.includes('food') ||
+      type.includes('restaurant') ||
+      merch.includes('cafe') ||
+      merch.includes('coffee')
+    ) {
+      return 'Food';
     }
 
     // Transport-related
-    if (type.includes('car') || type.includes('bike') || type.includes('taxi') || type.includes('ride') || type.includes('grab')) {
-      return 'Transport'
+    if (
+      type.includes('car') ||
+      type.includes('bike') ||
+      type.includes('taxi') ||
+      type.includes('ride') ||
+      type.includes('grab')
+    ) {
+      return 'Transport';
     }
 
     // Shopping-related
-    if (type.includes('shopping') || type.includes('mart') || type.includes('retail') || type.includes('store')) {
-      return 'Shopping'
+    if (
+      type.includes('shopping') ||
+      type.includes('mart') ||
+      type.includes('retail') ||
+      type.includes('store')
+    ) {
+      return 'Shopping';
     }
 
     // Entertainment-related
-    if (type.includes('entertainment') || type.includes('movie') || type.includes('game') || type.includes('subscription')) {
-      return 'Entertainment'
+    if (
+      type.includes('entertainment') ||
+      type.includes('movie') ||
+      type.includes('game') ||
+      type.includes('subscription')
+    ) {
+      return 'Entertainment';
     }
 
     // Bills-related
-    if (type.includes('bill') || type.includes('utility') || type.includes('internet') || type.includes('phone')) {
-      return 'Bills'
+    if (
+      type.includes('bill') ||
+      type.includes('utility') ||
+      type.includes('internet') ||
+      type.includes('phone')
+    ) {
+      return 'Bills';
     }
 
     // Health-related
-    if (type.includes('health') || type.includes('medical') || type.includes('hospital') || type.includes('pharmacy') || type.includes('clinic')) {
-      return 'Health'
+    if (
+      type.includes('health') ||
+      type.includes('medical') ||
+      type.includes('hospital') ||
+      type.includes('pharmacy') ||
+      type.includes('clinic')
+    ) {
+      return 'Health';
     }
 
-    return 'Other'
+    return 'Other';
   }
 
   /**
@@ -63,7 +95,7 @@ export class EmailParser {
       .replace(/<script[^>]*>.*?<\/script>/gis, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
-      .trim()
+      .trim();
   }
 
   /**
@@ -71,16 +103,22 @@ export class EmailParser {
    * Removes personal info and unnecessary marketing content
    */
   private sanitizeForAI(text: string): string {
-    let sanitized = text
+    let sanitized = text;
 
     // Remove email addresses (replace with placeholder)
-    sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL]')
+    sanitized = sanitized.replace(
+      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+      '[EMAIL]'
+    );
 
     // Remove phone numbers (various formats)
-    sanitized = sanitized.replace(/(\+?84|0)?[0-9]{9,11}/g, '[PHONE]')
+    sanitized = sanitized.replace(/(\+?84|0)?[0-9]{9,11}/g, '[PHONE]');
 
     // Remove credit card numbers (partial or full, keep last 4 digits pattern like 5138***5758)
-    sanitized = sanitized.replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, '[CARD]')
+    sanitized = sanitized.replace(
+      /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g,
+      '[CARD]'
+    );
 
     // Remove common footer/unsubscribe sections
     const footerPatterns = [
@@ -93,44 +131,99 @@ export class EmailParser {
       /© .*\d{4}.*$/is,
       /Follow us on.*$/is,
       /Download.*app.*$/is,
-    ]
+    ];
 
-    footerPatterns.forEach(pattern => {
-      sanitized = sanitized.replace(pattern, '')
-    })
+    footerPatterns.forEach((pattern) => {
+      sanitized = sanitized.replace(pattern, '');
+    });
 
     // Remove URLs (keep only the domain for context if needed)
-    sanitized = sanitized.replace(/https?:\/\/[^\s]+/g, '[LINK]')
+    sanitized = sanitized.replace(/https?:\/\/[^\s]+/g, '[LINK]');
 
     // Remove excessive whitespace
-    sanitized = sanitized.replace(/\s+/g, ' ').trim()
+    sanitized = sanitized.replace(/\s+/g, ' ').trim();
 
-    return sanitized
+    return sanitized;
+  }
+
+  /**
+   * Check if email should be skipped before calling LLM (saves API costs)
+   */
+  private shouldSkipEmail(subject: string, body: string): boolean {
+    const lowerSubject = subject.toLowerCase();
+    const lowerBody = body.toLowerCase();
+
+    // skip promotional emails
+    const promotionalPatterns = [
+      'chăm lo', // promotional vietnamese
+      'đặc biệt', // special offer
+      'khuyến mãi', // promotion
+      'giảm giá', // discount
+      'ưu đãi', // offer
+      'miễn phí', // free
+      'refer a friend',
+      'invite friends',
+      'download the app',
+      'follow us',
+      'rate your trip',
+      'how was your',
+      'share your feedback',
+    ];
+
+    // skip pending/confirmation emails
+    const pendingPatterns = [
+      'scheduled order received',
+      'order received',
+      'booking received',
+      'đơn hàng đã được nhận',
+      'booking confirmed',
+      "we've received your order",
+      'order confirmation',
+      'đã nhận đơn',
+      'đang xử lý', // processing
+      'chờ xác nhận', // waiting confirmation
+    ];
+
+    const skipPatterns = [...promotionalPatterns, ...pendingPatterns];
+
+    // check subject first (faster)
+    if (skipPatterns.some((pattern) => lowerSubject.includes(pattern))) {
+      return true;
+    }
+
+    // check body for pending patterns only (more specific)
+    if (pendingPatterns.some((pattern) => lowerBody.includes(pattern))) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
    * Parse email using OpenRouter AI (more reliable than regex)
    */
-  /**
-   * Parse email using OpenRouter AI (more reliable than regex)
-   */
-  private async parseWithAI(subject: string, body: string): Promise<ParsedExpense | null> {
+  private async parseWithAI(
+    subject: string,
+    body: string
+  ): Promise<ParsedExpense | null> {
     if (!llmService.isConfigured()) {
-      console.log('OpenRouter API key not configured, cannot parse email')
-      return null
+      console.log('OpenRouter API key not configured, cannot parse email');
+      return null;
     }
 
     try {
-      const cleanBody = this.stripHtml(body)
+      const cleanBody = this.stripHtml(body);
 
       // Sanitize to remove PII and unnecessary content
-      const sanitizedBody = this.sanitizeForAI(cleanBody)
-      const sanitizedSubject = this.sanitizeForAI(subject)
+      const sanitizedBody = this.sanitizeForAI(cleanBody);
+      const sanitizedSubject = this.sanitizeForAI(subject);
 
       // Truncate to reasonable length (first 1000 chars after sanitization)
-      const truncatedBody = sanitizedBody.substring(0, 1000)
+      const truncatedBody = sanitizedBody.substring(0, 3000);
 
-      console.log(`Sanitized email: ${truncatedBody.length} chars (original: ${cleanBody.length} chars)`)
+      console.log(
+        `Sanitized email: ${truncatedBody.length} chars (original: ${cleanBody.length} chars)`
+      );
 
       const prompt = `You are an email parser that extracts transaction information from emails.
 Parse the following email and extract the transaction details in JSON format.
@@ -181,52 +274,64 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
 }
 
 If this email is NOT a completed transaction (e.g., pending order, confirmation email, promotional email), return:
-{"skip": true}`
+{"skip": true}`;
 
       const response = await llmService.completion({
         messages: [{ role: 'user', content: prompt }],
         model: 'google/gemini-2.0-flash-001',
         temperature: 0.1,
         maxTokens: 500,
-      })
+      });
 
       if (!response) {
-        console.error('No response from LLM service')
-        return null
+        console.error('No response from LLM service');
+        return null;
       }
 
       // Parse JSON response
       const parsed = llmService.parseJSON<{
-        skip?: boolean
-        amount?: number
-        merchant?: string
-        currency?: string
-        transactionDate?: string
-        transactionType?: string
-        category?: string
-      }>(response.content)
+        skip?: boolean;
+        amount?: number;
+        merchant?: string;
+        currency?: string;
+        transactionDate?: string;
+        transactionType?: string;
+        category?: string;
+      }>(response.content);
 
       if (!parsed) {
-        return null
+        return null;
       }
 
       // Check if email should be skipped
       if (parsed.skip) {
-        console.log('AI detected this should be skipped (pending order or non-transaction email)')
-        return null
+        console.log(
+          'AI detected this should be skipped (pending order or non-transaction email)'
+        );
+        return null;
       }
 
       // Validate required fields
       if (!parsed.amount || !parsed.merchant) {
-        console.error('Missing required fields in AI response:', parsed)
-        return null
+        console.error('Missing required fields in AI response:', parsed);
+        return null;
       }
 
       // Validate category is one of the allowed values
-      const validCategories = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Health', 'Other']
-      const category = validCategories.includes(parsed.category || '') ? parsed.category! : 'Other'
+      const validCategories = [
+        'Food',
+        'Transport',
+        'Shopping',
+        'Entertainment',
+        'Bills',
+        'Health',
+        'Other',
+      ];
+      const category = validCategories.includes(parsed.category || '')
+        ? parsed.category!
+        : 'Other';
 
-      console.log('✓ AI parsed expense:', parsed)
+      console.log('✓ AI parsed expense:', parsed);
 
       return {
         transactionType: parsed.transactionType || 'Purchase',
@@ -237,28 +342,39 @@ If this email is NOT a completed transaction (e.g., pending order, confirmation 
         category,
         source: 'email',
         emailSubject: subject,
-      }
+      };
     } catch (error) {
-      console.error('Error in AI parsing:', error)
-      return null
+      console.error('Error in AI parsing:', error);
+      return null;
     }
   }
 
   /**
    * Main parser function - uses AI only
    */
-  async parseEmail(subject: string, body: string): Promise<ParsedExpense | null> {
-    console.log('Attempting to parse email with AI...')
-
-    // Try AI parsing
-    const aiResult = await this.parseWithAI(subject, body)
-    if (aiResult) {
-      console.log('✓ Successfully parsed with AI')
-      return aiResult
+  async parseEmail(
+    subject: string,
+    body: string
+  ): Promise<ParsedExpense | null> {
+    // pre-filter: skip obvious non-transaction emails before calling llm
+    if (this.shouldSkipEmail(subject, body)) {
+      console.log(
+        '✗ Skipped email (promotional or pending order) - no llm call made'
+      );
+      return null;
     }
 
-    console.log('AI parsing failed or returned null')
-    return null
+    console.log('Attempting to parse email with AI...');
+
+    // Try AI parsing
+    const aiResult = await this.parseWithAI(subject, body);
+    if (aiResult) {
+      console.log('✓ Successfully parsed with AI');
+      return aiResult;
+    }
+
+    console.log('AI parsing failed or returned null');
+    return null;
   }
 }
 

@@ -108,7 +108,27 @@ export async function POST() {
         // Check if it's a duplicate (unique constraint violation)
         if (error.code === '23505') {
           console.log(`Duplicate expense detected (already exists in database)`)
+          console.log(`Expense UID: ${expense.emailUid}, Account: ${expense.emailAccount}`)
           duplicates++
+
+          // still store the uid to prevent re-parsing this email
+          if (expense.emailUid && expense.emailAccount) {
+            const { error: uidError } = await supabaseAdmin
+              .from('processed_emails')
+              .insert({
+                user_id: user.id,
+                email_account: expense.emailAccount,
+                email_uid: expense.emailUid,
+                subject: expense.emailSubject,
+                expense_id: null, // no expense id since insert failed
+              })
+
+            if (uidError && uidError.code !== '23505') {
+              console.error('Failed to store processed email UID for duplicate:', uidError)
+            } else if (!uidError) {
+              console.log(`✓ Stored UID for duplicate expense: ${expense.emailUid}`)
+            }
+          }
         } else {
           failed++
         }

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useCreateMealOptimistic } from '@/lib/hooks/use-meals'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Apple, Calendar, Check, Coffee, Moon, Plus, Sun, Trash2, X } from 'lucide-react'
@@ -40,6 +41,9 @@ export function MealPlanner() {
   const [mealDate, setMealDate] = useState(new Date().toISOString().split('T')[0])
   const [estimatedCalories, setEstimatedCalories] = useState('')
 
+  // hook for creating meals in database
+  const createMealMutation = useCreateMealOptimistic()
+
   const handleAddMeal = () => {
     if (!mealName.trim()) {
       toast.error('Please enter a meal name')
@@ -69,11 +73,27 @@ export function MealPlanner() {
     toast.success('Meal removed from plan')
   }
 
-  const handleMarkAsEaten = (meal: PlannedMeal) => {
-    // This would integrate with the existing meal tracking system
-    handleDeleteMeal(meal.id)
-    hapticFeedback('light')
-    toast.success('Meal logged! Add details if needed.')
+  const handleMarkAsEaten = async (meal: PlannedMeal) => {
+    try {
+      // create meal entry in database with proper date format
+      const mealDateTime = new Date(meal.date).toISOString()
+
+      await createMealMutation.mutateAsync({
+        name: meal.name,
+        meal_time: meal.mealTime,
+        meal_date: mealDateTime,
+        calories: meal.estimatedCalories,
+        source: meal.estimatedCalories ? 'manual' : 'llm',
+        estimate: !meal.estimatedCalories, // use llm estimation if no calories provided
+      })
+
+      // remove from planner after successful creation
+      handleDeleteMeal(meal.id)
+      hapticFeedback('light')
+    } catch (error) {
+      console.error('Error logging meal:', error)
+      // error toast is handled by the mutation
+    }
   }
 
   // Group meals by date
