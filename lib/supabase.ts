@@ -48,3 +48,6 @@ export type PushSubscriptionUpdate = Database['public']['Tables']['push_subscrip
 export type LLMLog = Database['public']['Tables']['llm_logs']['Row']
 export type LLMLogInsert = Database['public']['Tables']['llm_logs']['Insert']
 export type LLMLogUpdate = Database['public']['Tables']['llm_logs']['Update']
+export type UserEmailSettings = Database['public']['Tables']['user_email_settings']['Row']
+export type UserEmailSettingsInsert = Database['public']['Tables']['user_email_settings']['Insert']
+export type UserEmailSettingsUpdate = Database['public']['Tables']['user_email_settings']['Update']

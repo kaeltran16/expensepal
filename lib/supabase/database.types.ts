@@ -268,6 +268,44 @@ export type Database = {
           },
         ]
       }
+      processed_emails: {
+        Row: {
+          email_account: string
+          email_uid: string
+          expense_id: string | null
+          id: string
+          processed_at: string | null
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          email_account: string
+          email_uid: string
+          expense_id?: string | null
+          id?: string
+          processed_at?: string | null
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          email_account?: string
+          email_uid?: string
+          expense_id?: string | null
+          id?: string
+          processed_at?: string | null
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processed_emails_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -300,51 +338,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      processed_emails: {
-        Row: {
-          id: string
-          user_id: string
-          email_account: string
-          email_uid: string
-          subject: string | null
-          processed_at: string
-          expense_id: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          email_account: string
-          email_uid: string
-          subject?: string | null
-          processed_at?: string
-          expense_id?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          email_account?: string
-          email_uid?: string
-          subject?: string | null
-          processed_at?: string
-          expense_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "processed_emails_expense_id_fkey"
-            columns: ["expense_id"]
-            isOneToOne: false
-            referencedRelation: "expenses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "processed_emails_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       saved_foods: {
         Row: {
@@ -436,12 +429,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_email_settings: {
+        Row: {
+          app_password: string
+          created_at: string | null
+          email_address: string
+          id: string
+          imap_host: string
+          imap_port: number
+          imap_tls: boolean
+          is_enabled: boolean
+          last_sync_at: string | null
+          trusted_senders: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          app_password: string
+          created_at?: string | null
+          email_address: string
+          id?: string
+          imap_host?: string
+          imap_port?: number
+          imap_tls?: boolean
+          is_enabled?: boolean
+          last_sync_at?: string | null
+          trusted_senders?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          app_password?: string
+          created_at?: string | null
+          email_address?: string
+          id?: string
+          imap_host?: string
+          imap_port?: number
+          imap_tls?: boolean
+          is_enabled?: boolean
+          last_sync_at?: string | null
+          trusted_senders?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_processed_emails: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never
