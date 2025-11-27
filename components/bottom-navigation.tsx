@@ -5,8 +5,8 @@ import { motion } from 'framer-motion'
 import { BarChart3, Flame, Lightbulb, Target, Wallet } from 'lucide-react'
 
 interface BottomNavProps {
-  activeView: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories'
-  onViewChange: (view: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories') => void
+  activeView: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'profile'
+  onViewChange: (view: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'profile') => void
 }
 
 const NAV_ITEMS = [

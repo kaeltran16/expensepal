@@ -215,6 +215,7 @@ export function SavingsGoals() {
                     <Input
                       id="targetAmount"
                       type="number"
+                      inputMode="numeric"
                       value={formData.targetAmount}
                       onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
                       placeholder="10,000,000"
@@ -230,6 +231,7 @@ export function SavingsGoals() {
                     <Input
                       id="currentAmount"
                       type="number"
+                      inputMode="numeric"
                       value={formData.currentAmount}
                       onChange={(e) => setFormData({ ...formData, currentAmount: e.target.value })}
                       placeholder="0"

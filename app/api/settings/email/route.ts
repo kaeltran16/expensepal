@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
+import { NextRequest, NextResponse } from 'next/server'
 
 // encryption key from environment (32 bytes for AES-256)
 const ENCRYPTION_KEY = process.env.EMAIL_ENCRYPTION_KEY || 'default-key-please-change-in-production!!!'
@@ -63,7 +63,13 @@ export async function GET(request: NextRequest) {
 
     // decrypt password before sending to client
     if (data && data.app_password) {
-      data.app_password = decryptPassword(data.app_password)
+      try {
+        data.app_password = decryptPassword(data.app_password)
+      } catch (e) {
+        console.error('Error decrypting password:', e)
+        // if decryption fails, return empty password so user can reset it
+        data.app_password = ''
+      }
     }
 
     return NextResponse.json(data)

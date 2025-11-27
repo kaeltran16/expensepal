@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/components/auth-provider'
+import { Navbar } from '@/components/navbar'
 import { Skeleton } from '@/components/skeleton-loader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,9 +11,9 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { AlertCircle, ArrowLeft, CheckCircle2, ExternalLink, Eye, EyeOff, Mail, Plus, Save, Trash2, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ExternalLink, Eye, EyeOff, Mail, Plus, Save, Trash2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 interface EmailSettings {
@@ -31,6 +32,8 @@ export default function SettingsPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
+  const [scrolled, setScrolled] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
   const [saving, setSaving] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [newSender, setNewSender] = useState('')
@@ -46,6 +49,25 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadEmailSettings()
+  }, [])
+
+  // Scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!contentRef.current) return
+      setScrolled(contentRef.current.scrollTop > 20)
+    }
+
+    const ref = contentRef.current
+    if (ref) {
+      ref.addEventListener('scroll', handleScroll, { passive: true })
+    }
+
+    return () => {
+      if (ref) {
+        ref.removeEventListener('scroll', handleScroll)
+      }
+    }
   }, [])
 
   const loadEmailSettings = async () => {
@@ -171,23 +193,19 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        {/* header skeleton */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <div className="container max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-7 w-32" />
-                <Skeleton className="h-4 w-48" />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Navbar */}
+        <Navbar onLogoClick={() => router.push('/')} />
 
         {/* content skeleton */}
-        <div className="container max-w-4xl mx-auto px-4 py-6 space-y-6">
+        <div
+          className="container max-w-4xl mx-auto px-4 py-6 space-y-6"
+          style={{
+            paddingTop: 'calc(4rem + env(safe-area-inset-top))',
+            paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+          }}
+        >
           {/* email sync card skeleton */}
-          <Card className="frosted-card">
+          <Card className="ios-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -215,7 +233,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* trusted senders card skeleton */}
-          <Card className="frosted-card">
+          <Card className="ios-card">
             <CardHeader>
               <Skeleton className="h-5 w-48" />
               <Skeleton className="h-4 w-full max-w-md mt-2" />
@@ -239,35 +257,53 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="container max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-              className="rounded-full"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Settings</h1>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Navbar */}
+      <Navbar onLogoClick={() => router.push('/')} />
 
       {/* content */}
-      <div className="container max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div
+        ref={contentRef}
+        className="h-screen overflow-auto overscroll-behavior-none"
+        style={{
+          paddingTop: 'calc(4rem + env(safe-area-inset-top))',
+          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+        }}
+      >
+        {/* Sticky Header */}
+        <motion.div
+          animate={{
+            paddingBottom: scrolled ? '0.75rem' : '1rem',
+          }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          className="sticky top-0 z-40 px-4 pt-4 -mt-4 mb-4"
+          style={{
+            backgroundColor: scrolled ? 'rgba(var(--background-rgb), 0.9)' : 'transparent',
+            backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
+            WebkitBackdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
+            borderBottom: scrolled ? '0.5px solid rgba(var(--ios-separator))' : 'none',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
+          <motion.div
+            animate={{
+              scale: scrolled ? 0.9 : 1,
+              originX: 0,
+            }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <h1 className="ios-large-title">Settings</h1>
+          </motion.div>
+        </motion.div>
+
+        <div className="container max-w-4xl mx-auto px-4 space-y-6">
+
         {/* email sync settings */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="frosted-card">
+          <Card className="ios-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -321,14 +357,14 @@ export default function SettingsPage() {
 
               {/* email address */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="your.email@gmail.com"
                   value={emailSettings.email_address}
                   onChange={(e) => setEmailSettings({ ...emailSettings, email_address: e.target.value })}
-                  className="min-h-touch h-12"
+                  className="min-h-touch h-12 rounded-xl"
                 />
                 <p className="text-xs text-muted-foreground">
                   The Gmail account that receives bank transaction emails
@@ -337,7 +373,7 @@ export default function SettingsPage() {
 
               {/* app password */}
               <div className="space-y-2">
-                <Label htmlFor="password">App Password</Label>
+                <Label htmlFor="password" className="text-sm font-medium">App Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -345,7 +381,7 @@ export default function SettingsPage() {
                     placeholder="abcdefghijklmnop"
                     value={emailSettings.app_password}
                     onChange={(e) => setEmailSettings({ ...emailSettings, app_password: e.target.value.replace(/\s/g, '') })}
-                    className="min-h-touch pr-10 h-12"
+                    className="min-h-touch pr-10 h-12 rounded-xl"
                   />
                   <Button
                     type="button"
@@ -416,7 +452,7 @@ export default function SettingsPage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 min-h-touch"
+                  className="flex-1 min-h-touch rounded-xl"
                 >
                   {saving ? (
                     <>
@@ -434,7 +470,8 @@ export default function SettingsPage() {
                   <Button
                     variant="destructive"
                     onClick={handleDelete}
-                    className="min-h-touch"
+                    className="min-h-touch rounded-xl"
+                    aria-label="Delete settings"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -450,7 +487,7 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <Card className="frosted-card">
+          <Card className="ios-card">
             <CardHeader>
               <CardTitle className="text-base">Trusted Email Senders</CardTitle>
               <CardDescription>
@@ -471,12 +508,12 @@ export default function SettingsPage() {
                       handleAddSender()
                     }
                   }}
-                  className="flex-1 h-12"
+                  className="flex-1 h-12 rounded-xl"
                 />
                 <Button
                   onClick={handleAddSender}
                   variant="outline"
-                  className="min-h-touch"
+                  className="min-h-touch rounded-xl"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add
@@ -521,6 +558,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+        </div>
       </div>
     </div>
   )

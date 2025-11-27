@@ -66,6 +66,7 @@ export type { CalorieStats, CalorieGoal } from './use-meals'
 
 // Custom UI Hooks
 export { useExpenseFilters } from './use-expense-filters'
+export { useMealFilters } from './use-meal-filters'
 export { useExpenseOperations } from './use-expense-operations'
 export { useSyncOperations } from './use-sync-operations'
 export type { SyncStatus } from './use-sync-operations'
@@ -93,3 +94,6 @@ export type { BudgetPredictionsResponse, Category } from './use-budget-predictio
 // Offline Mode
 export { useOfflineQueue } from './use-offline-queue'
 export type { PendingMutation } from './use-offline-queue'
+
+// Profile
+export { useProfile, useUpdateProfile } from './use-profile'

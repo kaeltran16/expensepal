@@ -1,28 +1,29 @@
 'use client'
 
 import { useAuth } from '@/components/auth-provider'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LogOut, User, Settings, Mail, CircleUserRound, RefreshCw, Bell, BellOff } from 'lucide-react'
-import { toast } from 'sonner'
 import { hapticFeedback } from '@/lib/utils'
-import { useState, useEffect } from 'react'
+import { Bell, BellOff, CircleUserRound, LogOut, RefreshCw, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 interface UserMenuProps {
   onSyncEmails?: () => void
   isSyncing?: boolean
+  onOpenProfile?: () => void
 }
 
-export function UserMenu({ onSyncEmails, isSyncing = false }: UserMenuProps = {}) {
+export function UserMenu({ onSyncEmails, isSyncing = false, onOpenProfile }: UserMenuProps = {}) {
   const { user, signOut } = useAuth()
   const router = useRouter()
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
@@ -195,7 +196,12 @@ export function UserMenu({ onSyncEmails, isSyncing = false }: UserMenuProps = {}
         <DropdownMenuItem
           onClick={() => {
             hapticFeedback('light')
-            toast.info('Profile settings coming soon!')
+            if (onOpenProfile) {
+              onOpenProfile()
+            } else {
+              // Navigate to home with profile view param
+              router.push('/?view=profile')
+            }
           }}
           className="cursor-pointer"
         >

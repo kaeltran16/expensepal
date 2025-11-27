@@ -156,6 +156,7 @@ export function SetBudgetDialog({
                     <Input
                       id="budget-amount"
                       type="number"
+                      inputMode="numeric"
                       step="1000"
                       placeholder="0"
                       value={amount}

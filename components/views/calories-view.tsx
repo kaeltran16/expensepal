@@ -5,11 +5,15 @@ import { MealList } from '@/components/meal-list';
 import { MealPlanner } from '@/components/meal-planner';
 import { NutritionCharts } from '@/components/nutrition-charts';
 import { QuickMealForm } from '@/components/quick-meal-form';
+import { MealFilterSheet } from '@/components/meal-filter-sheet';
 import { InsightCardSkeleton } from '@/components/skeleton-loader';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { hapticFeedback } from '@/lib/utils';
+import { useMealFilters } from '@/lib/hooks';
+import { Filter } from 'lucide-react';
+import { useState } from 'react';
 
 interface CaloriesViewProps {
   meals: any[];
@@ -20,6 +24,19 @@ interface CaloriesViewProps {
 }
 
 export function CaloriesView({ meals, calorieStats, loading, showAllMeals = false, onToggleShowAll }: CaloriesViewProps) {
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+
+  // Use meal filters hook
+  const {
+    filteredMeals,
+    quickFilter,
+    mealTimeFilter,
+    setQuickFilter,
+    setMealTimeFilter,
+    clearFilters,
+    hasActiveFilters,
+  } = useMealFilters(meals);
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -29,8 +46,6 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
       </div>
     );
   }
-
-
 
   // Content view
   return (
@@ -44,27 +59,51 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
       {/* Meal planner */}
       <MealPlanner />
 
-      {/* Meal list */}
+      {/* Meal list with filter button */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Recent Meals</h2>
-          {meals.length > 10 && onToggleShowAll && (
+          <div className="flex items-center gap-2">
+            {/* Filter Button */}
             <motion.div whileTap={{ scale: 0.95 }}>
               <Button
-                variant="ghost"
+                variant={hasActiveFilters ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => {
-                  onToggleShowAll();
+                  setShowFilterSheet(true);
                   hapticFeedback('light');
                 }}
-                className="gap-2 ios-touch min-h-touch text-primary rounded-full px-4"
+                className="gap-2 ios-touch min-h-touch rounded-full px-4"
               >
-                {showAllMeals ? 'Less' : 'All'}
+                <Filter className="h-4 w-4" />
+                {hasActiveFilters && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="h-2 w-2 rounded-full bg-primary-foreground"
+                  />
+                )}
               </Button>
             </motion.div>
-          )}
+
+            {meals.length > 10 && onToggleShowAll && (
+              <motion.div whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    onToggleShowAll();
+                    hapticFeedback('light');
+                  }}
+                  className="gap-2 ios-touch min-h-touch text-primary rounded-full px-4"
+                >
+                  {showAllMeals ? 'Less' : 'All'}
+                </Button>
+              </motion.div>
+            )}
+          </div>
         </div>
-        <MealList meals={meals} showAll={showAllMeals} />
+        <MealList meals={filteredMeals} showAll={showAllMeals} />
       </div>
 
       {/* Nutrition charts */}
@@ -74,6 +113,20 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
           <NutritionCharts stats={calorieStats} />
         </div>
       )}
+
+      {/* Meal Filter Sheet */}
+      <MealFilterSheet
+        isOpen={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        quickFilter={quickFilter}
+        mealTimeFilter={mealTimeFilter}
+        onQuickFilterChange={setQuickFilter}
+        onMealTimeFilterChange={setMealTimeFilter}
+        onReset={() => {
+          clearFilters();
+          setShowFilterSheet(false);
+        }}
+      />
     </div>
   );
 }

@@ -212,7 +212,7 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
             animate={{ scale: 1, rotate: -12 }}
             className="absolute top-2 right-2 z-10"
           >
-            <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
+            <div className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
               <Sparkles className="h-2.5 w-2.5" />
               NEW
             </div>

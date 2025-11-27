@@ -133,6 +133,7 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
                 id="amount"
                 name="amount"
                 type="number"
+                inputMode="numeric"
                 step="1000"
                 placeholder="0"
                 value={formData.amount}

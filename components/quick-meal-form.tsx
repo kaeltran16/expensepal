@@ -98,6 +98,7 @@ export function QuickMealForm() {
             <div>
               <Input
                 type="number"
+                inputMode="numeric"
                 placeholder="Calories (optional)"
                 value={manualCalories}
                 onChange={(e) => setManualCalories(e.target.value)}

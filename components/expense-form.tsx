@@ -79,6 +79,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                   id="amount"
                   name="amount"
                   type="number"
+                  inputMode="numeric"
                   step="0.01"
                   value={formData.amount}
                   onChange={handleChange}

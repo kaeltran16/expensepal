@@ -474,6 +474,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          currency: string | null
+          date_format: string | null
+          full_name: string | null
+          id: string
+          notification_enabled: boolean | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          currency?: string | null
+          date_format?: string | null
+          full_name?: string | null
+          id?: string
+          notification_enabled?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          currency?: string | null
+          date_format?: string | null
+          full_name?: string | null
+          id?: string
+          notification_enabled?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

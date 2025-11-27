@@ -6,3 +6,4 @@ export { SummaryView } from './summary-view';
 export { InsightsView } from './insights-view';
 export { CaloriesView } from './calories-view';
 export { RecurringView } from './recurring-view';
+export { ProfileView } from './profile-view';

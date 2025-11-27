@@ -250,6 +250,7 @@ export function MealPlanner() {
                       <Input
                         id="calories"
                         type="number"
+                        inputMode="numeric"
                         value={estimatedCalories}
                         onChange={(e) => setEstimatedCalories(e.target.value)}
                         placeholder="500"

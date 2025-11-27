@@ -25,6 +25,7 @@ import {
     ExpensesView,
     GoalsView,
     InsightsView,
+    ProfileView,
     SummaryView
 } from '@/components/views';
 import type { ViewType } from '@/lib/constants/filters';
@@ -35,21 +36,28 @@ import {
     useExpenseOperations,
     useExpenses,
     useMeals,
+    useProfile,
     useStats,
     useSyncOperations,
+    useUpdateProfile,
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Filter } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-export default function Home() {
+import { Suspense } from 'react';
+
+function HomeContent() {
   // TanStack Query hooks for server state
   const { data: expenses = [], isLoading: expensesLoading, refetch: refetchExpenses } = useExpenses();
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useStats();
   const currentMonth = new Date().toISOString().slice(0, 7);
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgets({ month: currentMonth });
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { mutateAsync: updateProfile } = useUpdateProfile();
 
   // Derived loading state
   const loading = expensesLoading || statsLoading || budgetsLoading;
@@ -59,7 +67,8 @@ export default function Home() {
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [showAllExpenses, setShowAllExpenses] = useState(false);
   const [showAllMeals, setShowAllMeals] = useState(false);
-  const [activeView, setActiveView] = useState<ViewType>('expenses');
+  const searchParams = useSearchParams();
+  const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -217,7 +226,18 @@ export default function Home() {
   return (
     <>
       {/* Navbar */}
-      <Navbar onSyncEmails={handleSync} isSyncing={isSyncing} />
+      <Navbar
+        onSyncEmails={handleSync}
+        isSyncing={isSyncing}
+        onOpenProfile={() => {
+          setActiveView('profile')
+          hapticFeedback('light')
+        }}
+        onLogoClick={() => {
+          setActiveView('expenses')
+          hapticFeedback('light')
+        }}
+      />
 
       <PullToRefreshWrapper
         onRefresh={handleRefresh}
@@ -362,6 +382,12 @@ export default function Home() {
               showAllMeals={showAllMeals}
               onToggleShowAll={() => setShowAllMeals(!showAllMeals)}
             />
+          ) : activeView === 'profile' ? (
+            <ProfileView
+              profile={profile ?? null}
+              loading={profileLoading}
+              onUpdate={updateProfile}
+            />
           ) : null}
         </div>
         {/* Floating Action Menu */}
@@ -431,5 +457,13 @@ export default function Home() {
         </div>
       </PullToRefreshWrapper>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }

@@ -3,15 +3,6 @@
 import { AnimatedCounter } from '@/components/animated-counter'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
@@ -20,8 +11,9 @@ import { useCalorieGoal, useCalorieStats, useUpdateCalorieGoal } from '@/lib/hoo
 import { getMillisecondsUntilMidnightGMT7, getTodayRangeGMT7 } from '@/lib/timezone'
 import { hapticFeedback } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { Flame, Settings } from 'lucide-react'
+import { Flame, Settings, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 
 interface DailyStats {
   calories: number
@@ -167,77 +159,177 @@ export function CalorieTracker() {
             <Flame className="w-5 h-5 text-orange-500" />
             <span className="font-semibold text-base">Today's Calories</span>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Adjust Daily Goals</DialogTitle>
-                <DialogDescription>
-                  Set your daily calorie and macro targets
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="calories">Daily Calories</Label>
-                  <Input
-                    id="calories"
-                    type="number"
-                    value={dailyCalories}
-                    onChange={(e) => setDailyCalories(e.target.value)}
-                    placeholder="2000"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="protein">Protein Target (g)</Label>
-                  <Input
-                    id="protein"
-                    type="number"
-                    value={proteinTarget}
-                    onChange={(e) => setProteinTarget(e.target.value)}
-                    placeholder="150"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="carbs">Carbs Target (g)</Label>
-                  <Input
-                    id="carbs"
-                    type="number"
-                    value={carbsTarget}
-                    onChange={(e) => setCarbsTarget(e.target.value)}
-                    placeholder="200"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="fat">Fat Target (g)</Label>
-                  <Input
-                    id="fat"
-                    type="number"
-                    value={fatTarget}
-                    onChange={(e) => setFatTarget(e.target.value)}
-                    placeholder="65"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => {
+              setIsDialogOpen(true);
+              hapticFeedback('light');
+            }}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+
+          {/* Bottom Sheet for Goals */}
+          <AnimatePresence>
+            {isDialogOpen && (
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    hapticFeedback('light');
+                  }}
+                  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+                />
+
+                {/* Sheet */}
+                <motion.div
+                  initial={{ y: '100%' }}
+                  animate={{ y: 0 }}
+                  exit={{ y: '100%' }}
+                  transition={{
+                    duration: 0.35,
+                    ease: [0.32, 0.72, 0, 1],
+                  }}
+                  className="fixed inset-x-0 bottom-0 z-[70] bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50"
+                  style={{ maxHeight: '85vh' }}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSaveGoal}
-                  disabled={updateGoalMutation.isPending}
-                >
-                  {updateGoalMutation.isPending ? 'Saving...' : 'Save Goals'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                  <div
+                    className="overflow-y-auto overscroll-contain"
+                    style={{ maxHeight: '85vh' }}
+                  >
+                    {/* Handle bar */}
+                    <div className="flex justify-center pt-4 pb-3">
+                      <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full" />
+                    </div>
+
+                    {/* Header */}
+                    <div className="relative px-6 pb-4 border-b">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                            <Flame className="w-6 h-6 text-orange-500" />
+                          </div>
+                          <div>
+                            <h2 className="text-xl font-bold">Adjust Daily Goals</h2>
+                            <p className="text-sm text-muted-foreground">Set your daily calorie and macro targets</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setIsDialogOpen(false)}
+                          className="h-9 w-9"
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 space-y-5">
+                      <div className="space-y-2">
+                        <Label htmlFor="calories" className="text-sm font-medium">
+                          Daily Calories
+                        </Label>
+                        <Input
+                          id="calories"
+                          type="number"
+                          inputMode="numeric"
+                          value={dailyCalories}
+                          onChange={(e) => setDailyCalories(e.target.value)}
+                          placeholder="2000"
+                          className="h-12 text-lg"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="protein" className="text-xs font-medium">
+                            Protein (g)
+                          </Label>
+                          <Input
+                            id="protein"
+                            type="number"
+                            inputMode="numeric"
+                            value={proteinTarget}
+                            onChange={(e) => setProteinTarget(e.target.value)}
+                            placeholder="150"
+                            className="h-12"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="carbs" className="text-xs font-medium">
+                            Carbs (g)
+                          </Label>
+                          <Input
+                            id="carbs"
+                            type="number"
+                            inputMode="numeric"
+                            value={carbsTarget}
+                            onChange={(e) => setCarbsTarget(e.target.value)}
+                            placeholder="200"
+                            className="h-12"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="fat" className="text-xs font-medium">
+                            Fat (g)
+                          </Label>
+                          <Input
+                            id="fat"
+                            type="number"
+                            inputMode="numeric"
+                            value={fatTarget}
+                            onChange={(e) => setFatTarget(e.target.value)}
+                            placeholder="65"
+                            className="h-12"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Footer */}
+                    <div className="border-t bg-background p-4 sm:p-6 flex-shrink-0">
+                      <div className="flex gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsDialogOpen(false)}
+                          className="flex-1 h-12 sm:h-14 text-base font-medium"
+                          disabled={updateGoalMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleSaveGoal}
+                          disabled={updateGoalMutation.isPending}
+                          className="flex-1 h-12 sm:h-14 text-base font-bold shadow-lg"
+                        >
+                          {updateGoalMutation.isPending ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              <span>Saving...</span>
+                            </div>
+                          ) : (
+                            '✓ Save Goals'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

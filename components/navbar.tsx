@@ -6,41 +6,43 @@ import { UserMenu } from '@/components/user-menu'
 import { motion } from 'framer-motion'
 import { LogIn, Moon, Sun, Wallet } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 interface NavbarProps {
   onSyncEmails?: () => void
   isSyncing?: boolean
+  onOpenProfile?: () => void
+  onLogoClick?: () => void
 }
 
-export function Navbar({ onSyncEmails, isSyncing }: NavbarProps = {}) {
+export function Navbar({ onSyncEmails, isSyncing, onOpenProfile, onLogoClick }: NavbarProps = {}) {
   const { user, loading } = useAuth()
   const { theme, setTheme } = useTheme()
   const router = useRouter()
-
-  const isDark = theme === 'dark'
 
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="fixed top-0 left-0 right-0 z-50"
+      className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50"
       style={{
         paddingTop: 'env(safe-area-inset-top)',
-        backgroundColor: `rgba(var(--card-rgb), ${isDark ? '0.7' : '0.8'})`,
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        borderBottom: isDark
-          ? '0.5px solid rgba(255, 255, 255, 0.1)'
-          : '0.5px solid rgba(0, 0, 0, 0.1)',
       }}
     >
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <button
+            onClick={() => {
+              if (onLogoClick) {
+                onLogoClick()
+              } else {
+                router.push('/')
+              }
+            }}
+            className="flex items-center gap-2 group"
+          >
             <motion.div
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.5 }}
@@ -52,7 +54,7 @@ export function Navbar({ onSyncEmails, isSyncing }: NavbarProps = {}) {
             <span className="font-bold text-lg text-black dark:text-white">
               ExpensePal
             </span>
-          </Link>
+          </button>
 
           {/* Actions */}
           <div className="flex items-center gap-2">
@@ -101,7 +103,7 @@ export function Navbar({ onSyncEmails, isSyncing }: NavbarProps = {}) {
             {loading ? (
               <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
             ) : user ? (
-              <UserMenu onSyncEmails={onSyncEmails} isSyncing={isSyncing} />
+              <UserMenu onSyncEmails={onSyncEmails} isSyncing={isSyncing} onOpenProfile={onOpenProfile} />
             ) : (
               <motion.div whileTap={{ scale: 0.95 }}>
                 <Button
