@@ -1,6 +1,8 @@
 import Imap from 'imap'
 import { simpleParser } from 'mailparser'
 import { emailParser, ParsedExpense } from './email-parser'
+import { supabaseAdmin } from './supabase'
+import crypto from 'crypto'
 
 export interface EmailConfig {
   user: string
@@ -8,6 +10,7 @@ export interface EmailConfig {
   host: string
   port: number
   tls: boolean
+  trustedSenders?: string[]
 }
 
 export class EmailService {
@@ -44,7 +47,8 @@ export class EmailService {
       })
 
       const expenses: ParsedExpense[] = []
-      const TRUSTED_SENDERS = ['info@card.vib.com.vn', 'no-reply@grab.com']
+      // use trusted senders from config, or default to common ones
+      const TRUSTED_SENDERS = this.config.trustedSenders || ['info@card.vib.com.vn', 'no-reply@grab.com']
 
       imap.once('ready', () => {
         imap.openBox('INBOX', false, (err, box) => {
@@ -269,4 +273,61 @@ export function getEmailService(): EmailService {
     throw new Error('No email services configured')
   }
   return services[0]
+}
+
+// decrypt app password when retrieving from database
+function decryptPassword(encrypted: string): string {
+  const ENCRYPTION_KEY = process.env.EMAIL_ENCRYPTION_KEY || 'default-key-please-change-in-production!!!'
+  const parts = encrypted.split(':')
+  const iv = Buffer.from(parts[0], 'hex')
+  const encryptedText = parts[1]
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32)
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
+
+  let decrypted = decipher.update(encryptedText, 'hex', 'utf8')
+  decrypted += decipher.final('utf8')
+
+  return decrypted
+}
+
+// get user-specific email services from database
+export async function getUserEmailServices(userId: string): Promise<EmailService[]> {
+  try {
+    // fetch user's email settings from database
+    const { data: settingsArray, error } = await (supabaseAdmin as any)
+      .from('user_email_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_enabled', true)
+
+    if (error) {
+      console.error('Error fetching user email settings:', error)
+      return []
+    }
+
+    if (!settingsArray || settingsArray.length === 0) {
+      console.log('No email settings configured for this user')
+      return []
+    }
+
+    // create email service instances for each configured account
+    const services = settingsArray.map((settings: any) => {
+      const decryptedPassword = decryptPassword(settings.app_password)
+
+      return new EmailService({
+        user: settings.email_address,
+        password: decryptedPassword,
+        host: settings.imap_host,
+        port: settings.imap_port,
+        tls: settings.imap_tls,
+        trustedSenders: settings.trusted_senders || ['info@card.vib.com.vn', 'no-reply@grab.com'],
+      })
+    })
+
+    console.log(`Loaded ${services.length} email account(s) for user ${userId}`)
+    return services
+  } catch (error) {
+    console.error('Error in getUserEmailServices:', error)
+    return []
+  }
 }

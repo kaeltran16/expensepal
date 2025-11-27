@@ -15,6 +15,7 @@ import { LogOut, User, Settings, Mail, CircleUserRound, RefreshCw, Bell, BellOff
 import { toast } from 'sonner'
 import { hapticFeedback } from '@/lib/utils'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface UserMenuProps {
   onSyncEmails?: () => void
@@ -23,6 +24,7 @@ interface UserMenuProps {
 
 export function UserMenu({ onSyncEmails, isSyncing = false }: UserMenuProps = {}) {
   const { user, signOut } = useAuth()
+  const router = useRouter()
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
 
   // Check notification status on mount
@@ -204,7 +206,7 @@ export function UserMenu({ onSyncEmails, isSyncing = false }: UserMenuProps = {}
         <DropdownMenuItem
           onClick={() => {
             hapticFeedback('light')
-            toast.info('Settings coming soon!')
+            router.push('/settings')
           }}
           className="cursor-pointer"
         >

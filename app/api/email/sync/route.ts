@@ -1,5 +1,5 @@
 import { calorieEstimator } from '@/lib/calorie-estimator'
-import { getEmailServices } from '@/lib/email-service'
+import { getUserEmailServices } from '@/lib/email-service'
 import { getMealTimeFromDate } from '@/lib/meal-utils'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase/server'
@@ -20,12 +20,13 @@ export async function POST() {
       )
     }
 
-    const emailServices = getEmailServices()
+    // get user-specific email services from database
+    const emailServices = await getUserEmailServices(user.id)
 
-    // Check if any email accounts are configured
+    // check if any email accounts are configured
     if (emailServices.length === 0) {
       return NextResponse.json(
-        { error: 'No email accounts configured' },
+        { error: 'No email accounts configured. Please add your email settings in Settings.' },
         { status: 400 }
       )
     }
@@ -234,6 +235,17 @@ export async function POST() {
     console.log(`Failed: ${failed}`)
     console.log(`Meals auto-tracked: ${mealsCreated}`)
 
+    // update last_sync_at timestamp for user's email settings
+    try {
+      await (supabaseAdmin as any)
+        .from('user_email_settings')
+        .update({ last_sync_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+    } catch (syncUpdateError) {
+      // don't fail the whole sync if timestamp update fails
+      console.error('Failed to update last_sync_at:', syncUpdateError)
+    }
+
     return NextResponse.json({
       message: `Synced ${successful} new expenses (${duplicates} duplicates skipped, ${failed} failed)`,
       newExpenses: successful,
@@ -256,21 +268,30 @@ export async function POST() {
 
 export async function GET() {
   try {
-    // Return sync status and last sync time
-    const { data, error } = await supabaseAdmin
-      .from('expenses')
-      .select('created_at')
-      .eq('source', 'email')
-      .order('created_at', { ascending: false })
-      .limit(1)
+    // get authenticated user
+    const supabase = createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (error && error.code !== 'PGRST116') {
-      throw error
+    if (authError || !user) {
+      return NextResponse.json({
+        configured: false,
+        lastSync: null,
+      })
     }
 
+    // check if user has email settings configured (using any to bypass type check for new table)
+    const { data: settings } = await (supabaseAdmin as any)
+      .from('user_email_settings')
+      .select('last_sync_at, is_enabled')
+      .eq('user_id', user.id)
+      .eq('is_enabled', true)
+      .limit(1)
+
+    const configured = !!settings && settings.length > 0
+
     return NextResponse.json({
-      configured: !!(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD),
-      lastSync: data?.[0]?.created_at || null,
+      configured,
+      lastSync: settings?.[0]?.last_sync_at || null,
     })
   } catch (error) {
     console.error('Error checking sync status:', error)
