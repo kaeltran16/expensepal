@@ -8,21 +8,21 @@ import { Toaster } from 'sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Expense Tracker',
+  title: 'ExpensePal',
   description: 'Track your expenses automatically from email notifications',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Expense Tracker',
+    title: 'ExpensePal',
     startupImage: [
       {
         url: '/icon-512x512.png',
-        media: '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)',
+        media: '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)',
       },
     ],
   },
-  applicationName: 'Expense Tracker',
+  applicationName: 'ExpensePal',
   formatDetection: {
     telephone: false,
   },
@@ -51,9 +51,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/icon-192x192.png" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/icon-180x180.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icon-180x180.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="ExpensePal" />
         <meta name="apple-mobile-web-app-status-bar-style" 
