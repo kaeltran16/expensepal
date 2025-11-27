@@ -72,7 +72,10 @@ export async function GET(request: Request) {
       stats.byMealTime[mealTime].calories += meal.calories
 
       // By date
-      const date = meal.meal_date.split('T')[0]
+      // Convert UTC date to GMT+7 for correct grouping
+      const mealDate = new Date(meal.meal_date)
+      const gmt7Date = new Date(mealDate.getTime() + (7 * 60 * 60 * 1000))
+      const date = gmt7Date.toISOString().split('T')[0]
       if (!stats.byDate[date]) {
         stats.byDate[date] = { calories: 0, protein: 0, carbs: 0, fat: 0, meals: 0 }
       }

@@ -33,7 +33,7 @@ export function getStartOfDayGMT7(date?: Date): string {
   const year = targetDate.getFullYear()
   const month = String(targetDate.getMonth() + 1).padStart(2, '0')
   const day = String(targetDate.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}T00:00:00`
+  return `${year}-${month}-${day}T00:00:00+07:00`
 }
 
 /**
@@ -44,7 +44,7 @@ export function getEndOfDayGMT7(date?: Date): string {
   const year = targetDate.getFullYear()
   const month = String(targetDate.getMonth() + 1).padStart(2, '0')
   const day = String(targetDate.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}T23:59:59`
+  return `${year}-${month}-${day}T23:59:59+07:00`
 }
 
 /**
@@ -59,7 +59,7 @@ export function getCurrentISOInGMT7(): string {
   const hours = String(now.getHours()).padStart(2, '0')
   const minutes = String(now.getMinutes()).padStart(2, '0')
   const seconds = String(now.getSeconds()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`
 }
 
 /**

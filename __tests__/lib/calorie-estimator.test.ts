@@ -15,6 +15,7 @@ vi.mock('@/lib/supabase', () => ({
 
 // Import after mocking
 import { CalorieEstimator } from '@/lib/calorie-estimator'
+import { supabaseAdmin } from '@/lib/supabase'
 
 describe('Calorie Estimator', () => {
   let estimator: CalorieEstimator
@@ -22,6 +23,58 @@ describe('Calorie Estimator', () => {
   beforeEach(() => {
     estimator = new CalorieEstimator()
     vi.clearAllMocks()
+  })
+
+  describe('Public API', () => {
+    it('should estimate using saved foods first', async () => {
+      // Mock saved food found
+      const mockSavedFood = {
+        id: '1',
+        name: 'Phở bò',
+        calories: 450,
+        protein: 20,
+        carbs: 60,
+        fat: 15,
+      }
+
+      const mockSelect = vi.fn().mockReturnValue({
+        ilike: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: mockSavedFood }),
+        }),
+      })
+
+      // Update mock for this specific test
+      vi.mocked(supabaseAdmin.from).mockReturnValue({
+        select: mockSelect,
+        update: vi.fn().mockReturnValue({ eq: vi.fn() }),
+      } as any)
+
+      const result = await estimator.estimate('Phở bò')
+      
+      expect(result.source).toBe('saved')
+      expect(result.calories).toBe(450)
+    })
+
+    it('should fall back to LLM/fallback if not saved', async () => {
+      // Mock no saved food
+      const mockSelect = vi.fn().mockReturnValue({
+        ilike: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null }),
+          limit: vi.fn().mockResolvedValue({ data: [] }),
+        }),
+      })
+
+      vi.mocked(supabaseAdmin.from).mockReturnValue({
+        select: mockSelect,
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      } as any)
+
+      // Since we don't mock fetch here, it should go to fallback
+      const result = await estimator.estimate('Unknown Food')
+      
+      expect(result.source).toBe('llm')
+      expect(result.confidence).toBe('low')
+    })
   })
 
   describe('Fallback estimation', () => {

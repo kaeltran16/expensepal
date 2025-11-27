@@ -13,6 +13,7 @@ const mockFetchUnreadExpenses = vi.fn()
 // Mock modules before imports
 vi.mock('@/lib/supabase', () => ({
   supabaseAdmin: {
+
     from: vi.fn((table: string) => {
       if (table === 'expenses') {
         return {
@@ -32,9 +33,21 @@ vi.mock('@/lib/supabase', () => ({
           insert: mockProcessedEmailsInsert,
         }
       }
+      // Default mock for other tables (like user_email_settings)
       return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
         insert: vi.fn().mockReturnValue({
           select: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: [], error: null }),
         }),
       }
     }),
@@ -43,6 +56,9 @@ vi.mock('@/lib/supabase', () => ({
 
 vi.mock('@/lib/email-service', () => ({
   getEmailServices: vi.fn(() => [{
+    fetchUnreadExpenses: mockFetchUnreadExpenses,
+  }]),
+  getUserEmailServices: vi.fn().mockResolvedValue([{
     fetchUnreadExpenses: mockFetchUnreadExpenses,
   }]),
 }))
