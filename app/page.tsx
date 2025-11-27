@@ -11,6 +11,7 @@ import { NetworkStatus } from '@/components/network-status';
 import { Onboarding } from '@/components/onboarding';
 import { PageHeader } from '@/components/page-header';
 import { ProgressIndicator } from '@/components/progress-indicator';
+import { PullToRefreshWrapper } from '@/components/pull-to-refresh-wrapper';
 import { PushNotificationManager } from '@/components/push-notification-manager';
 import { QuickExpenseForm } from '@/components/quick-expense-form';
 import { QuickStatsOverview } from '@/components/quick-stats-overview';
@@ -18,30 +19,29 @@ import { QuickStatsSkeleton } from '@/components/quick-stats-skeleton';
 import { SearchBar } from '@/components/search-bar';
 import { Button } from '@/components/ui/button';
 import {
-  AnalyticsView,
-  BudgetView,
-  CaloriesView,
-  ExpensesView,
-  GoalsView,
-  InsightsView,
-  SummaryView
+    AnalyticsView,
+    BudgetView,
+    CaloriesView,
+    ExpensesView,
+    GoalsView,
+    InsightsView,
+    SummaryView
 } from '@/components/views';
 import type { ViewType } from '@/lib/constants/filters';
 import {
-  useBudgets,
-  useCalorieStats,
-  useExpenseFilters,
-  useExpenseOperations,
-  useExpenses,
-  useMeals,
-  usePullToRefresh,
-  useStats,
-  useSyncOperations,
+    useBudgets,
+    useCalorieStats,
+    useExpenseFilters,
+    useExpenseOperations,
+    useExpenses,
+    useMeals,
+    useStats,
+    useSyncOperations,
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Filter, RefreshCw } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 export default function Home() {
@@ -98,17 +98,6 @@ export default function Home() {
     await refetchExpenses();
     await refetchStats();
   };
-
-  const {
-    pullDistance,
-    isRefreshing,
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
-  } = usePullToRefresh({
-    onRefresh: handleRefresh,
-    enabled: activeView === 'expenses',
-  });
 
   // Calorie tracking state - now using TanStack Query hooks
   const startDate = useMemo(() => {
@@ -230,59 +219,20 @@ export default function Home() {
       {/* Navbar */}
       <Navbar onSyncEmails={handleSync} isSyncing={isSyncing} />
 
-      <div
-        ref={contentRef}
-        className="min-h-screen overflow-auto overscroll-behavior-none"
-        style={{
-          WebkitOverflowScrolling: 'touch',
-          paddingTop: 'calc(4rem + env(safe-area-inset-top))',
-          paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))',
-          background: 'var(--background)',
-        }}
-        onTouchStart={(e) => handleTouchStart(e, contentRef)}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+      <PullToRefreshWrapper
+        onRefresh={handleRefresh}
+        enabled={['expenses', 'budget', 'analytics', 'calories'].includes(activeView)}
       >
-        {/* Pull to refresh indicator - Enhanced iOS style */}
-        <AnimatePresence>
-          {pullDistance > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{
-                opacity: Math.min(pullDistance / 70, 1),
-                y: Math.min(pullDistance / 3, 30),
-                scale: pullDistance > 70 ? 1.1 : 1,
-              }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed top-16 left-0 right-0 flex justify-center z-40 pointer-events-none"
-            >
-              <motion.div
-                className="bg-card/90 backdrop-blur-xl rounded-full p-3 shadow-lg border border-border/50"
-                animate={{
-                  boxShadow: pullDistance > 70
-                    ? '0 10px 40px -10px rgba(0, 122, 255, 0.3)'
-                    : '0 4px 12px -4px rgba(0, 0, 0, 0.1)',
-                }}
-              >
-                <motion.div
-                  animate={{ rotate: isRefreshing ? 360 : pullDistance * 3 }}
-                  transition={{
-                    duration: isRefreshing ? 1 : 0.2,
-                    repeat: isRefreshing ? Infinity : 0,
-                    ease: isRefreshing ? 'linear' : 'easeOut',
-                  }}
-                >
-                  <RefreshCw
-                    className={`h-5 w-5 transition-colors ${
-                      pullDistance > 70 ? 'text-primary' : 'text-muted-foreground'
-                    }`}
-                  />
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div
+          ref={contentRef}
+          className="min-h-screen overflow-auto overscroll-behavior-none"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            paddingTop: 'calc(4rem + env(safe-area-inset-top))',
+            paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))',
+            background: 'var(--background)',
+          }}
+        >
 
         {/* Header */}
         <PageHeader activeView={activeView} scrolled={scrolled} />
@@ -478,7 +428,8 @@ export default function Home() {
           budgets={budgets}
           currentMonth={currentMonth}
         />
-      </div>
+        </div>
+      </PullToRefreshWrapper>
     </>
   );
 }
