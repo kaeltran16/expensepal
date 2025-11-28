@@ -1,20 +1,13 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart'
-import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import { CartesianGrid, Cell, Line, LineChart, Pie, PieChart, XAxis, YAxis } from 'recharts'
+
+import { type CalorieStats } from '@/lib/hooks'
 
 interface NutritionChartsProps {
-  stats: {
-    byMealTime: {
-      breakfast: { count: number; calories: number }
-      lunch: { count: number; calories: number }
-      dinner: { count: number; calories: number }
-      snack: { count: number; calories: number }
-      other: { count: number; calories: number }
-    }
-    byDate: Record<string, { calories: number; protein: number; carbs: number; fat: number }>
-  }
+  stats: CalorieStats
 }
 
 const MEAL_TIME_COLORS = {
@@ -84,14 +77,22 @@ export function NutritionCharts({ stats }: NutritionChartsProps) {
   // Prepare line chart data (daily calories over time)
   const dailyData = Object.entries(stats.byDate)
     .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-7) // Last 7 days
-    .map(([date, data]) => ({
-      date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      calories: data.calories,
-      protein: Math.round(data.protein),
-      carbs: Math.round(data.carbs),
-      fat: Math.round(data.fat),
-    }))
+    .slice(-14) // Last 14 days (increased from 7)
+    .map(([date, data]) => {
+      // Parse date string YYYY-MM-DD directly to avoid timezone issues
+      const [year, month, day] = date.split('-').map(Number)
+      const dateObj = new Date(year, month - 1, day)
+      
+      return {
+        date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        fullDate: dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        calories: data.calories,
+        protein: Math.round(data.protein),
+        carbs: Math.round(data.carbs),
+        fat: Math.round(data.fat),
+        average: stats.averageCaloriesPerDay,
+      }
+    })
 
   return (
     <div className="space-y-4">
@@ -149,7 +150,7 @@ export function NutritionCharts({ stats }: NutritionChartsProps) {
       {dailyData.length > 0 && (
         <Card className="frosted-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">7-Day Calorie Trend</CardTitle>
+            <CardTitle className="text-base">14-Day Calorie Trend</CardTitle>
           </CardHeader>
           <CardContent className="pb-4 -mx-2">
             <ChartContainer config={calorieConfig} className="h-[200px] w-full">
@@ -174,7 +175,11 @@ export function NutritionCharts({ stats }: NutritionChartsProps) {
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
-                      formatter={(value) => `${value.toLocaleString()} cal`}
+                      labelKey="fullDate"
+                      formatter={(value, name) => {
+                        if (name === 'average') return [`${value} cal`, 'Avg']
+                        return [`${value.toLocaleString()} cal`, 'Calories']
+                      }}
                     />
                   }
                 />
@@ -185,6 +190,16 @@ export function NutritionCharts({ stats }: NutritionChartsProps) {
                   strokeWidth={2}
                   dot={{ fill: "var(--color-calories)", r: 3 }}
                   activeDot={{ r: 5 }}
+                />
+                {/* Average Line */}
+                <Line
+                  type="monotone"
+                  dataKey="average"
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="5 5"
+                  strokeWidth={1}
+                  dot={false}
+                  activeDot={false}
                 />
               </LineChart>
             </ChartContainer>
@@ -221,6 +236,7 @@ export function NutritionCharts({ stats }: NutritionChartsProps) {
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
+                      labelKey="fullDate"
                       formatter={(value) => `${value}g`}
                     />
                   }

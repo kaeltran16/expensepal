@@ -97,6 +97,9 @@ async function fetchCalorieStats(filters?: MealFilters): Promise<CalorieStats> {
 
   if (filters?.startDate) params.append('startDate', filters.startDate)
   if (filters?.endDate) params.append('endDate', filters.endDate)
+  
+  // Pass local timezone offset in minutes
+  params.append('timezoneOffset', new Date().getTimezoneOffset().toString())
 
   const response = await fetch(`/api/calorie-stats?${params.toString()}`)
 

@@ -21,12 +21,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const timezoneOffset = parseInt(searchParams.get('timezoneOffset') || '0', 10)
 
-    // Default to last 30 days if no dates provided
+    // Default to last 14 days if no dates provided (increased from 30/7)
     const end = endDate || new Date().toISOString()
     const start =
       startDate ||
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
 
     // Fetch meals in date range FOR THIS USER ONLY
     const { data: meals, error } = await supabaseAdmin
@@ -72,10 +73,16 @@ export async function GET(request: Request) {
       stats.byMealTime[mealTime].calories += meal.calories
 
       // By date
-      // Convert UTC date to GMT+7 for correct grouping
+      // Convert UTC date to user's local time for correct grouping
       const mealDate = new Date(meal.meal_date)
-      const gmt7Date = new Date(mealDate.getTime() + (7 * 60 * 60 * 1000))
-      const date = gmt7Date.toISOString().split('T')[0]
+      // timezoneOffset is in minutes (e.g. -420 for UTC+7, 300 for UTC-5)
+      // We subtract the offset because JS getTimezoneOffset returns positive for West, negative for East
+      // But here we expect the client to pass the offset in minutes.
+      // Standard JS: new Date().getTimezoneOffset() -> -420 for UTC+7.
+      // So to get local time: UTC time - (offset * 60 * 1000)
+      const localDate = new Date(mealDate.getTime() - (timezoneOffset * 60 * 1000))
+      const date = localDate.toISOString().split('T')[0]
+      
       if (!stats.byDate[date]) {
         stats.byDate[date] = { calories: 0, protein: 0, carbs: 0, fat: 0, meals: 0 }
       }
