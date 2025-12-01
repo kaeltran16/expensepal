@@ -19,15 +19,16 @@ import { QuickStatsSkeleton } from '@/components/quick-stats-skeleton';
 import { SearchBar } from '@/components/search-bar';
 import { Button } from '@/components/ui/button';
 import {
-    AnalyticsView,
+    AnalyticsInsightsView,
     BudgetView,
     CaloriesView,
     ExpensesView,
     GoalsView,
-    InsightsView,
     ProfileView,
-    SummaryView
+    SummaryView,
+    WorkoutsView
 } from '@/components/views';
+import { WorkoutLogger } from '@/components/workout-logger';
 import type { ViewType } from '@/lib/constants/filters';
 import {
     useBudgets,
@@ -40,6 +41,10 @@ import {
     useStats,
     useSyncOperations,
     useUpdateProfile,
+    useWorkoutTemplates,
+    useWorkouts,
+    useExercises,
+    useCreateWorkout,
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
@@ -59,6 +64,17 @@ function HomeContent() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { mutateAsync: updateProfile } = useUpdateProfile();
 
+  // workout tracking hooks
+  const weekAgo = useMemo(() => {
+    const date = new Date()
+    date.setDate(date.getDate() - 7)
+    return date.toISOString()
+  }, [])
+  const { data: workoutTemplates = [], isLoading: templatesLoading } = useWorkoutTemplates()
+  const { data: workouts = [] } = useWorkouts({ startDate: weekAgo })
+  const { data: exercises = [] } = useExercises()
+  const { mutateAsync: createWorkout } = useCreateWorkout()
+
   // Derived loading state
   const loading = expensesLoading || statsLoading || budgetsLoading;
 
@@ -67,6 +83,7 @@ function HomeContent() {
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [showAllExpenses, setShowAllExpenses] = useState(false);
   const [showAllMeals, setShowAllMeals] = useState(false);
+  const [activeWorkout, setActiveWorkout] = useState<any>(null);
   const searchParams = useSearchParams();
   const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -241,7 +258,7 @@ function HomeContent() {
 
       <PullToRefreshWrapper
         onRefresh={handleRefresh}
-        enabled={['expenses', 'budget', 'analytics', 'calories'].includes(activeView)}
+        enabled={['expenses', 'budget', 'insights', 'calories'].includes(activeView)}
       >
         <div
           ref={contentRef}
@@ -364,16 +381,14 @@ function HomeContent() {
               onUpdate={handleUpdateNotes}
               onClearFilters={clearFilters}
             />
-          ) : activeView === 'analytics' ? (
-            <AnalyticsView expenses={expenses} loading={loading} />
+          ) : activeView === 'insights' ? (
+            <AnalyticsInsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
           ) : activeView === 'budget' ? (
             <BudgetView expenses={expenses} loading={loading} />
           ) : activeView === 'goals' ? (
             <GoalsView loading={loading} />
           ) : activeView === 'summary' ? (
             <SummaryView expenses={expenses} loading={loading} />
-          ) : activeView === 'insights' ? (
-            <InsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
           ) : activeView === 'calories' ? (
             <CaloriesView
               meals={meals}
@@ -381,6 +396,16 @@ function HomeContent() {
               loading={loadingMeals}
               showAllMeals={showAllMeals}
               onToggleShowAll={() => setShowAllMeals(!showAllMeals)}
+            />
+          ) : activeView === 'workouts' ? (
+            <WorkoutsView
+              templates={workoutTemplates}
+              recentWorkouts={workouts}
+              loading={templatesLoading}
+              onStartWorkout={(template) => {
+                setActiveWorkout(template)
+                hapticFeedback('medium')
+              }}
             />
           ) : activeView === 'profile' ? (
             <ProfileView
@@ -454,6 +479,21 @@ function HomeContent() {
           budgets={budgets}
           currentMonth={currentMonth}
         />
+
+        {/* Workout Logger */}
+        <AnimatePresence>
+          {activeWorkout && (
+            <WorkoutLogger
+              template={activeWorkout}
+              exercises={exercises}
+              onComplete={async (workoutData) => {
+                await createWorkout(workoutData)
+                setActiveWorkout(null)
+              }}
+              onCancel={() => setActiveWorkout(null)}
+            />
+          )}
+        </AnimatePresence>
         </div>
       </PullToRefreshWrapper>
     </>

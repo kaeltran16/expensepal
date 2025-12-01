@@ -16,12 +16,11 @@ export const CATEGORY_FILTERS = [
   'Other',
 ];
 
-export const VIEW_ORDER: Array<'expenses' | 'analytics' | 'budget' | 'insights'> = [
+export const VIEW_ORDER: Array<'expenses' | 'budget' | 'insights'> = [
   'expenses',
-  'analytics',
   'budget',
   'insights',
 ];
 
 export type QuickFilterType = 'all' | 'today' | 'week' | 'month';
-export type ViewType = 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'profile';
+export type ViewType = 'expenses' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'workouts' | 'profile';

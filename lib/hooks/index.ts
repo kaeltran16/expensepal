@@ -97,3 +97,18 @@ export type { PendingMutation } from './use-offline-queue'
 
 // Profile
 export { useProfile, useUpdateProfile } from './use-profile'
+
+// Workouts
+export {
+  useWorkouts,
+  useWorkoutTemplates,
+  useExercises,
+  useCreateWorkout,
+  useCreateTemplate,
+  useUpdateTemplate,
+  useDeleteTemplate,
+  useExerciseHistory,
+  usePersonalRecords,
+  useCreatePersonalRecord,
+} from './use-workouts'
+export type { WorkoutFilters } from './use-workouts'

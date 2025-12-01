@@ -10,12 +10,12 @@ interface PageHeaderProps {
 
 const VIEW_TITLES: Record<ViewType, string> = {
   expenses: 'Expenses',
-  analytics: 'Analytics',
   budget: 'Budget',
   goals: 'Goals',
   calories: 'Calories',
   summary: 'Summary',
   insights: 'Insights',
+  workouts: 'Workouts',
   profile: 'Profile',
 };
 

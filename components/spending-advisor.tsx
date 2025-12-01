@@ -31,7 +31,7 @@ interface Recommendation {
 
 interface SpendingAdvisorProps {
   expenses: Expense[]
-  onNavigate?: (view: 'budget' | 'analytics' | 'expenses') => void
+  onNavigate?: (view: 'budget' | 'expenses') => void
 }
 
 export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) {

@@ -2,18 +2,18 @@
 
 import { hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { BarChart3, Flame, Lightbulb, Target, Wallet } from 'lucide-react'
+import { Dumbbell, Flame, Lightbulb, Target, Wallet } from 'lucide-react'
 
 interface BottomNavProps {
-  activeView: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'profile'
-  onViewChange: (view: 'expenses' | 'analytics' | 'budget' | 'goals' | 'summary' | 'insights' | 'calories' | 'profile') => void
+  activeView: 'expenses' | 'insights' | 'budget' | 'goals' | 'summary' | 'calories' | 'workouts' | 'profile'
+  onViewChange: (view: 'expenses' | 'insights' | 'budget' | 'goals' | 'summary' | 'calories' | 'workouts' | 'profile') => void
 }
 
 const NAV_ITEMS = [
   { id: 'expenses' as const, label: 'Expenses', icon: Wallet },
   { id: 'calories' as const, label: 'Calories', icon: Flame },
+  { id: 'workouts' as const, label: 'Workouts', icon: Dumbbell },
   { id: 'budget' as const, label: 'Budget', icon: Target },
-  { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
   { id: 'insights' as const, label: 'Insights', icon: Lightbulb },
 ]
 

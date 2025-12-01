@@ -4,6 +4,8 @@ export { BudgetView } from './budget-view';
 export { GoalsView } from './goals-view';
 export { SummaryView } from './summary-view';
 export { InsightsView } from './insights-view';
+export { AnalyticsInsightsView } from './analytics-insights-view';
 export { CaloriesView } from './calories-view';
+export { WorkoutsViewPlanfit as WorkoutsView } from './workouts-view-planfit';
 export { RecurringView } from './recurring-view';
 export { ProfileView } from './profile-view';
