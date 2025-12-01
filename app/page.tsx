@@ -45,6 +45,8 @@ import {
     useWorkouts,
     useExercises,
     useCreateWorkout,
+    useCreateTemplate,
+    useUpdateTemplate,
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
@@ -74,6 +76,8 @@ function HomeContent() {
   const { data: workouts = [] } = useWorkouts({ startDate: weekAgo })
   const { data: exercises = [] } = useExercises()
   const { mutateAsync: createWorkout } = useCreateWorkout()
+  const { mutateAsync: createTemplate } = useCreateTemplate()
+  const { mutateAsync: updateTemplate } = useUpdateTemplate()
 
   // Derived loading state
   const loading = expensesLoading || statsLoading || budgetsLoading;
@@ -405,6 +409,12 @@ function HomeContent() {
               onStartWorkout={(template) => {
                 setActiveWorkout(template)
                 hapticFeedback('medium')
+              }}
+              onCreateTemplate={async (templateData) => {
+                await createTemplate(templateData as any)
+              }}
+              onUpdateTemplate={async (id, templateData) => {
+                await updateTemplate({ id, ...templateData } as any)
               }}
             />
           ) : activeView === 'profile' ? (
