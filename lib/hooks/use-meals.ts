@@ -85,6 +85,10 @@ export function useMeals(
   return useQuery({
     queryKey: queryKeys.meals.list(filters),
     queryFn: () => fetchMeals(filters),
+    // Cache for 12 hours - meals rarely change
+    staleTime: 12 * 60 * 60 * 1000,
+    // Keep previous data while fetching new data (prevents loading flicker)
+    placeholderData: (previousData) => previousData,
     ...options,
   })
 }
@@ -126,10 +130,13 @@ export function useCalorieStats(
   return useQuery({
     queryKey: queryKeys.calorieStats.summary(filters),
     queryFn: () => fetchCalorieStats(filters),
-    // Default to fresh data for calorie stats
-    staleTime: 0, // Always refetch to ensure up-to-date stats
+    // Cache for 12 hours - stats only change when meals are added/removed
+    staleTime: 12 * 60 * 60 * 1000,
+    // Keep previous data while fetching (prevents loading flicker)
+    placeholderData: (previousData) => previousData,
+    // Still refetch in background on mount to ensure eventual consistency
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     ...options,
   })
 }
@@ -334,6 +341,9 @@ export function useCalorieGoal() {
   return useQuery({
     queryKey: queryKeys.calorieGoal.detail(),
     queryFn: fetchCalorieGoal,
+    // Goals rarely change - cache for 12 hours
+    staleTime: 12 * 60 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 }
 

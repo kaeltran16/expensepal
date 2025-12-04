@@ -15,9 +15,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
         defaultOptions: {
           queries: {
             // Stale time: how long data is considered fresh before refetching
-            staleTime: 60 * 1000, // 1 minute
+            staleTime: 12 * 60 * 60 * 1000, // 12 hours (default, can be overridden per query)
             // Cache time: how long inactive data stays in cache
-            gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
+            gcTime: 24 * 60 * 60 * 1000, // 24 hours (formerly cacheTime)
             // Retry failed requests
             retry: 1,
             // Refetch on window focus

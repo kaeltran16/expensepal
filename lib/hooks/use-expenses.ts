@@ -59,6 +59,10 @@ export function useExpenses(
   return useQuery({
     queryKey: queryKeys.expenses.list(filters),
     queryFn: () => fetchExpenses(filters),
+    // Cache for 12 hours - expenses rarely change
+    staleTime: 12 * 60 * 60 * 1000,
+    // Keep previous data while fetching new data (prevents loading flicker)
+    placeholderData: (previousData) => previousData,
     ...options,
   })
 }

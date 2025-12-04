@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { Workout, WorkoutTemplate, Exercise } from '../supabase'
+import type { Exercise, Workout, WorkoutTemplate } from '../supabase'
 
 // query keys
 export const workoutKeys = {
@@ -32,6 +32,9 @@ export function useWorkouts(filters: WorkoutFilters = {}) {
       const data = await res.json()
       return data.workouts as Workout[]
     },
+    // Cache for 12 hours - workouts rarely change
+    staleTime: 12 * 60 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 }
 
@@ -45,6 +48,9 @@ export function useWorkoutTemplates() {
       const data = await res.json()
       return data.templates as WorkoutTemplate[]
     },
+    // Cache for 12 hours - templates rarely change
+    staleTime: 12 * 60 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 }
 
@@ -59,6 +65,9 @@ export function useExercises(category?: string) {
       const data = await res.json()
       return data.exercises as Exercise[]
     },
+    // Cache for 24 hours - exercises database rarely changes
+    staleTime: 24 * 60 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 }
 

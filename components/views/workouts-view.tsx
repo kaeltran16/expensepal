@@ -14,18 +14,25 @@ import {
   ArrowLeft,
   Award,
   Calendar,
+  ChevronDown,
   ChevronRight,
   Clock,
   Dumbbell,
   Edit,
   GripVertical,
+  Heart,
+  MoreHorizontal,
   Play,
   Plus,
+  Search,
   Target,
   TrendingUp,
   X
 } from 'lucide-react'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { ExercisePickerSheet } from '@/components/exercise-picker-sheet'
+import { ExerciseDetailSheet } from '@/components/exercise-detail-sheet'
 
 interface WorkoutsViewProps {
   templates: WorkoutTemplate[]
@@ -401,7 +408,25 @@ function WorkoutHistoryCard({
   )
 }
 
-// Template Detail Full Screen (mobile-optimized with drag reordering)
+// Helper function to get ExerciseDB image URL
+function getExerciseImageUrl(exerciseName?: string | null, gifUrl?: string | null): string {
+  // If we have a gif_url from database, use it
+  if (gifUrl) return gifUrl
+  
+  // If no name, return empty (will show fallback icon)
+  if (!exerciseName) return ''
+  
+  // Fallback to ExerciseDB API - format the name for URL
+  const formattedName = exerciseName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '%20')
+  
+  // ExerciseDB uses this format for their CDN
+  return `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${formattedName}/0.jpg`
+}
+
+// Template Detail Full Screen (mobile-optimized with images like screenshot)
 function TemplateDetailSheet({
   template,
   onClose,
@@ -413,13 +438,18 @@ function TemplateDetailSheet({
 }) {
   const [exercises, setExercises] = useState<any[]>([])
   const [editingExercise, setEditingExercise] = useState<number | null>(null)
+  const [duration, setDuration] = useState<'short' | 'normal' | 'long'>('normal')
+  const [condition, setCondition] = useState<number>(100)
+  const [showExercisePicker, setShowExercisePicker] = useState(false)
+  const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (template) {
       // Add unique IDs to exercises if they don't have them
       const exercisesWithIds = ((template.exercises as any[]) || []).map((ex, idx) => ({
         ...ex,
-        _id: ex._id || `ex-${Date.now()}-${idx}`
+        _id: ex._id || `ex-${Date.now()}-${idx}`,
+        weight: ex.weight || 0,
       }))
       setExercises(exercisesWithIds)
     }
@@ -427,17 +457,30 @@ function TemplateDetailSheet({
 
   if (!template) return null
 
+  const totalTime = exercises.reduce((sum, ex) => {
+    const restTime = (ex.rest || 60) * (ex.sets || 3)
+    const workTime = 45 * (ex.sets || 3) // Assume 45s per set
+    return sum + restTime + workTime
+  }, 0)
+
   const handleAddExercise = () => {
-    const newExercise = {
-      _id: `ex-${Date.now()}-${exercises.length}`,
-      name: 'New Exercise',
+    setShowExercisePicker(true)
+    hapticFeedback('light')
+  }
+
+  const handleSelectExercises = (selectedExercises: any[]) => {
+    const newExercises = selectedExercises.map((ex, idx) => ({
+      _id: `ex-${Date.now()}-${exercises.length + idx}`,
+      name: ex.name,
       sets: 3,
       reps: '10-12',
-      rest: 60
-    }
-    setExercises([...exercises, newExercise])
-    setEditingExercise(exercises.length)
-    hapticFeedback('light')
+      weight: 0,
+      rest: 60,
+      image_url: ex.image_url,
+      gif_url: ex.gif_url,
+    }))
+    setExercises([...exercises, ...newExercises])
+    hapticFeedback('medium')
   }
 
   const handleRemoveExercise = (index: number) => {
@@ -475,27 +518,55 @@ function TemplateDetailSheet({
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="flex-1 min-w-0">
-                <h2 className="ios-headline truncate">{template.name}</h2>
-                <p className="ios-caption text-muted-foreground truncate">
-                  {template.description}
-                </p>
+              <div className="flex-1 min-w-0 text-center">
+                <h2 className="ios-headline truncate">Today's Workout</h2>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0"
+              >
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Duration & Condition Selectors */}
+            <div className="px-4 pb-3 flex gap-3">
+              <div className="flex-1 bg-muted/50 rounded-xl p-3">
+                <div className="text-xs text-muted-foreground mb-1">Duration</div>
+                <button className="flex items-center justify-between w-full">
+                  <span className="font-medium capitalize">{duration}</span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="flex-1 bg-muted/50 rounded-xl p-3">
+                <div className="text-xs text-muted-foreground mb-1">Condition</div>
+                <button className="flex items-center justify-between w-full">
+                  <span className="font-medium">{condition}%</span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </button>
               </div>
             </div>
 
             {/* Stats Row */}
-            <div className="px-4 pb-3 flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4" />
-                <span>{template.duration_minutes}min</span>
+            <div className="px-4 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>Total of {exercises.length}</span>
+                <span className="text-muted-foreground/50">|</span>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  <span>{Math.round(totalTime / 60)}min</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Dumbbell className="h-4 w-4" />
-                <span>{exercises.length} exercises</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="h-4 w-4" />
-                <span className="capitalize">{template.difficulty}</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                  <GripVertical className="h-3.5 w-3.5" />
+                  Reorder
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                  <Target className="h-3.5 w-3.5" />
+                  Superset
+                </Button>
               </div>
             </div>
           </div>
@@ -529,13 +600,13 @@ function TemplateDetailSheet({
                 className="space-y-3 pb-4"
               >
                 {exercises.map((exercise: any, index: number) => (
-                  <ExerciseCard
+                  <ExerciseCardWithImage
                     key={exercise._id}
                     exercise={exercise}
                     index={index}
                     isEditing={editingExercise === index}
                     onEdit={() => {
-                      setEditingExercise(index)
+                      setSelectedExerciseIndex(index)
                       hapticFeedback('light')
                     }}
                     onClose={() => setEditingExercise(null)}
@@ -563,21 +634,63 @@ function TemplateDetailSheet({
             <Button
               onClick={onStart}
               disabled={exercises.length === 0}
-              className="w-full min-h-touch ripple-effect gap-2 bg-primary text-primary-foreground shadow-lg"
+              className="w-full min-h-touch ripple-effect gap-2 bg-primary text-primary-foreground shadow-lg rounded-2xl"
               size="lg"
             >
-              <Play className="h-5 w-5" />
               Get Started
             </Button>
           </div>
         </motion.div>
       )}
+
+      {/* Exercise Picker Sheet */}
+      <ExercisePickerSheet
+        isOpen={showExercisePicker}
+        onClose={() => setShowExercisePicker(false)}
+        onSelectExercises={handleSelectExercises}
+      />
+
+      {/* Exercise Detail Sheet */}
+      <ExerciseDetailSheet
+        isOpen={selectedExerciseIndex !== null}
+        exerciseIndex={selectedExerciseIndex}
+        exercise={selectedExerciseIndex !== null ? exercises[selectedExerciseIndex] : null}
+        onClose={() => setSelectedExerciseIndex(null)}
+        onUpdate={(updates) => {
+          if (selectedExerciseIndex !== null) {
+            handleUpdateExercise(selectedExerciseIndex, 'sets', updates.sets)
+            handleUpdateExercise(selectedExerciseIndex, 'weight', updates.weight)
+            handleUpdateExercise(selectedExerciseIndex, 'reps', updates.reps)
+          }
+        }}
+        onDelete={() => {
+          if (selectedExerciseIndex !== null) {
+            handleRemoveExercise(selectedExerciseIndex)
+          }
+        }}
+        onReplace={(newExercise) => {
+          if (selectedExerciseIndex !== null) {
+            // Replace the exercise at the current index with the new one
+            setExercises(prev => prev.map((ex, idx) => 
+              idx === selectedExerciseIndex 
+                ? {
+                    ...ex,
+                    _id: `ex-${Date.now()}`,
+                    name: newExercise.name,
+                    image_url: newExercise.image_url,
+                    gif_url: newExercise.gif_url,
+                  }
+                : ex
+            ))
+          }
+        }}
+      />
     </AnimatePresence>
   )
 }
 
-// Exercise Card Component
-function ExerciseCard({
+// Exercise Card Component with Image (matching screenshot style)
+function ExerciseCardWithImage({
   exercise,
   index,
   isEditing,
@@ -597,6 +710,7 @@ function ExerciseCard({
   onDragStart: () => void
 }) {
   const [isDraggingLocal, setIsDraggingLocal] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   // Editing mode
   if (isEditing) {
@@ -626,8 +740,8 @@ function ExerciseCard({
           />
         </div>
 
-        {/* Sets, Reps, Rest */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Sets, Reps, Weight, Rest */}
+        <div className="grid grid-cols-4 gap-2">
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Sets</Label>
             <Input
@@ -636,6 +750,17 @@ function ExerciseCard({
               onChange={(e) => onUpdate('sets', parseInt(e.target.value))}
               className="h-11 text-center text-base"
               min="1"
+            />
+          </div>
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Weight</Label>
+            <Input
+              type="number"
+              value={exercise.weight || 0}
+              onChange={(e) => onUpdate('weight', parseInt(e.target.value))}
+              placeholder="kg"
+              className="h-11 text-center text-base"
+              min="0"
             />
           </div>
           <div>
@@ -681,7 +806,7 @@ function ExerciseCard({
     )
   }
 
-  // Normal draggable card using Reorder.Item
+  // Normal card with exercise image (like screenshot)
   return (
     <Reorder.Item
       value={exercise}
@@ -694,10 +819,10 @@ function ExerciseCard({
         setTimeout(() => setIsDraggingLocal(false), 100)
         hapticFeedback('medium')
       }}
- whileDrag={{
-        scale: 1.06,
+      whileDrag={{
+        scale: 1.02,
         zIndex: 50,
-        boxShadow: '0 15px 35px -8px rgba(0, 0, 0, 0.35)',
+        boxShadow: '0 15px 35px -8px rgba(0, 0, 0, 0.25)',
       }}
       transition={{
         layout: {
@@ -710,44 +835,54 @@ function ExerciseCard({
       className="relative cursor-grab active:cursor-grabbing"
       style={{ touchAction: 'none' }}
     >
-      <div className="rounded-2xl overflow-hidden bg-card/50 border border-border">
-        <div className="flex items-stretch">
-          {/* Drag Handle */}
-          <div className="flex items-center justify-center w-14 bg-muted/40">
-            <GripVertical className="h-6 w-6 text-muted-foreground/60" />
-          </div>
-
-          {/* Exercise Content */}
-          <button
-            onClick={() => {
-              if (!isDraggingLocal) {
-                onEdit()
-              }
-            }}
-            className="flex-1 flex items-center gap-3 p-4 text-left active:bg-muted/20 transition-all"
-          >
-            {/* Exercise Number */}
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-sm font-semibold text-primary">
-                {index + 1}
-              </span>
+      <div className="ios-card p-3 flex items-center gap-4">
+        {/* Exercise Image */}
+        <div className="w-16 h-16 rounded-xl bg-muted/50 overflow-hidden shrink-0 relative">
+          {!imageError ? (
+            <Image
+              src={exercise.gif_url || exercise.image_url || getExerciseImageUrl(exercise.name)}
+              alt={exercise.name}
+              fill
+              className="object-cover"
+              onError={() => setImageError(true)}
+              unoptimized // For external URLs
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Dumbbell className="h-8 w-8 text-muted-foreground/40" />
             </div>
-
-            {/* Exercise Info */}
-            <div className="flex-1 min-w-0">
-              <div className="font-medium truncate mb-0.5">
-                {exercise.name || 'Exercise'}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {exercise.sets} sets × {exercise.reps} reps
-                {exercise.rest && ` • ${exercise.rest}s rest`}
-              </div>
-            </div>
-
-            {/* Edit Indicator */}
-            <ChevronRight className="h-5 w-5 text-muted-foreground/50 shrink-0" />
-          </button>
+          )}
         </div>
+
+        {/* Exercise Info */}
+        <button
+          onClick={() => {
+            if (!isDraggingLocal) {
+              onEdit()
+            }
+          }}
+          className="flex-1 min-w-0 text-left"
+        >
+          <h4 className="font-semibold text-base mb-1 truncate">
+            {exercise.name || 'Exercise'}
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            {exercise.sets}Sets{exercise.weight > 0 && ` X ${exercise.weight}kg`} X {exercise.reps}Reps
+          </p>
+        </button>
+
+        {/* More Options */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation()
+            onEdit()
+          }}
+          className="h-8 w-8 shrink-0"
+        >
+          <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+        </Button>
       </div>
     </Reorder.Item>
   )
