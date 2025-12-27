@@ -53,6 +53,7 @@ export function TemplateDetailSheet({
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null)
   const [isReorderMode, setIsReorderMode] = useState(false)
+  const [pendingReorder, setPendingReorder] = useState<any[] | null>(null)
 
   useEffect(() => {
     if (template) {
@@ -105,14 +106,16 @@ export function TemplateDetailSheet({
     }))
     const updated = [...exercises, ...newExercises]
     setExercises(updated)
-    await saveExercises(updated)
+    // Don't await - save in background for instant UI feedback
+    saveExercises(updated).catch(err => console.error('Failed to save:', err))
     hapticFeedback('medium')
   }
 
   const handleRemoveExercise = async (index: number) => {
     const updated = exercises.filter((_, i) => i !== index)
     setExercises(updated)
-    await saveExercises(updated)
+    // Don't await - save in background for instant UI feedback
+    saveExercises(updated).catch(err => console.error('Failed to save:', err))
     if (editingExercise === index) {
       setEditingExercise(null)
     }
@@ -123,7 +126,7 @@ export function TemplateDetailSheet({
     const newExercises = [...exercises]
     newExercises[index] = { ...newExercises[index], [field]: value }
     setExercises(newExercises)
-    await saveExercises(newExercises)
+    // Don't save immediately - let ExerciseDetailSheet handle saving on close
   }
 
   return (
@@ -149,16 +152,21 @@ export function TemplateDetailSheet({
                     hapticFeedback('light')
                   }}
                   className="h-10 w-10 shrink-0"
+                  aria-label="Go back"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div className="flex-1 min-w-0 text-center">
-                  <h2 className="ios-headline truncate">{template.name}</h2>
+                <div className="flex-1 min-w-0">
+                  <h2 className="ios-headline truncate text-left">{template.name}</h2>
+                  {isWorkoutActive && (
+                    <p className="text-xs text-muted-foreground">Active workout</p>
+                  )}
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-10 w-10 shrink-0"
+                  aria-label="More options"
                 >
                   <MoreHorizontal className="h-5 w-5" />
                 </Button>
@@ -193,19 +201,35 @@ export function TemplateDetailSheet({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button 
-                    variant={isReorderMode ? "default" : "outline"} 
-                    size="sm" 
-                    className="gap-1.5 h-8 text-xs"
-                    onClick={() => {
+                  <Button
+                    variant={isReorderMode ? "default" : "outline"}
+                    size="sm"
+                    className={`gap-1.5 min-h-touch h-9 text-xs transition-all ${
+                      isReorderMode ? 'bg-primary text-primary-foreground shadow-md' : ''
+                    }`}
+                    onClick={async () => {
+                      if (isReorderMode && pendingReorder) {
+                        // Exiting reorder mode - save the changes
+                        await saveExercises(pendingReorder)
+                        setPendingReorder(null)
+                      }
                       setIsReorderMode(!isReorderMode)
                       hapticFeedback('light')
                     }}
                   >
-                    <GripVertical className="h-3.5 w-3.5" />
-                    {isReorderMode ? 'Done' : 'Reorder'}
+                    {isReorderMode ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Done Reordering
+                      </>
+                    ) : (
+                      <>
+                        <GripVertical className="h-3.5 w-3.5" />
+                        Reorder
+                      </>
+                    )}
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                  <Button variant="outline" size="sm" className="gap-1.5 min-h-touch h-9 text-xs">
                     <Target className="h-3.5 w-3.5" />
                     Superset
                   </Button>
@@ -242,7 +266,7 @@ export function TemplateDetailSheet({
                       values={exercises}
                       onReorder={(newOrder) => {
                         setExercises(newOrder)
-                        saveExercises(newOrder)
+                        setPendingReorder(newOrder) // Save for later
                       }}
                       className="space-y-3 mb-4"
                     >
@@ -336,7 +360,11 @@ export function TemplateDetailSheet({
             isOpen={selectedExerciseIndex !== null}
             exerciseIndex={selectedExerciseIndex}
             exercise={selectedExerciseIndex !== null ? exercises[selectedExerciseIndex] : null}
-            onClose={() => setSelectedExerciseIndex(null)}
+            onClose={async () => {
+              // Save changes when closing the detail sheet
+              await saveExercises(exercises)
+              setSelectedExerciseIndex(null)
+            }}
             onUpdate={(updates) => {
               if (selectedExerciseIndex !== null) {
                 handleUpdateExercise(selectedExerciseIndex, 'sets', updates.sets)

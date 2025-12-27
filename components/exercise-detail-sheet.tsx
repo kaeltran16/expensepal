@@ -269,9 +269,11 @@ export function ExerciseDetailSheet({
                         {/* Weight Input */}
                         <input
                           type="number"
+                          inputMode="decimal"
+                          step="0.5"
                           value={set.weight || ''}
-                          onChange={(e) => handleSetValue(set.id, 'weight', parseInt(e.target.value) || 0)}
-                          className="w-16 h-11 text-center bg-muted border-0 rounded-xl font-semibold text-foreground focus:ring-2 focus:ring-primary"
+                          onChange={(e) => handleSetValue(set.id, 'weight', parseFloat(e.target.value) || 0)}
+                          className="w-20 h-12 text-center bg-muted border-0 rounded-xl font-semibold text-foreground focus:ring-2 focus:ring-primary min-h-touch"
                           placeholder="0"
                         />
                         <span className="text-sm text-muted-foreground">kg</span>
@@ -279,9 +281,11 @@ export function ExerciseDetailSheet({
                         {/* Reps Input */}
                         <input
                           type="number"
+                          inputMode="numeric"
+                          step="1"
                           value={set.reps || ''}
                           onChange={(e) => handleSetValue(set.id, 'reps', parseInt(e.target.value) || 0)}
-                          className="w-16 h-11 text-center bg-muted border-0 rounded-xl font-semibold text-foreground focus:ring-2 focus:ring-primary"
+                          className="w-20 h-12 text-center bg-muted border-0 rounded-xl font-semibold text-foreground focus:ring-2 focus:ring-primary min-h-touch"
                           placeholder="0"
                         />
                         <span className="text-sm text-muted-foreground">reps</span>
@@ -290,7 +294,7 @@ export function ExerciseDetailSheet({
                         <button
                           onClick={() => handleRemoveSet(set.id)}
                           disabled={sets.length <= 1}
-                          className="h-11 w-11 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-30 ml-auto"
+                          className="min-h-touch min-w-[48px] h-12 w-12 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed ml-auto"
                         >
                           <Trash2 className="h-5 w-5" />
                         </button>

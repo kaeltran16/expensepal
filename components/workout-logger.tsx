@@ -53,6 +53,7 @@ export function WorkoutLogger({
   const [detectedPRs, setDetectedPRs] = useState<any[]>([])
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [editingSetNumber, setEditingSetNumber] = useState<number | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // initialize exercise logs from template
   useEffect(() => {
@@ -171,19 +172,27 @@ export function WorkoutLogger({
   }
 
   const handleFinishWorkout = async () => {
-    const endTime = new Date()
-    const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+    if (isSubmitting) return
 
-    const workoutData = {
-      template_id: template.id,
-      started_at: startTime.toISOString(),
-      completed_at: endTime.toISOString(),
-      duration_minutes: durationMinutes,
-      exerciseLogs
+    setIsSubmitting(true)
+    try {
+      const endTime = new Date()
+      const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+
+      const workoutData = {
+        template_id: template.id,
+        started_at: startTime.toISOString(),
+        completed_at: endTime.toISOString(),
+        duration_minutes: durationMinutes,
+        exerciseLogs
+      }
+
+      await onComplete(workoutData)
+      hapticFeedback('heavy')
+    } catch (error) {
+      console.error('Failed to finish workout:', error)
+      setIsSubmitting(false)
     }
-
-    await onComplete(workoutData)
-    hapticFeedback('heavy')
   }
 
 
@@ -220,26 +229,33 @@ export function WorkoutLogger({
           </Button>
           <div className="text-center flex-1">
             <h2 className="font-semibold">{template.name}</h2>
-            <p className="text-sm text-muted-foreground">
-              exercise {currentExerciseIndex + 1} of {exerciseLogs.length}
-            </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <span className="font-medium text-primary">
+                Exercise {currentExerciseIndex + 1}
+              </span>
+              <span>/</span>
+              <span>{exerciseLogs.length}</span>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="font-medium">{Math.round(progress)}%</span>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleFinishWorkout}
-            className="ios-touch text-green-600"
+            disabled={isSubmitting}
+            className="ios-touch text-green-600 disabled:opacity-50"
           >
             <Check className="h-5 w-5" />
           </Button>
         </div>
 
         {/* progress bar */}
-        <div className="h-1 bg-muted">
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            className="h-full bg-primary"
+            className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full"
             transition={{ duration: 0.3 }}
           />
         </div>
@@ -327,52 +343,86 @@ export function WorkoutLogger({
         )}
       </AnimatePresence>
 
-      {/* rest timer overlay */}
+      {/* rest timer overlay - semi-transparent to show workout behind */}
       <AnimatePresence>
         {isResting && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-20 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 flex items-center justify-center p-4"
+            onClick={(e) => {
+              // Allow clicking background to skip rest
+              if (e.target === e.currentTarget) {
+                setIsResting(false)
+                setRestTimer(0)
+                hapticFeedback('medium')
+              }
+            }}
           >
-            <div className="text-center max-w-md w-full">
+            <motion.div
+              className="text-center max-w-md w-full bg-background/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl"
+              initial={{ y: 20 }}
+              animate={{ y: 0 }}
+            >
               <Timer className="h-16 w-16 mx-auto mb-4 text-primary animate-pulse" />
               <div className="text-7xl font-bold mb-2 tabular-nums">{restTimer}s</div>
-              <p className="text-lg text-muted-foreground mb-8">Rest Time</p>
+              <p className="text-lg text-muted-foreground mb-2">Rest Time</p>
+              {currentExercise && (
+                <p className="text-sm text-muted-foreground/70 mb-6">
+                  Next: {currentExercise.exercise_name}
+                </p>
+              )}
 
-              {/* Quick time adjustment buttons */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
+              {/* Slider for time adjustment */}
+              <div className="mb-6">
+                <input
+                  type="range"
+                  min="0"
+                  max="300"
+                  step="5"
+                  value={restTimer}
+                  onChange={(e) => setRestTimer(parseInt(e.target.value))}
+                  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                  <span>0s</span>
+                  <span>5min</span>
+                </div>
+              </div>
+
+              {/* Quick adjustment buttons */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="sm"
                   onClick={() => {
                     setRestTimer(prev => Math.max(0, prev - 15))
                     hapticFeedback('light')
                   }}
-                  className="h-14 text-base font-semibold"
+                  className="min-h-touch text-sm"
                 >
                   -15s
                 </Button>
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="sm"
                   onClick={() => {
-                    setRestTimer(prev => prev + 30)
+                    setRestTimer(prev => Math.min(300, prev + 30))
                     hapticFeedback('light')
                   }}
-                  className="h-14 text-base font-semibold"
+                  className="min-h-touch text-sm"
                 >
                   +30s
                 </Button>
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="sm"
                   onClick={() => {
-                    setRestTimer(prev => prev + 60)
+                    setRestTimer(prev => Math.min(300, prev + 60))
                     hapticFeedback('light')
                   }}
-                  className="h-14 text-base font-semibold"
+                  className="min-h-touch text-sm"
                 >
                   +1min
                 </Button>
@@ -390,44 +440,100 @@ export function WorkoutLogger({
               >
                 Skip Rest
               </Button>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* content */}
-      <div className="p-4 pb-32 space-y-6">
+      {/* content - optimized single scroll context */}
+      <div className="p-4 pb-24 space-y-6 overflow-y-auto flex-1">
         {/* exercise info */}
         <div className={`ios-card p-6 text-center relative overflow-hidden ${
           currentExercise.sets.length >= currentExercise.target_sets 
             ? 'ring-2 ring-green-500/50 bg-green-500/5' 
             : ''
         }`}>
-          {/* Completed badge */}
+          {/* Completed badge with confetti animation */}
           {currentExercise.sets.length >= currentExercise.target_sets && (
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', bounce: 0.5 }}
-              className="absolute top-3 right-3 flex items-center gap-1.5 bg-green-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold"
-            >
-              <Check className="h-3.5 w-3.5" />
-              Complete
-            </motion.div>
+            <>
+              <motion.div
+                initial={{ scale: 0, opacity: 0, rotate: -180 }}
+                animate={{
+                  scale: [0, 1.2, 1],
+                  opacity: 1,
+                  rotate: [- 180, 10, 0]
+                }}
+                transition={{
+                  type: 'spring',
+                  bounce: 0.6,
+                  duration: 0.8
+                }}
+                className="absolute top-3 right-3 flex items-center gap-1.5 bg-gradient-to-r from-green-500 to-green-600 text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-lg"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </motion.div>
+                Complete
+              </motion.div>
+              {/* Confetti particles */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ scale: 0, x: 0, y: 0 }}
+                  animate={{
+                    scale: [0, 1, 0],
+                    x: Math.cos((i / 8) * Math.PI * 2) * 80,
+                    y: Math.sin((i / 8) * Math.PI * 2) * 80,
+                    opacity: [0, 1, 0]
+                  }}
+                  transition={{ duration: 1, delay: 0.2 }}
+                  className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full"
+                  style={{
+                    background: ['#10b981', '#22c55e', '#86efac', '#fbbf24'][i % 4]
+                  }}
+                />
+              ))}
+            </>
           )}
           <h1 className="text-3xl font-bold mb-2">{currentExercise.exercise_name}</h1>
           <p className="text-muted-foreground">
             {currentExercise.target_sets} sets × {currentExercise.target_reps} reps
           </p>
-          {/* Completion message */}
+          {/* Completion message with bounce */}
           {currentExercise.sets.length >= currentExercise.target_sets && (
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-green-600 font-medium mt-3 text-sm"
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1
+              }}
+              transition={{
+                type: 'spring',
+                bounce: 0.5,
+                delay: 0.3
+              }}
+              className="mt-3"
             >
-              🎉 All sets completed! Move to next exercise.
-            </motion.p>
+              <p className="text-green-600 font-bold text-base flex items-center justify-center gap-2">
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 1 }}
+                >
+                  🎉
+                </motion.span>
+                All sets completed!
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 1, delay: 0.2 }}
+                >
+                  💪
+                </motion.span>
+              </p>
+            </motion.div>
           )}
         </div>
 
@@ -500,11 +606,25 @@ export function WorkoutLogger({
           {currentExerciseIndex === exerciseLogs.length - 1 ? (
             <Button
               onClick={handleFinishWorkout}
-              disabled={currentExercise.sets.length === 0}
-              className="flex-1 min-h-touch bg-green-600 hover:bg-green-700 text-white gap-2"
+              disabled={currentExercise.sets.length === 0 || isSubmitting}
+              className="flex-1 min-h-touch bg-green-600 hover:bg-green-700 text-white gap-2 disabled:opacity-50"
             >
-              <Check className="h-4 w-4" />
-              Finish Workout
+              {isSubmitting ? (
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Timer className="h-4 w-4" />
+                  </motion.div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Finish Workout
+                </>
+              )}
             </Button>
           ) : (
             <Button

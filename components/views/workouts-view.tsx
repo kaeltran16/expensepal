@@ -49,13 +49,15 @@ export function WorkoutsView({
   const [weekOffset, setWeekOffset] = useState(0)
   const [showAnalytics, setShowAnalytics] = useState(false)
 
-  // Auto-show template sheet when activeWorkout is set (coming from workout logger)
-  // Use fresh template data from templates array to ensure we have the latest exercise order
-  const freshActiveWorkout = activeWorkout 
-    ? templates.find(t => t.id === activeWorkout.id) || activeWorkout
-    : null
-  const templateToShow = freshActiveWorkout || selectedTemplate
+  // Only show template sheet when explicitly selected, not automatically for active workouts
+  // Active workouts should stay in the WorkoutLogger, not auto-open the template sheet
+  const templateToShow = selectedTemplate
   const isWorkoutActive = !!activeWorkout
+
+  // If user explicitly wants to edit an active workout's exercises, use fresh template data
+  const templateToShowWithFreshData = templateToShow && activeWorkout && templateToShow.id === activeWorkout.id
+    ? templates.find(t => t.id === activeWorkout.id) || templateToShow
+    : templateToShow
 
   console.log('WorkoutsView - activeWorkout:', activeWorkout?.name, 'isWorkoutActive:', isWorkoutActive)
 
@@ -165,13 +167,10 @@ export function WorkoutsView({
 
       {/* Template Detail Sheet */}
       <TemplateDetailSheet
-        template={templateToShow}
+        template={templateToShowWithFreshData}
         onClose={() => {
           setSelectedTemplate(null)
-          // If we were editing an active workout, navigate back to it
-          if (isWorkoutActive && onReturnToWorkout) {
-            onReturnToWorkout()
-          }
+          // Don't automatically navigate away - let user stay on workouts tab
         }}
         onStart={() => {
           if (templateToShow) {

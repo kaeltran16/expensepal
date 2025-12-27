@@ -71,12 +71,13 @@ export function WorkoutCalendar({
           variant="ghost"
           size="icon"
           onClick={handlePrevWeek}
-          className="h-8 w-8"
+          className="h-10 w-10 min-h-touch"
+          aria-label="Previous week"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5" />
         </Button>
 
-        <h3 className="ios-headline">
+        <h3 className="ios-headline text-center flex-1">
           {weekOffset === 0 ? 'This Week' : format(weekDates[0], 'MMM d')} - {format(weekDates[6], 'MMM d')}
         </h3>
 
@@ -84,9 +85,10 @@ export function WorkoutCalendar({
           variant="ghost"
           size="icon"
           onClick={handleNextWeek}
-          className="h-8 w-8"
+          className="h-10 w-10 min-h-touch"
+          aria-label="Next week"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
 

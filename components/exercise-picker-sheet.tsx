@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { useExercises } from '@/lib/hooks/use-workouts'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Dumbbell, Heart, Search, X } from 'lucide-react'
+import { CheckSquare, Dumbbell, Heart, Search, Square, X } from 'lucide-react'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
 
@@ -59,6 +59,7 @@ export function ExercisePickerSheet({
   const [selectedEquipment, setSelectedEquipment] = useState('all')
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'recent'>('all')
+  const [multiSelectMode, setMultiSelectMode] = useState(false) // Toggle for multi-select
 
   const { data: exercises = [], isLoading } = useExercises()
 
@@ -91,6 +92,22 @@ export function ExercisePickerSheet({
   }, [exercises, searchQuery, selectedArea, selectedEquipment])
 
   const toggleExercise = (exerciseId: string) => {
+    if (!multiSelectMode) {
+      // Quick add mode: immediately add the exercise
+      const exercise = exercises.find((e: Exercise) => e.id === exerciseId)
+      if (exercise) {
+        onSelectExercises([exercise])
+        setSelectedExercises(new Set())
+        setSearchQuery('')
+        setSelectedArea('all')
+        setSelectedEquipment('all')
+        onClose()
+        hapticFeedback('medium')
+        return
+      }
+    }
+
+    // Multi-select mode: toggle selection
     setSelectedExercises(prev => {
       const newSet = new Set(prev)
       if (newSet.has(exerciseId)) {
@@ -116,6 +133,7 @@ export function ExercisePickerSheet({
     setSearchQuery('')
     setSelectedArea('all')
     setSelectedEquipment('all')
+    setMultiSelectMode(false) // Reset to quick add mode
     onClose()
   }
 
@@ -144,17 +162,37 @@ export function ExercisePickerSheet({
           >
             {/* Header */}
             <div className="px-5 pt-6 pb-4 border-b">
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-bold">Add Exercise</h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleClose}
-                  className="h-10 w-10 -mr-2"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={multiSelectMode ? "default" : "ghost"}
+                    size="icon"
+                    onClick={() => {
+                      setMultiSelectMode(!multiSelectMode)
+                      if (multiSelectMode) {
+                        setSelectedExercises(new Set())
+                      }
+                      hapticFeedback('light')
+                    }}
+                    className="h-10 w-10"
+                  >
+                    {multiSelectMode ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleClose}
+                    className="h-10 w-10 -mr-2"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
+              {/* Mode hint */}
+              <p className="text-xs text-muted-foreground mb-3">
+                {multiSelectMode ? '✓ Multi-select mode: Tap to select, then click Done' : '👆 Tap any exercise to add instantly'}
+              </p>
 
               {/* Search */}
               <div className="relative">
@@ -293,23 +331,26 @@ export function ExercisePickerSheet({
                       exercise={exercise}
                       isSelected={selectedExercises.has(exercise.id)}
                       onToggle={() => toggleExercise(exercise.id)}
+                      showCheckmark={multiSelectMode}
                     />
                   ))}
                 </motion.div>
               )}
             </div>
 
-            {/* Done Button */}
-            <div className="p-5 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 safe-bottom">
-              <Button
-                onClick={handleDone}
-                disabled={selectedExercises.size === 0}
-                className="w-full h-14 rounded-2xl bg-primary text-primary-foreground text-base font-semibold"
-                size="lg"
-              >
-                Done ({selectedExercises.size} selected)
-              </Button>
-            </div>
+            {/* Done Button - Only show in multi-select mode */}
+            {multiSelectMode && (
+              <div className="p-5 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 safe-bottom">
+                <Button
+                  onClick={handleDone}
+                  disabled={selectedExercises.size === 0}
+                  className="w-full h-14 rounded-2xl bg-primary text-primary-foreground text-base font-semibold"
+                  size="lg"
+                >
+                  Done ({selectedExercises.size} selected)
+                </Button>
+              </div>
+            )}
           </motion.div>
         </>
       )}
@@ -321,18 +362,20 @@ export function ExercisePickerSheet({
 function ExerciseListItem({
   exercise,
   isSelected,
-  onToggle
+  onToggle,
+  showCheckmark = false
 }: {
   exercise: Exercise
   isSelected: boolean
   onToggle: () => void
+  showCheckmark?: boolean
 }) {
   const [imageError, setImageError] = useState(false)
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { type: 'spring', stiffness: 300, damping: 30 }
     }
@@ -373,18 +416,26 @@ function ExerciseListItem({
         </p>
       </div>
 
-      {/* Favorite Button */}
+      {/* Selection indicator */}
       <motion.div
-        animate={{ 
+        animate={{
           scale: isSelected ? [1, 1.2, 1] : 1,
         }}
         transition={{ duration: 0.2 }}
       >
-        <Heart
-          className={`h-6 w-6 shrink-0 transition-colors ${
-            isSelected ? 'fill-primary text-primary' : 'text-muted-foreground/50'
-          }`}
-        />
+        {showCheckmark ? (
+          <CheckSquare
+            className={`h-6 w-6 shrink-0 transition-colors ${
+              isSelected ? 'fill-primary text-primary' : 'text-muted-foreground/30'
+            }`}
+          />
+        ) : (
+          <Heart
+            className={`h-6 w-6 shrink-0 transition-colors ${
+              isSelected ? 'fill-primary text-primary' : 'text-muted-foreground/50'
+            }`}
+          />
+        )}
       </motion.div>
     </motion.button>
   )
