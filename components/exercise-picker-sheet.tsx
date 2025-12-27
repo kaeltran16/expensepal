@@ -246,7 +246,7 @@ export function ExercisePickerSheet({
             </div>
 
             {/* Exercise List */}
-            <div className="flex-1 overflow-y-auto px-5 pb-4">
+            <div className="flex-1 overflow-y-auto px-5 py-4">
               {isLoading ? (
                 <div className="space-y-4">
                   {[1, 2, 3, 4, 5].map((i) => (
@@ -275,8 +275,8 @@ export function ExercisePickerSheet({
                   <p className="text-muted-foreground text-lg">No exercises found</p>
                 </motion.div>
               ) : (
-                <motion.div 
-                  className="space-y-3"
+                <motion.div
+                  className="space-y-3 pb-6"
                   initial="hidden"
                   animate="visible"
                   variants={{
@@ -300,7 +300,7 @@ export function ExercisePickerSheet({
             </div>
 
             {/* Done Button */}
-            <div className="p-5 border-t bg-background safe-bottom">
+            <div className="p-5 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 safe-bottom">
               <Button
                 onClick={handleDone}
                 disabled={selectedExercises.size === 0}

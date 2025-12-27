@@ -1,26 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  X,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Dumbbell,
-  Plus,
-  Minus,
-  Play,
-  Pause,
-  SkipForward
-} from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { hapticFeedback } from '@/lib/utils'
+import { useExerciseHistory } from '@/lib/hooks'
 import type { WorkoutTemplate } from '@/lib/supabase'
+import { hapticFeedback } from '@/lib/utils'
+import { detectPersonalRecords, getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Check, Minus, Plus, Timer, TrendingUp, X, Zap } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 interface Set {
   set_number: number
@@ -44,28 +33,35 @@ interface WorkoutLoggerProps {
   exercises: { id: string; name: string }[]
   onComplete: (workoutData: any) => Promise<void>
   onCancel: () => void
+  onEditExercises?: () => void
+  onExerciseLogsChange?: (logs: ExerciseLog[]) => void
 }
 
 export function WorkoutLogger({
   template,
   exercises,
   onComplete,
-  onCancel
+  onCancel,
+  onEditExercises,
+  onExerciseLogsChange
 }: WorkoutLoggerProps) {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
   const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>([])
-  const [restTimer, setRestTimer] = useState<number | null>(null)
+  const [restTimer, setRestTimer] = useState<number>(0)
+  const [isResting, setIsResting] = useState(false)
   const [startTime] = useState(new Date())
-  const [showQuitDialog, setShowQuitDialog] = useState(false)
+  const [detectedPRs, setDetectedPRs] = useState<any[]>([])
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [editingSetNumber, setEditingSetNumber] = useState<number | null>(null)
 
-  // Initialize exercise logs from template
+  // initialize exercise logs from template
   useEffect(() => {
     const templateExercises = (template.exercises as any[]) || []
     const logs: ExerciseLog[] = templateExercises.map((te) => {
       const exercise = exercises.find((e) => e.id === te.exercise_id)
       return {
         exercise_id: te.exercise_id,
-        exercise_name: exercise?.name || 'Unknown',
+        exercise_name: exercise?.name || 'unknown',
         sets: [],
         target_sets: te.sets || 3,
         target_reps: te.reps || '10',
@@ -73,44 +69,103 @@ export function WorkoutLogger({
       }
     })
     setExerciseLogs(logs)
+    onExerciseLogsChange?.(logs)
   }, [template, exercises])
 
+  // rest timer countdown
+  useEffect(() => {
+    if (isResting && restTimer > 0) {
+      const interval = setInterval(() => {
+        setRestTimer((prev) => {
+          if (prev <= 1) {
+            setIsResting(false)
+            hapticFeedback('medium')
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [isResting, restTimer])
+
   const currentExercise = exerciseLogs[currentExerciseIndex]
-  const progress = ((currentExerciseIndex + 1) / exerciseLogs.length) * 100
-  const isLastExercise = currentExerciseIndex === exerciseLogs.length - 1
 
   const handleAddSet = (reps: number, weight: number) => {
     if (!currentExercise) return
 
-    const newSet: Set = {
-      set_number: currentExercise.sets.length + 1,
-      reps,
-      weight,
-      completed: true,
-      rest: currentExercise.target_rest
-    }
+    const setNumber = editingSetNumber || currentExercise.sets.length + 1
 
     const updatedLogs = [...exerciseLogs]
-    updatedLogs[currentExerciseIndex].sets.push(newSet)
-    setExerciseLogs(updatedLogs)
 
-    // Start rest timer
-    setRestTimer(currentExercise.target_rest)
-    hapticFeedback('medium')
+    if (editingSetNumber) {
+      // Update existing set
+      const setIndex = updatedLogs[currentExerciseIndex].sets.findIndex(s => s.set_number === editingSetNumber)
+      if (setIndex >= 0) {
+        updatedLogs[currentExerciseIndex].sets[setIndex] = {
+          ...updatedLogs[currentExerciseIndex].sets[setIndex],
+          reps,
+          weight
+        }
+      }
+      setEditingSetNumber(null)
+    } else {
+      // Add new set
+      const newSet: Set = {
+        set_number: setNumber,
+        reps,
+        weight,
+        completed: true,
+        rest: currentExercise.target_rest
+      }
+      updatedLogs[currentExerciseIndex].sets.push(newSet)
+
+      // Check if this was the last set of the current exercise
+      const completedAllSets = setNumber >= currentExercise.target_sets
+
+      if (completedAllSets && currentExerciseIndex < exerciseLogs.length - 1) {
+        // Auto-advance to next exercise after a short delay
+        setTimeout(() => {
+          handleNextExercise()
+        }, 800)
+        hapticFeedback('medium')
+      } else if (!completedAllSets) {
+        // Start rest timer if not last set
+        setRestTimer(currentExercise.target_rest)
+        setIsResting(true)
+      }
+    }
+
+    setExerciseLogs(updatedLogs)
+    onExerciseLogsChange?.(updatedLogs)
+    hapticFeedback('light')
+  }
+
+  const handleDeleteSet = (setNumber: number) => {
+    const updatedLogs = [...exerciseLogs]
+    updatedLogs[currentExerciseIndex].sets = updatedLogs[currentExerciseIndex].sets
+      .filter(s => s.set_number !== setNumber)
+      .map((s, idx) => ({ ...s, set_number: idx + 1 })) // Renumber remaining sets
+    setExerciseLogs(updatedLogs)
+    onExerciseLogsChange?.(updatedLogs)
+    setEditingSetNumber(null)
+    hapticFeedback('light')
   }
 
   const handleNextExercise = () => {
     if (currentExerciseIndex < exerciseLogs.length - 1) {
       setCurrentExerciseIndex(currentExerciseIndex + 1)
-      setRestTimer(null)
-      hapticFeedback('light')
+      setIsResting(false)
+      setRestTimer(0)
+      hapticFeedback('medium')
     }
   }
 
   const handlePreviousExercise = () => {
     if (currentExerciseIndex > 0) {
       setCurrentExerciseIndex(currentExerciseIndex - 1)
-      setRestTimer(null)
+      setIsResting(false)
+      setRestTimer(0)
       hapticFeedback('light')
     }
   }
@@ -131,514 +186,561 @@ export function WorkoutLogger({
     hapticFeedback('heavy')
   }
 
-  if (!currentExercise) return null
 
-  const completedSets = currentExercise.sets.length
-  const targetSets = currentExercise.target_sets
+  if (!currentExercise) {
+    return null
+  }
 
-  return (
-    <>
-      {/* Full screen workout UI */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-background z-50 flex flex-col"
-      >
-        {/* Header */}
-        <div className="safe-top ios-card border-b border-border/50 px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setShowQuitDialog(true)
-                hapticFeedback('light')
-              }}
-              aria-label="Cancel workout"
-            >
-              <X className="h-5 w-5" />
-            </Button>
+  const progress = ((currentExerciseIndex + 1) / exerciseLogs.length) * 100
 
-            <div className="text-center flex-1">
-              <h2 className="ios-headline truncate">{template.name}</h2>
-              <p className="ios-caption text-muted-foreground">
-                Exercise {currentExerciseIndex + 1} of {exerciseLogs.length}
-              </p>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleFinishWorkout}
-              aria-label="Finish workout"
-            >
-              <Check className="h-5 w-5 text-green-500" />
-            </Button>
-          </div>
-
-          {/* Progress bar */}
-          <Progress value={progress} className="h-1" />
-        </div>
-
-        {/* Exercise Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {/* Exercise Header */}
-          <motion.div
-            key={currentExerciseIndex}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-4"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Dumbbell className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="ios-title2 mb-1">{currentExercise.exercise_name}</h3>
-                <p className="ios-body text-muted-foreground">
-                  Target: {currentExercise.target_sets} sets × {currentExercise.target_reps} reps
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Sets Tracking */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="ios-headline">Sets</h4>
-              <Badge variant="secondary">
-                {completedSets}/{targetSets} completed
-              </Badge>
-            </div>
-
-            {/* Completed sets */}
-            {currentExercise.sets.map((set) => (
-              <CompletedSetRow
-                key={set.set_number}
-                setNumber={set.set_number}
-                reps={set.reps}
-                weight={set.weight}
-              />
-            ))}
-
-            {/* Next set input */}
-            {completedSets < targetSets && (
-              <SetInputForm
-                setNumber={completedSets + 1}
-                targetReps={currentExercise.target_reps}
-                onAddSet={handleAddSet}
-              />
-            )}
-
-            {/* Add another set beyond target */}
-            {completedSets >= targetSets && (
-              <Button
-                variant="outline"
-                className="w-full min-h-touch ripple-effect gap-2"
-                onClick={() => {
-                  // Allow adding more sets
-                  const newSet: Set = {
-                    set_number: completedSets + 1,
-                    reps: 10,
-                    weight: 20,
-                    completed: false,
-                    rest: currentExercise.target_rest
-                  }
-                  const updatedLogs = [...exerciseLogs]
-                  updatedLogs[currentExerciseIndex].target_sets += 1
-                  setExerciseLogs(updatedLogs)
-                  hapticFeedback('light')
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                Add Another Set
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Navigation */}
-        <div className="safe-bottom border-t border-border/50 p-4 glass">
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={handlePreviousExercise}
-              disabled={currentExerciseIndex === 0}
-              className="flex-1 min-h-touch ripple-effect gap-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              onClick={isLastExercise ? handleFinishWorkout : handleNextExercise}
-              disabled={completedSets === 0}
-              className="flex-1 min-h-touch ripple-effect gap-2"
-            >
-              {isLastExercise ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Finish
-                </>
-              ) : (
-                <>
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Rest Timer Overlay */}
-      <RestTimerOverlay
-        seconds={restTimer}
-        onComplete={() => {
-          setRestTimer(null)
-          hapticFeedback('light')
-        }}
-        onSkip={() => {
-          setRestTimer(null)
-          hapticFeedback('light')
-        }}
-      />
-
-      {/* Quit Confirmation Dialog */}
-      <QuitDialog
-        isOpen={showQuitDialog}
-        onConfirm={() => {
-          onCancel()
-          hapticFeedback('medium')
-        }}
-        onCancel={() => {
-          setShowQuitDialog(false)
-          hapticFeedback('light')
-        }}
-      />
-    </>
-  )
-}
-
-// Completed Set Row
-function CompletedSetRow({
-  setNumber,
-  reps,
-  weight
-}: {
-  setNumber: number
-  reps: number
-  weight: number
-}) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="ios-card p-4 flex items-center gap-4 bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-900"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-background z-50 overflow-auto"
     >
-      <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+      {/* header */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border/50">
+        <div className="flex items-center justify-between p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (onEditExercises) {
+                onEditExercises()
+                hapticFeedback('light')
+              } else {
+                setShowCancelConfirm(true)
+              }
+            }}
+            className="ios-touch"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+          <div className="text-center flex-1">
+            <h2 className="font-semibold">{template.name}</h2>
+            <p className="text-sm text-muted-foreground">
+              exercise {currentExerciseIndex + 1} of {exerciseLogs.length}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleFinishWorkout}
+            className="ios-touch text-green-600"
+          >
+            <Check className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* progress bar */}
+        <div className="h-1 bg-muted">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            className="h-full bg-primary"
+            transition={{ duration: 0.3 }}
+          />
+        </div>
       </div>
-      <div className="flex-1">
-        <span className="ios-subheadline">Set {setNumber}</span>
+
+      {/* pr celebration overlay */}
+      <AnimatePresence>
+        {detectedPRs.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-30 flex items-center justify-center"
+            onClick={() => setDetectedPRs([])}
+          >
+            <div className="text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', bounce: 0.6 }}
+                className="text-8xl mb-4"
+              >
+                🏆
+              </motion.div>
+              <h2 className="ios-title1 mb-2">new personal record!</h2>
+              {detectedPRs.map((pr, idx) => (
+                <p key={idx} className="ios-body text-primary">
+                  {pr.type}: {pr.value} {pr.unit}
+                </p>
+              ))}
+              <Button
+                onClick={() => setDetectedPRs([])}
+                className="mt-6 min-h-touch"
+              >
+                awesome!
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* cancel workout confirmation dialog */}
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center p-4"
+            onClick={() => setShowCancelConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="ios-card p-6 max-w-sm w-full"
+            >
+              <h3 className="text-xl font-bold mb-2">End Workout?</h3>
+              <p className="text-muted-foreground mb-6">
+                Are you sure you want to cancel this workout? Your progress will not be saved.
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="flex-1 min-h-touch"
+                >
+                  Continue Workout
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setShowCancelConfirm(false)
+                    onCancel()
+                    hapticFeedback('medium')
+                  }}
+                  className="flex-1 min-h-touch"
+                >
+                  End Workout
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* rest timer overlay */}
+      <AnimatePresence>
+        {isResting && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-20 flex items-center justify-center p-4"
+          >
+            <div className="text-center max-w-md w-full">
+              <Timer className="h-16 w-16 mx-auto mb-4 text-primary animate-pulse" />
+              <div className="text-7xl font-bold mb-2 tabular-nums">{restTimer}s</div>
+              <p className="text-lg text-muted-foreground mb-8">Rest Time</p>
+
+              {/* Quick time adjustment buttons */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    setRestTimer(prev => Math.max(0, prev - 15))
+                    hapticFeedback('light')
+                  }}
+                  className="h-14 text-base font-semibold"
+                >
+                  -15s
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    setRestTimer(prev => prev + 30)
+                    hapticFeedback('light')
+                  }}
+                  className="h-14 text-base font-semibold"
+                >
+                  +30s
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    setRestTimer(prev => prev + 60)
+                    hapticFeedback('light')
+                  }}
+                  className="h-14 text-base font-semibold"
+                >
+                  +1min
+                </Button>
+              </div>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => {
+                  setIsResting(false)
+                  setRestTimer(0)
+                  hapticFeedback('medium')
+                }}
+                className="w-full min-h-touch"
+              >
+                Skip Rest
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* content */}
+      <div className="p-4 pb-32 space-y-6">
+        {/* exercise info */}
+        <div className={`ios-card p-6 text-center relative overflow-hidden ${
+          currentExercise.sets.length >= currentExercise.target_sets 
+            ? 'ring-2 ring-green-500/50 bg-green-500/5' 
+            : ''
+        }`}>
+          {/* Completed badge */}
+          {currentExercise.sets.length >= currentExercise.target_sets && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', bounce: 0.5 }}
+              className="absolute top-3 right-3 flex items-center gap-1.5 bg-green-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Complete
+            </motion.div>
+          )}
+          <h1 className="text-3xl font-bold mb-2">{currentExercise.exercise_name}</h1>
+          <p className="text-muted-foreground">
+            {currentExercise.target_sets} sets × {currentExercise.target_reps} reps
+          </p>
+          {/* Completion message */}
+          {currentExercise.sets.length >= currentExercise.target_sets && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-green-600 font-medium mt-3 text-sm"
+            >
+              🎉 All sets completed! Move to next exercise.
+            </motion.p>
+          )}
+        </div>
+
+        {/* completed sets only - tap to edit */}
+        {currentExercise.sets.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="ios-headline">Completed Sets</h3>
+              <span className="text-sm text-muted-foreground">
+                {currentExercise.sets.length} of {currentExercise.target_sets}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {currentExercise.sets.map((set) => (
+                <motion.div
+                  key={set.set_number}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="ios-card p-4 cursor-pointer active:scale-[0.98] transition-transform"
+                  onClick={() => {
+                    setEditingSetNumber(set.set_number)
+                    hapticFeedback('light')
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Set {set.set_number}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-muted-foreground">
+                        {set.weight}kg × {set.reps} reps
+                      </span>
+                      <Check className="h-5 w-5 text-green-600" />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* add/edit set form with AI suggestions */}
+        {(currentExercise.sets.length < currentExercise.target_sets || editingSetNumber) && (
+          <EnhancedSetInputForm
+            setNumber={editingSetNumber || currentExercise.sets.length + 1}
+            exerciseId={currentExercise.exercise_id}
+            lastSet={editingSetNumber
+              ? currentExercise.sets.find(s => s.set_number === editingSetNumber)
+              : currentExercise.sets[currentExercise.sets.length - 1]
+            }
+            targetReps={currentExercise.target_reps}
+            onAddSet={handleAddSet}
+            onPRDetected={(prs) => setDetectedPRs(prs)}
+            isEditing={!!editingSetNumber}
+            onCancelEdit={() => setEditingSetNumber(null)}
+            onDelete={editingSetNumber ? () => handleDeleteSet(editingSetNumber) : undefined}
+          />
+        )}
       </div>
-      <div className="text-right">
-        <div className="ios-headline">{reps} reps</div>
-        <div className="ios-caption text-muted-foreground">@ {weight}kg</div>
+
+      {/* navigation footer */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border/50 p-4">
+        <div className="flex gap-3 max-w-screen-sm mx-auto">
+          <Button
+            variant="outline"
+            onClick={handlePreviousExercise}
+            disabled={currentExerciseIndex === 0}
+            className="flex-1 min-h-touch"
+          >
+            Previous
+          </Button>
+          {currentExerciseIndex === exerciseLogs.length - 1 ? (
+            <Button
+              onClick={handleFinishWorkout}
+              disabled={currentExercise.sets.length === 0}
+              className="flex-1 min-h-touch bg-green-600 hover:bg-green-700 text-white gap-2"
+            >
+              <Check className="h-4 w-4" />
+              Finish Workout
+            </Button>
+          ) : (
+            <Button
+              onClick={handleNextExercise}
+              className="flex-1 min-h-touch"
+            >
+              Next Exercise
+            </Button>
+          )}
+        </div>
       </div>
     </motion.div>
   )
 }
 
-// Set Input Form
-function SetInputForm({
+// enhanced set input form with progressive overload suggestions
+function EnhancedSetInputForm({
   setNumber,
+  exerciseId,
+  lastSet,
   targetReps,
-  onAddSet
+  onAddSet,
+  onPRDetected,
+  isEditing = false,
+  onCancelEdit,
+  onDelete
 }: {
   setNumber: number
-  targetReps: string | number
+  exerciseId: string
+  lastSet?: Set
+  targetReps: string
   onAddSet: (reps: number, weight: number) => void
+  onPRDetected: (prs: any[]) => void
+  isEditing?: boolean
+  onCancelEdit?: () => void
+  onDelete?: () => void
 }) {
-  const [reps, setReps] = useState(typeof targetReps === 'number' ? targetReps : 10)
-  const [weight, setWeight] = useState(20)
+  // fetch exercise history for suggestions
+  const { data: history = [] } = useExerciseHistory(exerciseId, 5)
 
-  const handleIncrement = (field: 'reps' | 'weight') => {
-    hapticFeedback('light')
-    if (field === 'reps') {
-      setReps(r => r + 1)
-    } else {
-      setWeight(w => w + 2.5)
+  // parse target reps range
+  const [targetMin, targetMax] = useMemo(() => {
+    const match = targetReps.match(/(\d+)-(\d+)/)
+    if (match) {
+      return [parseInt(match[1]), parseInt(match[2])]
     }
-  }
+    const single = parseInt(targetReps)
+    return [single, single]
+  }, [targetReps])
 
-  const handleDecrement = (field: 'reps' | 'weight') => {
-    hapticFeedback('light')
-    if (field === 'reps' && reps > 0) {
-      setReps(r => r - 1)
-    } else if (field === 'weight' && weight > 0) {
-      setWeight(w => Math.max(0, w - 2.5))
+  // get progressive overload suggestion
+  const suggestion = useMemo(() => {
+    return getProgressiveOverloadSuggestion(history, targetMin, targetMax)
+  }, [history, targetMin, targetMax])
+
+  // initialize with suggested or last weight
+  const [reps, setReps] = useState(targetMin || 10)
+  const [weight, setWeight] = useState(() => {
+    if (lastSet) return lastSet.weight
+    if (suggestion.recommendedWeight) return suggestion.recommendedWeight
+    if (history.length > 0 && history[0].sets.length > 0) {
+      return Math.max(...history[0].sets.map((s: any) => s.weight || 0))
+    }
+    return 20
+  })
+
+  const handleSubmit = () => {
+    onAddSet(reps, weight)
+
+    // check for PRs if we have history with actual data to compare
+    if (history.length > 0 && history[0].sets?.length > 0) {
+      const previousBest = history[0]
+      
+      // Only check PRs if we have meaningful previous data
+      if (previousBest.maxWeight > 0) {
+        const currentSet = { set_number: setNumber, reps, weight, completed: true, rest: 60 }
+        
+        // Calculate max reps from a single set in previous history (not totalReps which is sum of all sets)
+        const previousMaxReps = Math.max(...previousBest.sets.map((s: any) => s.reps || 0))
+        
+        const prs = detectPersonalRecords([currentSet], {
+          max_weight: previousBest.maxWeight,
+          max_reps: previousMaxReps, // Use max reps from single set, not total
+          max_volume: previousBest.totalVolume,
+          estimated_1rm: previousBest.estimated1RM,
+        })
+
+        if (prs.length > 0) {
+          onPRDetected(prs)
+          hapticFeedback('heavy')
+        }
+      }
     }
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="ios-card p-4 space-y-4 border-2 border-primary"
-    >
-      <div className="flex items-center justify-between">
-        <span className="ios-headline">Set {setNumber}</span>
-        <Badge variant="outline">Current</Badge>
-      </div>
+    <div className="space-y-4">
+      {/* ai suggestion card */}
+      {suggestion.type !== 'maintain' && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="frosted-card p-4 border-l-4 border-l-primary"
+        >
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-full bg-primary/10">
+              {suggestion.type === 'increase_weight' && <TrendingUp className="h-5 w-5 text-primary" />}
+              {suggestion.type === 'increase_reps' && <Zap className="h-5 w-5 text-primary" />}
+              {suggestion.type === 'decrease_weight' && <TrendingUp className="h-5 w-5 text-orange-500 rotate-180" />}
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="ios-headline">ai coach</span>
+                <Badge variant="outline" className="text-xs">
+                  {suggestion.type.replace('_', ' ')}
+                </Badge>
+              </div>
+              <p className="ios-caption text-muted-foreground">
+                {suggestion.suggestion}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Reps Input */}
+      {/* previous performance */}
+      {history.length > 0 && history[0].sets.length > 0 && (
+        <div className="ios-card p-4">
+          <div className="flex items-center justify-between">
+            <span className="ios-caption text-muted-foreground">last workout</span>
+            <div className="text-right">
+              <p className="ios-headline">
+                {Math.max(...history[0].sets.map((s: any) => s.weight || 0))}kg × {' '}
+                {Math.max(...history[0].sets.map((s: any) => s.reps || 0))} reps
+              </p>
+              <p className="ios-caption text-muted-foreground">
+                {history[0].totalSets} sets • {Math.round(history[0].totalVolume)}kg volume
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* set input */}
+      <div className="ios-card p-6 space-y-4">
+        <h3 className="ios-headline text-center">
+          {isEditing ? `Edit Set ${setNumber}` : `Log Set ${setNumber}`}
+        </h3>
+
+        {/* reps input */}
         <div className="space-y-2">
-          <label className="ios-caption text-muted-foreground">Reps</label>
-          <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">reps</label>
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleDecrement('reps')}
-              className="h-10 w-10 shrink-0"
+              onClick={() => setReps(Math.max(1, reps - 1))}
+              className="h-12 w-12"
             >
               <Minus className="h-4 w-4" />
             </Button>
             <Input
               type="number"
               value={reps}
-              onChange={(e) => setReps(parseInt(e.target.value) || 0)}
-              className="text-2xl font-bold text-center h-10"
+              onChange={(e) => setReps(Number(e.target.value))}
+              className="text-center text-2xl font-bold h-12"
             />
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleIncrement('reps')}
-              className="h-10 w-10 shrink-0"
+              onClick={() => setReps(reps + 1)}
+              className="h-12 w-12"
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Weight Input */}
+        {/* weight input */}
         <div className="space-y-2">
-          <label className="ios-caption text-muted-foreground">Weight (kg)</label>
-          <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">weight (kg)</label>
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleDecrement('weight')}
-              className="h-10 w-10 shrink-0"
+              onClick={() => setWeight(Math.max(0, weight - 2.5))}
+              className="h-12 w-12"
             >
               <Minus className="h-4 w-4" />
             </Button>
             <Input
               type="number"
-              step="2.5"
               value={weight}
-              onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
-              className="text-2xl font-bold text-center h-10"
+              onChange={(e) => setWeight(Number(e.target.value))}
+              step="2.5"
+              className="text-center text-2xl font-bold h-12"
             />
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleIncrement('weight')}
-              className="h-10 w-10 shrink-0"
+              onClick={() => setWeight(weight + 2.5)}
+              className="h-12 w-12"
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
-      </div>
 
-      <Button
-        onClick={() => onAddSet(reps, weight)}
-        className="w-full min-h-touch ripple-effect gap-2"
-        disabled={reps === 0}
-      >
-        <Check className="h-4 w-4" />
-        Complete Set
-      </Button>
-    </motion.div>
-  )
-}
-
-// Rest Timer Overlay
-function RestTimerOverlay({
-  seconds,
-  onComplete,
-  onSkip
-}: {
-  seconds: number | null
-  onComplete: () => void
-  onSkip: () => void
-}) {
-  const [remaining, setRemaining] = useState(seconds)
-  const [isPaused, setIsPaused] = useState(false)
-
-  useEffect(() => {
-    setRemaining(seconds)
-    setIsPaused(false)
-  }, [seconds])
-
-  useEffect(() => {
-    if (remaining === null || remaining === 0 || isPaused) {
-      if (remaining === 0) onComplete()
-      return
-    }
-
-    const timer = setInterval(() => {
-      setRemaining(r => (r !== null ? r - 1 : null))
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [remaining, isPaused, onComplete])
-
-  if (seconds === null || remaining === null) return null
-
-  const progress = seconds > 0 ? ((seconds - remaining) / seconds) * 100 : 0
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6"
-      >
-        <motion.div
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          exit={{ scale: 0.9 }}
-          className="text-center"
-        >
-          {/* Circular Timer */}
-          <div className="relative w-56 h-56 mb-8 mx-auto">
-            <svg className="transform -rotate-90 w-56 h-56">
-              <circle
-                cx="112"
-                cy="112"
-                r="100"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="none"
-                className="text-muted-foreground opacity-20"
-              />
-              <circle
-                cx="112"
-                cy="112"
-                r="100"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="none"
-                strokeDasharray={`${2 * Math.PI * 100}`}
-                strokeDashoffset={`${2 * Math.PI * 100 * (1 - progress / 100)}`}
-                className="text-primary transition-all duration-1000"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-7xl font-bold text-white mb-2">{remaining}</span>
-              <span className="ios-caption text-white/70">seconds</span>
-            </div>
-          </div>
-
-          <h3 className="ios-title2 text-white mb-6">Rest Time</h3>
-
-          <div className="flex gap-3 justify-center">
+        <div className="flex gap-3">
+          {isEditing && onCancelEdit && (
             <Button
               variant="outline"
-              onClick={() => {
-                setIsPaused(!isPaused)
-                hapticFeedback('light')
-              }}
-              className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
-            >
-              {isPaused ? (
-                <>
-                  <Play className="h-4 w-4" />
-                  Resume
-                </>
-              ) : (
-                <>
-                  <Pause className="h-4 w-4" />
-                  Pause
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={onSkip}
-              className="gap-2"
-            >
-              <SkipForward className="h-4 w-4" />
-              Skip Rest
-            </Button>
-          </div>
-
-          <Button
-            variant="ghost"
-            onClick={() => setRemaining(r => (r !== null ? r + 30 : 30))}
-            className="mt-4 text-white/70 hover:text-white"
-          >
-            +30 seconds
-          </Button>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  )
-}
-
-// Quit Dialog
-function QuitDialog({
-  isOpen,
-  onConfirm,
-  onCancel
-}: {
-  isOpen: boolean
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  if (!isOpen) return null
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onCancel}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-6"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
-          className="ios-card p-6 max-w-sm w-full"
-        >
-          <h3 className="ios-title2 mb-2">Quit Workout?</h3>
-          <p className="ios-body text-muted-foreground mb-6">
-            Your progress will not be saved if you quit now.
-          </p>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={onCancel}
-              className="flex-1 min-h-touch ripple-effect"
+              onClick={onCancelEdit}
+              className="flex-1 min-h-touch"
             >
               Cancel
             </Button>
+          )}
+          {isEditing && onDelete && (
             <Button
               variant="destructive"
-              onClick={onConfirm}
-              className="flex-1 min-h-touch ripple-effect"
+              onClick={onDelete}
+              className="flex-1 min-h-touch"
             >
-              Quit
+              Delete Set
             </Button>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+          )}
+          <Button
+            onClick={handleSubmit}
+            className={`${isEditing ? 'flex-1' : 'w-full'} min-h-touch gap-2`}
+          >
+            <Check className="h-4 w-4" />
+            {isEditing ? 'Update Set' : 'Complete Set'}
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }

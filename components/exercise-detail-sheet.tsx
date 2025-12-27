@@ -166,10 +166,10 @@ export function ExerciseDetailSheet({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-[90] bg-background rounded-t-3xl max-h-[90vh] flex flex-col"
+            className="fixed inset-0 z-[90] bg-background flex flex-col"
           >
             {/* Header */}
-            <div className="px-5 pt-6 pb-4 flex items-center justify-between">
+            <div className="px-5 pt-6 pb-4 flex items-center justify-between safe-top border-b">
               <h2 className="text-xl font-bold truncate pr-4">
                 {showReplacePicker ? 'Replace Exercise' : exercise.name}
               </h2>
@@ -222,7 +222,7 @@ export function ExerciseDetailSheet({
               /* Normal Detail View */
               <>
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto px-5 pb-4">
+                <div className="flex-1 overflow-y-auto px-5 py-6">
                   {/* Exercise Image */}
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}

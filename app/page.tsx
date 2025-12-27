@@ -33,6 +33,9 @@ import type { ViewType } from '@/lib/constants/filters';
 import {
     useBudgets,
     useCalorieStats,
+    useCreateTemplate,
+    useCreateWorkout,
+    useExercises,
     useExpenseFilters,
     useExpenseOperations,
     useExpenses,
@@ -41,12 +44,9 @@ import {
     useStats,
     useSyncOperations,
     useUpdateProfile,
+    useUpdateTemplate,
     useWorkoutTemplates,
     useWorkouts,
-    useExercises,
-    useCreateWorkout,
-    useCreateTemplate,
-    useUpdateTemplate,
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
@@ -88,6 +88,7 @@ function HomeContent() {
   const [showAllExpenses, setShowAllExpenses] = useState(false);
   const [showAllMeals, setShowAllMeals] = useState(false);
   const [activeWorkout, setActiveWorkout] = useState<any>(null);
+  const [exerciseLogs, setExerciseLogs] = useState<any[]>([]);
   const searchParams = useSearchParams();
   const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -408,6 +409,8 @@ function HomeContent() {
               loading={templatesLoading}
               onStartWorkout={(template) => {
                 setActiveWorkout(template)
+                setExerciseLogs([]) // Reset logs for new workout
+                setActiveView('summary') // Switch away from workouts view so WorkoutLogger can show
                 hapticFeedback('medium')
               }}
               onCreateTemplate={async (templateData) => {
@@ -415,6 +418,12 @@ function HomeContent() {
               }}
               onUpdateTemplate={async (id, templateData) => {
                 await updateTemplate({ id, ...templateData } as any)
+              }}
+              activeWorkout={activeWorkout}
+              exerciseLogs={exerciseLogs}
+              onReturnToWorkout={() => {
+                // Switch back to previous view (or summary) to show workout logger
+                setActiveView('summary')
               }}
             />
           ) : activeView === 'profile' ? (
@@ -490,19 +499,32 @@ function HomeContent() {
           currentMonth={currentMonth}
         />
 
-        {/* Workout Logger */}
+        {/* Workout Logger - only show when not editing exercises */}
         <AnimatePresence>
-          {activeWorkout && (
-            <WorkoutLogger
-              template={activeWorkout}
-              exercises={exercises}
-              onComplete={async (workoutData) => {
-                await createWorkout(workoutData)
-                setActiveWorkout(null)
-              }}
-              onCancel={() => setActiveWorkout(null)}
-            />
-          )}
+          {(() => {
+            const shouldShow = activeWorkout && activeView !== 'workouts'
+            console.log('WorkoutLogger shouldShow:', shouldShow, 'activeWorkout:', activeWorkout?.name, 'activeView:', activeView)
+            return shouldShow && (
+              <WorkoutLogger
+                template={activeWorkout}
+                exercises={exercises}
+                onComplete={async (workoutData) => {
+                  await createWorkout(workoutData)
+                  setActiveWorkout(null)
+                  setExerciseLogs([])
+                }}
+                onCancel={() => {
+                  setActiveWorkout(null)
+                  setExerciseLogs([])
+                }}
+                onEditExercises={() => {
+                  console.log('onEditExercises called - switching to workouts view, activeWorkout:', activeWorkout?.name)
+                  setActiveView('workouts')
+                }}
+                onExerciseLogsChange={setExerciseLogs}
+              />
+            )
+          })()}
         </AnimatePresence>
         </div>
       </PullToRefreshWrapper>
