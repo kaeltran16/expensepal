@@ -120,12 +120,11 @@ export async function DELETE(
       )
     }
 
-    // delete template (only if user owns it and it's not default)
+    // delete template
     const { error } = await supabase
       .from('workout_templates')
       .delete()
       .eq('id', params.id)
-      .eq('is_default', false)
 
     if (error) {
       console.error('error deleting workout template:', error)

@@ -56,39 +56,105 @@ export function WorkoutHero({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        type: "spring",
+        stiffness: 260,
+        damping: 20
+      }}
       className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20"
     >
       <div className="relative z-10">
-        <div className="flex items-center gap-2 mb-3">
-          {content.icon}
+        <motion.div
+          className="flex items-center gap-2 mb-3"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
+        >
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: todayCompleted ? [0, 5, -5, 0] : 0
+            }}
+            transition={{
+              duration: 0.5,
+              repeat: todayCompleted ? Infinity : 0,
+              repeatDelay: 2
+            }}
+          >
+            {content.icon}
+          </motion.div>
           <span className="ios-subheadline text-primary">{content.badge}</span>
-        </div>
+        </motion.div>
 
-        <h2 className="ios-title1 mb-2">
+        <motion.h2
+          className="ios-title1 mb-2"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
+        >
           {content.title}
-        </h2>
+        </motion.h2>
 
-        <p className="ios-body text-muted-foreground mb-4">
+        <motion.p
+          className="ios-body text-muted-foreground mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           {content.description}
-        </p>
+        </motion.p>
 
         {content.showButton && onQuickStart && (
-          <Button
-            size="lg"
-            className="w-full touch-xl gap-2 bg-gradient-to-r from-primary to-primary/90 shadow-lg shadow-primary/20"
-            onClick={onQuickStart}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, type: "spring", stiffness: 300 }}
           >
-            {content.buttonIcon}
-            {content.buttonText}
-          </Button>
+            <Button
+              size="lg"
+              className="w-full touch-xl gap-2 bg-gradient-to-r from-primary to-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              onClick={onQuickStart}
+            >
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
+                {content.buttonIcon}
+              </motion.div>
+              {content.buttonText}
+            </Button>
+          </motion.div>
         )}
       </div>
 
-      {/* Decorative circles */}
-      <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-primary/5 blur-2xl" />
-      <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-primary/10 blur-xl" />
+      {/* Animated decorative circles */}
+      <motion.div
+        className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-primary/5 blur-2xl"
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.5, 0.7, 0.5]
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+      <motion.div
+        className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-primary/10 blur-xl"
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.6, 0.8, 0.6]
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.5
+        }}
+      />
     </motion.div>
   )
 }

@@ -24,6 +24,7 @@ interface WorkoutsViewProps {
   onStartWorkout: (template: WorkoutTemplate) => void
   onCreateTemplate?: (template: Partial<WorkoutTemplateInsert>) => Promise<void>
   onUpdateTemplate?: (id: string, template: Partial<WorkoutTemplateUpdate>) => Promise<void>
+  onDeleteTemplate?: (id: string) => Promise<void>
   activeWorkout?: WorkoutTemplate | null
   exerciseLogs?: any[]
   onReturnToWorkout?: () => void
@@ -36,6 +37,7 @@ export function WorkoutsView({
   onStartWorkout,
   onCreateTemplate,
   onUpdateTemplate,
+  onDeleteTemplate,
   activeWorkout,
   exerciseLogs = [],
   onReturnToWorkout
@@ -179,6 +181,10 @@ export function WorkoutsView({
           }
         }}
         onUpdateTemplate={onUpdateTemplate}
+        onDeleteTemplate={onDeleteTemplate ? async (id: string) => {
+          await onDeleteTemplate(id)
+          setSelectedTemplate(null) // Close the sheet after deletion
+        } : undefined}
         isWorkoutActive={isWorkoutActive}
         exerciseLogs={exerciseLogs}
       />

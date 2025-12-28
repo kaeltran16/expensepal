@@ -14,21 +14,25 @@ import type { WorkoutTemplate } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion, Reorder } from 'framer-motion'
 import {
-  ArrowDownUp,
   ArrowLeft,
+  Calendar,
   Check,
   ChevronDown,
   Clock,
   Copy,
   Dumbbell,
   Edit3,
+  FileText,
   GripVertical,
+  History,
   MoreHorizontal,
   Plus,
+  Share2,
+  Star,
   Target,
   Trash2
 } from 'lucide-react'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface ExerciseLog {
   exercise_id: string
@@ -195,7 +199,14 @@ export function TemplateDetailSheet({
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div className="flex-1 min-w-0">
-                  <h2 className="ios-headline truncate text-left">{template.name}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="ios-headline truncate text-left">{template.name}</h2>
+                    {template.is_default && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">
+                        Default
+                      </span>
+                    )}
+                  </div>
                   {isWorkoutActive && (
                     <p className="text-xs text-muted-foreground">Active workout</p>
                   )}
@@ -211,7 +222,7 @@ export function TemplateDetailSheet({
                       <MoreHorizontal className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="z-[80] w-52">
                     {onEditDetails && (
                       <DropdownMenuItem
                         onClick={() => {
@@ -220,6 +231,7 @@ export function TemplateDetailSheet({
                             hapticFeedback('light')
                           }
                         }}
+                        className="cursor-pointer"
                       >
                         <Edit3 className="h-4 w-4 mr-2" />
                         Edit Details
@@ -233,11 +245,72 @@ export function TemplateDetailSheet({
                             hapticFeedback('light')
                           }
                         }}
+                        className="cursor-pointer"
                       >
                         <Copy className="h-4 w-4 mr-2" />
                         Duplicate
                       </DropdownMenuItem>
                     )}
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // TODO: Add to favorites
+                        hapticFeedback('light')
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Star className="h-4 w-4 mr-2" />
+                      Add to Favorites
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // TODO: Schedule workout
+                        hapticFeedback('light')
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Schedule Workout
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // TODO: View history
+                        hapticFeedback('light')
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <History className="h-4 w-4 mr-2" />
+                      View History
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // TODO: Share template
+                        hapticFeedback('light')
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share Template
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // TODO: Export notes
+                        hapticFeedback('light')
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Export Notes
+                    </DropdownMenuItem>
+
                     {onDeleteTemplate && (
                       <>
                         <DropdownMenuSeparator />
@@ -248,7 +321,7 @@ export function TemplateDetailSheet({
                               hapticFeedback('medium')
                             }
                           }}
-                          className="text-destructive focus:text-destructive"
+                          className="cursor-pointer text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-700 dark:focus:text-red-300"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete Template

@@ -35,6 +35,7 @@ import {
     useCalorieStats,
     useCreateTemplate,
     useCreateWorkout,
+    useDeleteTemplate,
     useExercises,
     useExpenseFilters,
     useExpenseOperations,
@@ -78,6 +79,7 @@ function HomeContent() {
   const { mutateAsync: createWorkout } = useCreateWorkout()
   const { mutateAsync: createTemplate } = useCreateTemplate()
   const { mutateAsync: updateTemplate } = useUpdateTemplate()
+  const { mutateAsync: deleteTemplate } = useDeleteTemplate()
 
   // Derived loading state
   const loading = expensesLoading || statsLoading || budgetsLoading;
@@ -418,6 +420,9 @@ function HomeContent() {
               }}
               onUpdateTemplate={async (id, templateData) => {
                 await updateTemplate({ id, ...templateData } as any)
+              }}
+              onDeleteTemplate={async (id) => {
+                await deleteTemplate(id)
               }}
               activeWorkout={activeWorkout}
               exerciseLogs={exerciseLogs}

@@ -251,13 +251,30 @@ export function WorkoutLogger({
         </div>
 
         {/* progress bar */}
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
+        <div className="h-2 bg-muted rounded-full overflow-hidden relative">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full"
-            transition={{ duration: 0.3 }}
-          />
+            className="h-full bg-gradient-to-r from-primary via-primary to-primary/80 rounded-full relative overflow-hidden"
+            transition={{
+              type: "spring",
+              stiffness: 100,
+              damping: 15
+            }}
+          >
+            {/* Shimmer effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+              animate={{
+                x: ['-100%', '200%']
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            />
+          </motion.div>
         </div>
       </div>
 
@@ -347,9 +364,9 @@ export function WorkoutLogger({
       <AnimatePresence>
         {isResting && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 flex items-center justify-center p-4"
             onClick={(e) => {
               // Allow clicking background to skip rest
@@ -361,13 +378,50 @@ export function WorkoutLogger({
             }}
           >
             <motion.div
-              className="text-center max-w-md w-full bg-background/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl"
-              initial={{ y: 20 }}
-              animate={{ y: 0 }}
+              className="text-center max-w-md w-full bg-background/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-primary/20"
+              initial={{ scale: 0.8, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 50 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 25
+              }}
             >
-              <Timer className="h-16 w-16 mx-auto mb-4 text-primary animate-pulse" />
-              <div className="text-7xl font-bold mb-2 tabular-nums">{restTimer}s</div>
-              <p className="text-lg text-muted-foreground mb-2">Rest Time</p>
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <Timer className="h-16 w-16 mx-auto mb-4 text-primary" />
+              </motion.div>
+              <motion.div
+                className="text-7xl font-bold mb-2 tabular-nums"
+                key={restTimer}
+                initial={{ scale: 1.2, opacity: 0.5 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 25
+                }}
+              >
+                {restTimer}s
+              </motion.div>
+              <motion.p
+                className="text-lg text-muted-foreground mb-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                Rest Time
+              </motion.p>
               {currentExercise && (
                 <p className="text-sm text-muted-foreground/70 mb-6">
                   Next: {currentExercise.exercise_name}
@@ -539,38 +593,100 @@ export function WorkoutLogger({
 
         {/* completed sets only - tap to edit */}
         {currentExercise.sets.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-1">
+          <motion.div
+            className="space-y-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 25
+            }}
+          >
+            <motion.div
+              className="flex items-center justify-between px-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
               <h3 className="ios-headline">Completed Sets</h3>
-              <span className="text-sm text-muted-foreground">
+              <motion.span
+                className="text-sm text-muted-foreground"
+                key={currentExercise.sets.length}
+                initial={{ scale: 1.3 }}
+                animate={{ scale: 1 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 15
+                }}
+              >
                 {currentExercise.sets.length} of {currentExercise.target_sets}
-              </span>
-            </div>
+              </motion.span>
+            </motion.div>
             <div className="space-y-2">
-              {currentExercise.sets.map((set) => (
+              {currentExercise.sets.map((set, index) => (
                 <motion.div
                   key={set.set_number}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="ios-card p-4 cursor-pointer active:scale-[0.98] transition-transform"
+                  initial={{ opacity: 0, x: -30, scale: 0.9 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  transition={{
+                    delay: index * 0.05,
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 25
+                  }}
+                  whileHover={{
+                    scale: 1.02,
+                    x: 4,
+                    transition: { type: "spring", stiffness: 500, damping: 20 }
+                  }}
+                  whileTap={{
+                    scale: 0.98,
+                    transition: { duration: 0.1 }
+                  }}
+                  className="ios-card p-4 cursor-pointer"
                   onClick={() => {
                     setEditingSetNumber(set.set_number)
                     hapticFeedback('light')
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Set {set.set_number}</span>
+                    <motion.span
+                      className="font-medium"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.05 + 0.1 }}
+                    >
+                      Set {set.set_number}
+                    </motion.span>
                     <div className="flex items-center gap-3">
-                      <span className="text-muted-foreground">
+                      <motion.span
+                        className="text-muted-foreground"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 + 0.15 }}
+                      >
                         {set.weight}kg × {set.reps} reps
-                      </span>
-                      <Check className="h-5 w-5 text-green-600" />
+                      </motion.span>
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{
+                          delay: index * 0.05 + 0.2,
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 15
+                        }}
+                      >
+                        <Check className="h-5 w-5 text-green-600" />
+                      </motion.div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* add/edit set form with AI suggestions */}
@@ -593,49 +709,87 @@ export function WorkoutLogger({
       </div>
 
       {/* navigation footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border/50 p-4">
+      <motion.div
+        className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border/50 p-4"
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30
+        }}
+      >
         <div className="flex gap-3 max-w-screen-sm mx-auto">
-          <Button
-            variant="outline"
-            onClick={handlePreviousExercise}
-            disabled={currentExerciseIndex === 0}
-            className="flex-1 min-h-touch"
+          <motion.div
+            className="flex-1"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            Previous
-          </Button>
+            <Button
+              variant="outline"
+              onClick={handlePreviousExercise}
+              disabled={currentExerciseIndex === 0}
+              className="w-full min-h-touch"
+            >
+              Previous
+            </Button>
+          </motion.div>
           {currentExerciseIndex === exerciseLogs.length - 1 ? (
-            <Button
-              onClick={handleFinishWorkout}
-              disabled={currentExercise.sets.length === 0 || isSubmitting}
-              className="flex-1 min-h-touch bg-green-600 hover:bg-green-700 text-white gap-2 disabled:opacity-50"
+            <motion.div
+              className="flex-1"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {isSubmitting ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  >
-                    <Timer className="h-4 w-4" />
-                  </motion.div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4" />
-                  Finish Workout
-                </>
-              )}
-            </Button>
+              <Button
+                onClick={handleFinishWorkout}
+                disabled={currentExercise.sets.length === 0 || isSubmitting}
+                className="w-full min-h-touch bg-green-600 hover:bg-green-700 text-white gap-2 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Timer className="h-4 w-4" />
+                    </motion.div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.2, 1]
+                      }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      <Check className="h-4 w-4" />
+                    </motion.div>
+                    Finish Workout
+                  </>
+                )}
+              </Button>
+            </motion.div>
           ) : (
-            <Button
-              onClick={handleNextExercise}
-              className="flex-1 min-h-touch"
+            <motion.div
+              className="flex-1"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              Next Exercise
-            </Button>
+              <Button
+                onClick={handleNextExercise}
+                className="w-full min-h-touch"
+              >
+                Next Exercise
+              </Button>
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   )
 }

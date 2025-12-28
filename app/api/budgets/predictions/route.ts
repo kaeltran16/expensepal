@@ -7,6 +7,8 @@ import {
   calculateSavingsOpportunities,
 } from '@/lib/analytics/budget-predictions'
 
+export const dynamic = 'force-dynamic'
+
 // GET budget predictions and alerts for current month
 export async function GET(request: NextRequest) {
   try {

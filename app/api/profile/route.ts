@@ -2,6 +2,8 @@ import { supabaseAdmin } from '@/lib/supabase'
 import type { UserProfileUpdate } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/profile - Get current user's profile
 export async function GET(request: NextRequest) {
   try {
