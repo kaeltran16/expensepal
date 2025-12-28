@@ -39,7 +39,7 @@ interface ExerciseDetailSheetProps {
     gif_url?: string | null
   } | null
   onClose: () => void
-  onUpdate: (updates: { sets: number; weight: number; reps: string }) => void
+  onUpdate: (updates: { sets: number; weight: number; reps: string; rest?: number }) => void
   onDelete: () => void
   onReplace: (newExercise: Exercise) => void
 }
@@ -304,9 +304,14 @@ export function ExerciseDetailSheet({
 
                   {/* Add Set Button */}
                   <motion.button
-                    onClick={handleAddSet}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleAddSet()
+                    }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full py-4 text-center font-medium text-primary hover:text-primary/80 transition-colors"
+                    className="w-full py-4 text-center font-medium text-primary hover:text-primary/80 transition-colors border-t border-border"
                   >
                     + Add Set
                   </motion.button>

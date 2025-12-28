@@ -3,21 +3,32 @@
 import { ExerciseDetailSheet } from '@/components/exercise-detail-sheet'
 import { ExercisePickerSheet } from '@/components/exercise-picker-sheet'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import type { WorkoutTemplate } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion, Reorder } from 'framer-motion'
 import {
+  ArrowDownUp,
   ArrowLeft,
   Check,
   ChevronDown,
   Clock,
+  Copy,
   Dumbbell,
+  Edit3,
   GripVertical,
   MoreHorizontal,
   Plus,
-  Target
+  Target,
+  Trash2
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 interface ExerciseLog {
   exercise_id: string
@@ -30,6 +41,9 @@ interface TemplateDetailSheetProps {
   onClose: () => void
   onStart: () => void
   onUpdateTemplate?: (id: string, updates: Partial<WorkoutTemplate>) => Promise<void>
+  onDeleteTemplate?: (id: string) => void
+  onDuplicateTemplate?: (template: WorkoutTemplate) => void
+  onEditDetails?: (template: WorkoutTemplate) => void
   isWorkoutActive?: boolean
   exerciseLogs?: ExerciseLog[]
 }
@@ -39,6 +53,9 @@ export function TemplateDetailSheet({
   onClose,
   onStart,
   onUpdateTemplate,
+  onDeleteTemplate,
+  onDuplicateTemplate,
+  onEditDetails,
   isWorkoutActive = false,
   exerciseLogs = []
 }: TemplateDetailSheetProps) {
@@ -53,7 +70,7 @@ export function TemplateDetailSheet({
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null)
   const [isReorderMode, setIsReorderMode] = useState(false)
-  const [pendingReorder, setPendingReorder] = useState<any[] | null>(null)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (template) {
@@ -66,6 +83,15 @@ export function TemplateDetailSheet({
       setExercises(exercisesWithIds)
     }
   }, [template])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [])
 
   if (!template) return null
 
@@ -92,18 +118,37 @@ export function TemplateDetailSheet({
     }
   }
 
+  // Debounced save - waits 2 seconds after last change before saving
+  const debouncedSave = (updatedExercises: any[]) => {
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    // Set new timeout to save after 2 seconds of inactivity
+    saveTimeoutRef.current = setTimeout(() => {
+      saveExercises(updatedExercises).catch(err => console.error('Failed to save reorder:', err))
+    }, 2000)
+  }
+
   const handleSelectExercises = async (selectedExercises: any[]) => {
-    const newExercises = selectedExercises.map((ex, idx) => ({
-      _id: `ex-${Date.now()}-${exercises.length + idx}`,
-      exercise_id: ex.id,
-      name: ex.name,
-      sets: 3,
-      reps: '10-12',
-      weight: 0,
-      rest: 60,
-      image_url: ex.image_url,
-      gif_url: ex.gif_url,
-    }))
+    const existingIds = new Set(exercises.map(ex => ex.exercise_id))
+
+    // Filter out exercises that are already in the list
+    const newExercises = selectedExercises
+      .filter(ex => !existingIds.has(ex.id))
+      .map((ex, idx) => ({
+        _id: `ex-${Date.now()}-${exercises.length + idx}`,
+        exercise_id: ex.id,
+        name: ex.name,
+        sets: 3,
+        reps: '10-12',
+        weight: 0,
+        rest: 60,
+        image_url: ex.image_url,
+        gif_url: ex.gif_url,
+      }))
+
     const updated = [...exercises, ...newExercises]
     setExercises(updated)
     // Don't await - save in background for instant UI feedback
@@ -120,13 +165,6 @@ export function TemplateDetailSheet({
       setEditingExercise(null)
     }
     hapticFeedback('light')
-  }
-
-  const handleUpdateExercise = async (index: number, field: string, value: any) => {
-    const newExercises = [...exercises]
-    newExercises[index] = { ...newExercises[index], [field]: value }
-    setExercises(newExercises)
-    // Don't save immediately - let ExerciseDetailSheet handle saving on close
   }
 
   return (
@@ -162,14 +200,63 @@ export function TemplateDetailSheet({
                     <p className="text-xs text-muted-foreground">Active workout</p>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 shrink-0"
-                  aria-label="More options"
-                >
-                  <MoreHorizontal className="h-5 w-5" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 shrink-0"
+                      aria-label="More options"
+                    >
+                      <MoreHorizontal className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {onEditDetails && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          if (template) {
+                            onEditDetails(template)
+                            hapticFeedback('light')
+                          }
+                        }}
+                      >
+                        <Edit3 className="h-4 w-4 mr-2" />
+                        Edit Details
+                      </DropdownMenuItem>
+                    )}
+                    {onDuplicateTemplate && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          if (template) {
+                            onDuplicateTemplate(template)
+                            hapticFeedback('light')
+                          }
+                        }}
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Duplicate
+                      </DropdownMenuItem>
+                    )}
+                    {onDeleteTemplate && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => {
+                            if (template) {
+                              onDeleteTemplate(template.id)
+                              hapticFeedback('medium')
+                            }
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Template
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Duration & Condition Selectors */}
@@ -207,12 +294,7 @@ export function TemplateDetailSheet({
                     className={`gap-1.5 min-h-touch h-9 text-xs transition-all ${
                       isReorderMode ? 'bg-primary text-primary-foreground shadow-md' : ''
                     }`}
-                    onClick={async () => {
-                      if (isReorderMode && pendingReorder) {
-                        // Exiting reorder mode - save the changes
-                        await saveExercises(pendingReorder)
-                        setPendingReorder(null)
-                      }
+                    onClick={() => {
                       setIsReorderMode(!isReorderMode)
                       hapticFeedback('light')
                     }}
@@ -266,7 +348,8 @@ export function TemplateDetailSheet({
                       values={exercises}
                       onReorder={(newOrder) => {
                         setExercises(newOrder)
-                        setPendingReorder(newOrder) // Save for later
+                        // Debounced save - waits 2 seconds after last drag before saving
+                        debouncedSave(newOrder)
                       }}
                       className="space-y-3 mb-4"
                     >
@@ -292,6 +375,7 @@ export function TemplateDetailSheet({
                                 hapticFeedback('light')
                               }
                             }}
+                            onRemove={() => handleRemoveExercise(index)}
                           />
                         )
                       })}
@@ -360,16 +444,21 @@ export function TemplateDetailSheet({
             isOpen={selectedExerciseIndex !== null}
             exerciseIndex={selectedExerciseIndex}
             exercise={selectedExerciseIndex !== null ? exercises[selectedExerciseIndex] : null}
-            onClose={async () => {
-              // Save changes when closing the detail sheet
-              await saveExercises(exercises)
+            onClose={() => {
               setSelectedExerciseIndex(null)
             }}
             onUpdate={(updates) => {
               if (selectedExerciseIndex !== null) {
-                handleUpdateExercise(selectedExerciseIndex, 'sets', updates.sets)
-                handleUpdateExercise(selectedExerciseIndex, 'weight', updates.weight)
-                handleUpdateExercise(selectedExerciseIndex, 'reps', updates.reps)
+                const newExercises = [...exercises]
+                newExercises[selectedExerciseIndex] = {
+                  ...newExercises[selectedExerciseIndex],
+                  sets: updates.sets,
+                  weight: updates.weight,
+                  reps: updates.reps
+                }
+                setExercises(newExercises)
+                // Save immediately after updating
+                saveExercises(newExercises).catch(err => console.error('Failed to save:', err))
               }
             }}
             onDelete={() => {
@@ -409,7 +498,8 @@ function ExerciseCardSimple({
   completedSets = 0,
   targetSets = 3,
   isComplete = false,
-  onEdit
+  onEdit,
+  onRemove
 }: {
   exercise: any
   index: number
@@ -418,6 +508,7 @@ function ExerciseCardSimple({
   targetSets?: number
   isComplete?: boolean
   onEdit: () => void
+  onRemove: () => void
 }) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -510,6 +601,22 @@ function ExerciseCardSimple({
         {/* Drag Handle - only show in reorder mode */}
         {isReorderMode && (
           <GripVertical className="h-6 w-6 text-muted-foreground/40 shrink-0" />
+        )}
+
+        {/* Delete Button - only show when NOT in reorder mode */}
+        {!isReorderMode && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation()
+              onRemove()
+              hapticFeedback('light')
+            }}
+            className="shrink-0 h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         )}
       </div>
     </Reorder.Item>

@@ -175,7 +175,7 @@ export function useUpdateTemplate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workoutKeys.templates })
-      toast.success('template updated!')
+      // Removed toast notification - too many popups during editing
     },
     onError: (error: Error) => {
       toast.error(error.message || 'failed to update template')

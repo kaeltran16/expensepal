@@ -3,11 +3,13 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useExercises } from '@/lib/hooks/use-workouts'
+import { useExerciseFavorites } from '@/lib/hooks/use-exercise-favorites'
+import { useRecentExercises } from '@/lib/hooks/use-recent-exercises'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
-import { CheckSquare, Dumbbell, Heart, Search, Square, X } from 'lucide-react'
+import { Dumbbell, Heart, Search, X } from 'lucide-react'
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback, memo, useRef, useEffect } from 'react'
 
 interface Exercise {
   id: string
@@ -59,14 +61,34 @@ export function ExercisePickerSheet({
   const [selectedEquipment, setSelectedEquipment] = useState('all')
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'recent'>('all')
-  const [multiSelectMode, setMultiSelectMode] = useState(false) // Toggle for multi-select
+  const [displayCount, setDisplayCount] = useState(30) // Start with 30 exercises
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const { data: exercises = [], isLoading } = useExercises()
+  const { favorites, toggleFavorite, isFavorite } = useExerciseFavorites()
+  const { recentIds, addRecent } = useRecentExercises()
 
-  // Filter exercises based on search, area, and equipment
+  // Filter exercises based on search, area, equipment, and active tab
   const filteredExercises = useMemo(() => {
-    return exercises.filter((exercise: Exercise) => {
-      // Search filter
+    let filtered = exercises
+
+    // Tab filter (favorites or recent)
+    if (activeTab === 'favorites') {
+      filtered = exercises.filter((ex: Exercise) => favorites.has(ex.id))
+    } else if (activeTab === 'recent') {
+      // Sort by recent order
+      const recentSet = new Set(recentIds)
+      filtered = exercises.filter((ex: Exercise) => recentSet.has(ex.id))
+      // Sort by recency
+      filtered = filtered.sort((a: Exercise, b: Exercise) => {
+        const aIndex = recentIds.indexOf(a.id)
+        const bIndex = recentIds.indexOf(b.id)
+        return aIndex - bIndex
+      })
+    }
+
+    // Search filter
+    filtered = filtered.filter((exercise: Exercise) => {
       if (searchQuery && !exercise.name.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false
       }
@@ -89,25 +111,53 @@ export function ExercisePickerSheet({
 
       return true
     })
-  }, [exercises, searchQuery, selectedArea, selectedEquipment])
 
-  const toggleExercise = (exerciseId: string) => {
-    if (!multiSelectMode) {
-      // Quick add mode: immediately add the exercise
-      const exercise = exercises.find((e: Exercise) => e.id === exerciseId)
-      if (exercise) {
-        onSelectExercises([exercise])
-        setSelectedExercises(new Set())
-        setSearchQuery('')
-        setSelectedArea('all')
-        setSelectedEquipment('all')
-        onClose()
-        hapticFeedback('medium')
-        return
+    return filtered
+  }, [exercises, searchQuery, selectedArea, selectedEquipment, activeTab, favorites, recentIds])
+
+  // Paginated exercises - only show displayCount items
+  const displayedExercises = useMemo(() => {
+    return filteredExercises.slice(0, displayCount)
+  }, [filteredExercises, displayCount])
+
+  const hasMore = displayCount < filteredExercises.length
+
+  // Load more exercises
+  const loadMore = useCallback(() => {
+    if (hasMore) {
+      setDisplayCount(prev => prev + 30)
+    }
+  }, [hasMore])
+
+  // Reset display count when filters change
+  const resetDisplayCount = useCallback(() => {
+    setDisplayCount(30)
+  }, [])
+
+  // Reset on filter/search changes
+  useMemo(() => {
+    resetDisplayCount()
+  }, [searchQuery, selectedArea, selectedEquipment, activeTab, resetDisplayCount])
+
+  // Handle scroll event for infinite loading
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer
+      // Load more when scrolled to bottom (with 200px threshold)
+      if (scrollHeight - scrollTop - clientHeight < 200 && hasMore) {
+        loadMore()
       }
     }
 
-    // Multi-select mode: toggle selection
+    scrollContainer.addEventListener('scroll', handleScroll)
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+  }, [hasMore, loadMore])
+
+  const toggleExercise = useCallback((exerciseId: string) => {
+    // Always toggle selection
     setSelectedExercises(prev => {
       const newSet = new Set(prev)
       if (newSet.has(exerciseId)) {
@@ -118,11 +168,13 @@ export function ExercisePickerSheet({
       return newSet
     })
     hapticFeedback('light')
-  }
+  }, [])
 
   const handleDone = () => {
     const selected = exercises.filter((e: Exercise) => selectedExercises.has(e.id))
     onSelectExercises(selected)
+    // Track all selected as recent
+    selected.forEach((ex: Exercise) => addRecent(ex.id))
     setSelectedExercises(new Set())
     onClose()
     hapticFeedback('medium')
@@ -133,7 +185,6 @@ export function ExercisePickerSheet({
     setSearchQuery('')
     setSelectedArea('all')
     setSelectedEquipment('all')
-    setMultiSelectMode(false) // Reset to quick add mode
     onClose()
   }
 
@@ -149,7 +200,7 @@ export function ExercisePickerSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md"
           />
 
           {/* Sheet */}
@@ -158,41 +209,22 @@ export function ExercisePickerSheet({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-[80] bg-background rounded-t-3xl max-h-[90vh] flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[100] bg-background rounded-t-3xl max-h-[90vh] flex flex-col"
           >
             {/* Header */}
             <div className="px-5 pt-6 pb-4 border-b">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Add Exercise</h2>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={multiSelectMode ? "default" : "ghost"}
-                    size="icon"
-                    onClick={() => {
-                      setMultiSelectMode(!multiSelectMode)
-                      if (multiSelectMode) {
-                        setSelectedExercises(new Set())
-                      }
-                      hapticFeedback('light')
-                    }}
-                    className="h-10 w-10"
-                  >
-                    {multiSelectMode ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleClose}
-                    className="h-10 w-10 -mr-2"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleClose}
+                  className="h-10 w-10 -mr-2"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
-              {/* Mode hint */}
-              <p className="text-xs text-muted-foreground mb-3">
-                {multiSelectMode ? '✓ Multi-select mode: Tap to select, then click Done' : '👆 Tap any exercise to add instantly'}
-              </p>
 
               {/* Search */}
               <div className="relative">
@@ -213,14 +245,27 @@ export function ExercisePickerSheet({
                 {(['all', 'favorites', 'recent'] as const).map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`py-2 text-sm font-semibold transition-colors ${
+                    onClick={() => {
+                      setActiveTab(tab)
+                      hapticFeedback('light')
+                    }}
+                    className={`py-2 text-sm font-semibold transition-colors relative ${
                       activeTab === tab
                         ? 'text-foreground'
                         : 'text-muted-foreground'
                     }`}
                   >
-                    {tab === 'all' ? 'MY' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {tab === 'all' ? 'All' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {tab === 'favorites' && favorites.size > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
+                        {favorites.size}
+                      </span>
+                    )}
+                    {tab === 'recent' && recentIds.length > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
+                        {recentIds.length}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -284,7 +329,7 @@ export function ExercisePickerSheet({
             </div>
 
             {/* Exercise List */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-4">
               {isLoading ? (
                 <div className="space-y-4">
                   {[1, 2, 3, 4, 5].map((i) => (
@@ -304,53 +349,78 @@ export function ExercisePickerSheet({
                   ))}
                 </div>
               ) : filteredExercises.length === 0 ? (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-16"
+                  className="text-center py-16 px-4"
                 >
-                  <Dumbbell className="h-14 w-14 text-muted-foreground/50 mx-auto mb-4" />
-                  <p className="text-muted-foreground text-lg">No exercises found</p>
+                  {activeTab === 'favorites' ? (
+                    <>
+                      <Heart className="h-14 w-14 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground text-lg font-medium mb-2">No favorites yet</p>
+                      <p className="text-sm text-muted-foreground/70">
+                        Tap the heart icon on exercises to save them here
+                      </p>
+                    </>
+                  ) : activeTab === 'recent' ? (
+                    <>
+                      <Dumbbell className="h-14 w-14 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground text-lg font-medium mb-2">No recent exercises</p>
+                      <p className="text-sm text-muted-foreground/70">
+                        Exercises you add will appear here
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Dumbbell className="h-14 w-14 text-muted-foreground/50 mx-auto mb-4" />
+                      <p className="text-muted-foreground text-lg">No exercises found</p>
+                      <p className="text-sm text-muted-foreground/70 mt-2">
+                        Try adjusting your filters
+                      </p>
+                    </>
+                  )}
                 </motion.div>
               ) : (
-                <motion.div
-                  className="space-y-3 pb-6"
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    visible: {
-                      transition: {
-                        staggerChildren: 0.03
-                      }
-                    }
-                  }}
-                >
-                  {filteredExercises.map((exercise: Exercise) => (
-                    <ExerciseListItem
-                      key={exercise.id}
-                      exercise={exercise}
-                      isSelected={selectedExercises.has(exercise.id)}
-                      onToggle={() => toggleExercise(exercise.id)}
-                      showCheckmark={multiSelectMode}
-                    />
-                  ))}
-                </motion.div>
+                <>
+                  <div className="space-y-3 pb-6">
+                    {displayedExercises.map((exercise: Exercise) => (
+                      <ExerciseListItem
+                        key={exercise.id}
+                        exercise={exercise}
+                        isSelected={selectedExercises.has(exercise.id)}
+                        isFavorite={isFavorite(exercise.id)}
+                        onToggle={() => toggleExercise(exercise.id)}
+                        onToggleFavorite={() => {
+                          toggleFavorite(exercise.id)
+                          hapticFeedback('light')
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Loading indicator when scrolling */}
+                  {hasMore && (
+                    <div className="pb-6 flex justify-center">
+                      <div className="text-sm text-muted-foreground">
+                        Scroll for more...
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
-            {/* Done Button - Only show in multi-select mode */}
-            {multiSelectMode && (
-              <div className="p-5 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 safe-bottom">
-                <Button
-                  onClick={handleDone}
-                  disabled={selectedExercises.size === 0}
-                  className="w-full h-14 rounded-2xl bg-primary text-primary-foreground text-base font-semibold"
-                  size="lg"
-                >
-                  Done ({selectedExercises.size} selected)
-                </Button>
-              </div>
-            )}
+            {/* Floating Add Button - Always visible */}
+            <div className="p-5 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 safe-bottom">
+              <Button
+                onClick={handleDone}
+                disabled={selectedExercises.size === 0}
+                className="w-full h-14 rounded-2xl bg-primary text-primary-foreground text-base font-semibold"
+                size="lg"
+              >
+                Add {selectedExercises.size > 0 && `(${selectedExercises.size})`}
+              </Button>
+            </div>
           </motion.div>
         </>
       )}
@@ -358,33 +428,27 @@ export function ExercisePickerSheet({
   )
 }
 
-// Exercise list item component
-function ExerciseListItem({
+// Exercise list item component - Memoized for performance
+const ExerciseListItem = memo(function ExerciseListItem({
   exercise,
   isSelected,
+  isFavorite,
   onToggle,
-  showCheckmark = false
+  onToggleFavorite
 }: {
   exercise: Exercise
   isSelected: boolean
+  isFavorite: boolean
   onToggle: () => void
-  showCheckmark?: boolean
+  onToggleFavorite: () => void
 }) {
   const [imageError, setImageError] = useState(false)
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 30 }
-    }
-  }
 
   return (
     <motion.button
       onClick={onToggle}
-      variants={itemVariants}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${
         isSelected ? 'bg-primary/10 ring-2 ring-primary' : 'bg-muted/30 hover:bg-muted/50'
       }`}
@@ -399,7 +463,9 @@ function ExerciseListItem({
             fill
             className="object-cover"
             onError={() => setImageError(true)}
+            loading="lazy"
             unoptimized
+            sizes="80px"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -416,27 +482,23 @@ function ExerciseListItem({
         </p>
       </div>
 
-      {/* Selection indicator */}
-      <motion.div
-        animate={{
-          scale: isSelected ? [1, 1.2, 1] : 1,
+      {/* Favorite Heart Icon */}
+      <motion.button
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggleFavorite()
         }}
-        transition={{ duration: 0.2 }}
+        className="shrink-0 p-1 hover:bg-muted/50 rounded-lg transition-colors"
+        whileTap={{ scale: 0.9 }}
       >
-        {showCheckmark ? (
-          <CheckSquare
-            className={`h-6 w-6 shrink-0 transition-colors ${
-              isSelected ? 'fill-primary text-primary' : 'text-muted-foreground/30'
-            }`}
-          />
-        ) : (
-          <Heart
-            className={`h-6 w-6 shrink-0 transition-colors ${
-              isSelected ? 'fill-primary text-primary' : 'text-muted-foreground/50'
-            }`}
-          />
-        )}
-      </motion.div>
+        <Heart
+          className={`h-5 w-5 transition-all ${
+            isFavorite
+              ? 'fill-red-500 text-red-500'
+              : 'text-muted-foreground/40 hover:text-red-400'
+          }`}
+        />
+      </motion.button>
     </motion.button>
   )
-}
+})
