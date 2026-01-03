@@ -11,6 +11,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 
 // Import mock modules
 import './mocks/fetch'
+import './mocks/framer-motion'
 import './mocks/sonner'
 import './mocks/supabase'
 import './mocks/tanstack-query'
