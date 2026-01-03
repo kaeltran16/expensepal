@@ -1,5 +1,5 @@
 import { hapticFeedback } from '@/lib/utils';
-import { useState, useRef, RefObject } from 'react';
+import { RefObject, useRef, useState } from 'react';
 
 interface UsePullToRefreshOptions {
   threshold?: number;
@@ -24,13 +24,13 @@ export function usePullToRefresh({
       contentRef.current &&
       contentRef.current.scrollTop === 0
     ) {
-      touchStart.current = e.touches[0].clientY;
+      touchStart.current = e.touches[0]!.clientY;
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (enabled && touchStart.current) {
-      const pull = e.touches[0].clientY - touchStart.current;
+      const pull = e.touches[0]!.clientY - touchStart.current;
       if (pull > 0) {
         setPullDistance(Math.min(pull, maxDistance));
       }

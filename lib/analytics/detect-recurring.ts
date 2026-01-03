@@ -88,7 +88,7 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
 
   // Sort by date ascending
   const sorted = dates
-    .map((date, i) => ({ date, amount: amounts[i], expense: expenses[i] }))
+    .map((date, i) => ({ date, amount: amounts[i]!, expense: expenses[i]! }))
     .sort((a, b) => a.date.getTime() - b.date.getTime())
 
   // Calculate intervals between transactions (in days)
@@ -218,8 +218,8 @@ export function getMerchantInsights(
     )
 
     const total = merchantExpenses.reduce((sum, e) => sum + e.amount, 0)
-    const firstDate = new Date(sorted[0].transaction_date)
-    const lastDate = new Date(sorted[sorted.length - 1].transaction_date)
+    const firstDate = new Date(sorted[0]!.transaction_date)
+    const lastDate = new Date(sorted[sorted.length - 1]!.transaction_date)
 
     // Calculate months span
     const monthsSpan = Math.max(
@@ -229,13 +229,13 @@ export function getMerchantInsights(
     )
 
     insights.push({
-      merchant: sorted[0].merchant,
-      category: sorted[0].category || 'Other',
+      merchant: sorted[0]!.merchant,
+      category: sorted[0]!.category || 'Other',
       totalSpent: total,
       transactionCount: merchantExpenses.length,
       averageAmount: total / merchantExpenses.length,
-      firstTransaction: sorted[0].transaction_date,
-      lastTransaction: sorted[sorted.length - 1].transaction_date,
+      firstTransaction: sorted[0]!.transaction_date,
+      lastTransaction: sorted[sorted.length - 1]!.transaction_date,
       monthlyAverage: total / monthsSpan,
       percentOfTotal: (total / totalSpent) * 100,
     })

@@ -61,7 +61,7 @@ export function getProgressiveOverloadSuggestion(
   }
 
   // get last working set (exclude warmups if marked)
-  const workingSets = lastWorkout.sets.filter(s => !s.completed || s.rpe || s.reps > 0)
+  const workingSets = lastWorkout.sets.filter(s => !s.completed || s.rpe || (s.reps ?? 0) > 0)
   if (workingSets.length === 0) {
     return {
       type: 'maintain',
@@ -82,12 +82,12 @@ export function getProgressiveOverloadSuggestion(
 
   // check consistency across recent workouts
   const hitTargetRepsConsistently = recentWorkouts.every(workout => {
-    const sets = workout.sets.filter(s => !s.completed || s.rpe || s.reps > 0)
+    const sets = workout.sets.filter(s => !s.completed || s.rpe || (s.reps ?? 0) > 0)
     return sets.length > 0 && sets.every(s => (s.reps || 0) >= targetRepsMin)
   })
 
   const strugglingRecently = recentWorkouts.some(workout => {
-    const sets = workout.sets.filter(s => !s.completed || s.rpe || s.reps > 0)
+    const sets = workout.sets.filter(s => !s.completed || s.rpe || (s.reps ?? 0) > 0)
     return sets.length > 0 && sets.some(s => (s.reps || 0) < targetRepsMin - 2)
   })
 
@@ -140,7 +140,7 @@ export function getProgressiveOverloadSuggestion(
   if (history.length >= 4) {
     const last4Workouts = history.slice(0, 4)
     const weights = last4Workouts.map(w => {
-      const sets = w.sets.filter(s => !s.completed || s.rpe || s.reps > 0)
+      const sets = w.sets.filter(s => !s.completed || s.rpe || (s.reps ?? 0) > 0)
       return Math.max(...sets.map(s => s.weight || 0))
     })
     const allSameWeight = weights.every(w => w === weights[0])
@@ -198,7 +198,7 @@ export function detectPersonalRecords(
     const bestScore = (best.weight || 0) * (1 + (best.reps || 0) / 30)
     const currentScore = (current.weight || 0) * (1 + (current.reps || 0) / 30)
     return currentScore > bestScore ? current : best
-  }, currentSets[0])
+  }, currentSets[0]!)
 
   let estimated1RM = 0
   if (bestSet && bestSet.weight && bestSet.reps) {

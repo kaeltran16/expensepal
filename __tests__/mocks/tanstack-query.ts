@@ -89,7 +89,7 @@ export function mockQuery<TData = unknown>(
   queryKey: string | readonly unknown[],
   options: MockQueryOptions<TData>
 ): void {
-  const key = Array.isArray(queryKey) ? JSON.stringify(queryKey) : queryKey
+  const key = typeof queryKey === 'string' ? queryKey : JSON.stringify(queryKey)
   queryMockOverrides[key] = options as MockQueryOptions
 }
 
@@ -188,3 +188,4 @@ vi.mock('@tanstack/react-query', async () => {
 
 // Export mock utilities for use in tests
 export { mockQueryClient }
+

@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { WorkoutTemplate } from '@/lib/supabase'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export interface ScheduledWorkout {
   id: string
@@ -44,7 +44,7 @@ export function useScheduledWorkouts({ startDate, endDate }: UseScheduledWorkout
 
 // Get today's scheduled workout
 export function useTodayScheduledWorkout() {
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0]!
 
   return useQuery({
     queryKey: ['scheduled-workout', 'today', today],
@@ -169,7 +169,7 @@ export function getWeekDates(date: Date = new Date()): string[] {
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday)
     date.setDate(monday.getDate() + i)
-    dates.push(date.toISOString().split('T')[0])
+    dates.push(date.toISOString().split('T')[0]!)
   }
 
   return dates
@@ -178,8 +178,8 @@ export function getWeekDates(date: Date = new Date()): string[] {
 // Utility: Get this week's scheduled workouts
 export function useThisWeekScheduledWorkouts() {
   const weekDates = getWeekDates()
-  const startDate = weekDates[0]
-  const endDate = weekDates[weekDates.length - 1]
+  const startDate = weekDates[0]!
+  const endDate = weekDates[weekDates.length - 1]!
 
   return useScheduledWorkouts({ startDate, endDate })
 }

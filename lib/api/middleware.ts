@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { User } from '@supabase/supabase-js'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 /**
@@ -160,7 +160,7 @@ export function withAuthAndValidation<T extends z.ZodType>(
         return NextResponse.json(
           {
             error: 'Validation failed',
-            details: error.errors.map(err => ({
+            details: error.issues.map(err => ({
               path: err.path.join('.'),
               message: err.message,
             })),
@@ -210,7 +210,7 @@ export function withAuthAndQueryValidation<T extends z.ZodType>(
         return NextResponse.json(
           {
             error: 'Invalid query parameters',
-            details: error.errors.map(err => ({
+            details: error.issues.map(err => ({
               path: err.path.join('.'),
               message: err.message,
             })),

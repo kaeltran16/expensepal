@@ -2,8 +2,8 @@
  * Common type definitions used across the application
  */
 
-import type { LucideIcon } from 'lucide-react'
 import type { Database } from '@/lib/supabase/database.types'
+import type { LucideIcon } from 'lucide-react'
 
 // Icon type for Lucide React icons
 export type IconType = LucideIcon
@@ -15,12 +15,10 @@ export type ReactElement = React.ReactElement
 // Database types
 export type Expense = Database['public']['Tables']['expenses']['Row']
 export type Budget = Database['public']['Tables']['budgets']['Row']
-export type Goal = Database['public']['Tables']['goals']['Row']
 export type Meal = Database['public']['Tables']['meals']['Row']
 export type Workout = Database['public']['Tables']['workouts']['Row']
 export type Exercise = Database['public']['Tables']['exercises']['Row']
 export type WorkoutTemplate = Database['public']['Tables']['workout_templates']['Row']
-export type ExerciseHistory = Database['public']['Tables']['exercise_history']['Row']
 
 // Template exercise type (used in workout templates)
 export interface TemplateExercise {

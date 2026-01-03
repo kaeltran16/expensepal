@@ -8,6 +8,14 @@ import { SupabaseClient, PostgrestError } from '@supabase/supabase-js'
  */
 
 // ============================================================================
+// Type Helpers
+// ============================================================================
+
+type SupabaseQueryBuilder<T extends keyof Database['public']['Tables']> = ReturnType<
+  ReturnType<ReturnType<SupabaseClient<Database>['from']>['select']>['eq']
+>
+
+// ============================================================================
 // Base Query Builder
 // ============================================================================
 
@@ -16,7 +24,7 @@ import { SupabaseClient, PostgrestError } from '@supabase/supabase-js'
  * Provides common functionality for all entity-specific builders
  */
 export abstract class BaseQueryBuilder<T extends keyof Database['public']['Tables']> {
-  protected query: ReturnType<SupabaseClient<Database>['from']>
+  protected query: SupabaseQueryBuilder<T>
 
   constructor(
     protected supabase: SupabaseClient<Database>,
@@ -24,10 +32,11 @@ export abstract class BaseQueryBuilder<T extends keyof Database['public']['Table
     protected userId: string
   ) {
     // Initialize base query with user filter and default ordering
-    this.query = this.supabase
-      .from(this.table)
+    // Using type assertion because Supabase's generated types are complex
+    this.query = (this.supabase
+      .from(this.table as T & string)
       .select('*')
-      .eq('user_id', this.userId)
+      .eq('user_id' as never, this.userId)) as unknown as SupabaseQueryBuilder<T>
   }
 
   /**
@@ -38,7 +47,7 @@ export abstract class BaseQueryBuilder<T extends keyof Database['public']['Table
   paginate(page: number, limit: number) {
     const from = (page - 1) * limit
     const to = from + limit - 1
-    this.query = this.query.range(from, to)
+    this.query = this.query.range(from, to) as SupabaseQueryBuilder<T>
     return this
   }
 
@@ -47,7 +56,7 @@ export abstract class BaseQueryBuilder<T extends keyof Database['public']['Table
    * @param limit - Maximum number of items to return
    */
   limit(limit: number) {
-    this.query = this.query.limit(limit)
+    this.query = this.query.limit(limit) as SupabaseQueryBuilder<T>
     return this
   }
 
@@ -56,7 +65,7 @@ export abstract class BaseQueryBuilder<T extends keyof Database['public']['Table
    * @param offset - Number of items to skip
    */
   offset(offset: number) {
-    this.query = this.query.range(offset, offset + 999999)
+    this.query = this.query.range(offset, offset + 999999) as SupabaseQueryBuilder<T>
     return this
   }
 
@@ -67,7 +76,11 @@ export abstract class BaseQueryBuilder<T extends keyof Database['public']['Table
     data: Database['public']['Tables'][T]['Row'][] | null
     error: PostgrestError | null
   }> {
-    return await this.query
+    // Type assertion is safe here because we know the runtime behavior
+    return (await this.query) as {
+      data: Database['public']['Tables'][T]['Row'][] | null
+      error: PostgrestError | null
+    }
   }
 
   /**
@@ -77,15 +90,30 @@ export abstract class BaseQueryBuilder<T extends keyof Database['public']['Table
     data: Database['public']['Tables'][T]['Row'] | null
     error: PostgrestError | null
   }> {
-    return await this.query.single()
+    // Type assertion is safe here because we know the runtime behavior
+    return (await this.query.single()) as {
+      data: Database['public']['Tables'][T]['Row'] | null
+      error: PostgrestError | null
+    }
   }
 
   /**
    * Execute the query and return count
    */
-  async count() {
-    this.query = this.query.select('*', { count: 'exact', head: true })
-    return await this.query
+  async count(): Promise<{
+    count: number | null
+    error: PostgrestError | null
+  }> {
+    const countQuery = this.supabase
+      .from(this.table as T & string)
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id' as never, this.userId)
+
+    // Type assertion is safe here because we know the runtime behavior
+    return (await countQuery) as {
+      count: number | null
+      error: PostgrestError | null
+    }
   }
 }
 
@@ -302,9 +330,9 @@ export interface GoalFilters {
   completed?: boolean
 }
 
-export class GoalQueryBuilder extends BaseQueryBuilder<'goals'> {
+export class GoalQueryBuilder extends BaseQueryBuilder<'savings_goals'> {
   constructor(supabase: SupabaseClient<Database>, userId: string) {
-    super(supabase, 'goals', userId)
+    super(supabase, 'savings_goals', userId)
     // Default: order by deadline ascending
     this.query = this.query.order('deadline', { ascending: true })
   }

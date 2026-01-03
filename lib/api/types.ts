@@ -75,10 +75,6 @@ export type Budget = Database['public']['Tables']['budgets']['Row']
 export type BudgetInsert = Database['public']['Tables']['budgets']['Insert']
 export type BudgetUpdate = Database['public']['Tables']['budgets']['Update']
 
-export type Goal = Database['public']['Tables']['goals']['Row']
-export type GoalInsert = Database['public']['Tables']['goals']['Insert']
-export type GoalUpdate = Database['public']['Tables']['goals']['Update']
-
 export type Meal = Database['public']['Tables']['meals']['Row']
 export type MealInsert = Database['public']['Tables']['meals']['Insert']
 export type MealUpdate = Database['public']['Tables']['meals']['Update']
@@ -95,9 +91,6 @@ export type Exercise = Database['public']['Tables']['exercises']['Row']
 export type ExerciseInsert = Database['public']['Tables']['exercises']['Insert']
 export type ExerciseUpdate = Database['public']['Tables']['exercises']['Update']
 
-export type ExerciseHistory = Database['public']['Tables']['exercise_history']['Row']
-export type ExerciseHistoryInsert = Database['public']['Tables']['exercise_history']['Insert']
-export type ExerciseHistoryUpdate = Database['public']['Tables']['exercise_history']['Update']
 
 export type Category = Database['public']['Tables']['categories']['Row']
 export type CategoryInsert = Database['public']['Tables']['categories']['Insert']
@@ -107,9 +100,6 @@ export type CalorieGoal = Database['public']['Tables']['calorie_goals']['Row']
 export type CalorieGoalInsert = Database['public']['Tables']['calorie_goals']['Insert']
 export type CalorieGoalUpdate = Database['public']['Tables']['calorie_goals']['Update']
 
-export type Profile = Database['public']['Tables']['profiles']['Row']
-export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
-export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 
 // ============================================================================
 // Specific API Response Types
@@ -129,12 +119,6 @@ export type CreateBudgetResponse = SuccessResponse<Budget>
 export type UpdateBudgetResponse = SuccessResponse<Budget>
 export type DeleteBudgetResponse = SuccessResponse<{ id: string }>
 
-// Goal API Responses
-export type GetGoalsResponse = ListResponse<Goal>
-export type GetGoalResponse = SuccessResponse<Goal>
-export type CreateGoalResponse = SuccessResponse<Goal>
-export type UpdateGoalResponse = SuccessResponse<Goal>
-export type DeleteGoalResponse = SuccessResponse<{ id: string }>
 
 // Meal API Responses
 export type GetMealsResponse = ListResponse<Meal>
@@ -162,8 +146,6 @@ export type GetExercisesResponse = ListResponse<Exercise>
 export type GetExerciseResponse = SuccessResponse<Exercise>
 export type CreateExerciseResponse = SuccessResponse<Exercise>
 
-// Exercise History API Responses
-export type GetExerciseHistoryResponse = ListResponse<ExerciseHistory>
 
 // ============================================================================
 // Analytics and Stats Response Types

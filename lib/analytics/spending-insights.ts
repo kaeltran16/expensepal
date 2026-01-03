@@ -65,7 +65,6 @@ export function analyzeCategoryTrends(expenses: Expense[]): CategoryTrend[] {
   const now = new Date()
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1)
 
   // Group by category and month
   const categoryData = new Map<string, { current: number; previous: number }>()
@@ -129,7 +128,7 @@ export function detectSpendingStreaks(expenses: Expense[]): SpendingPattern[] {
 
     if (categoryExpenses.length === 0) continue
 
-    const lastExpense = new Date(categoryExpenses[0].transaction_date)
+    const lastExpense = new Date(categoryExpenses[0]!.transaction_date)
     const daysSince = Math.floor((Date.now() - lastExpense.getTime()) / (1000 * 60 * 60 * 24))
 
     if (daysSince >= 7) {
@@ -143,7 +142,7 @@ export function detectSpendingStreaks(expenses: Expense[]): SpendingPattern[] {
     }
   }
 
-  return patterns.sort((a, b) => (b.data?.daysSince || 0) - (a.data?.daysSince || 0))
+  return patterns.sort((a, b) => ((b.data?.daysSince as number) || 0) - ((a.data?.daysSince as number) || 0))
 }
 
 /**

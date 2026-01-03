@@ -87,9 +87,9 @@ export class CalorieEstimator {
         .limit(1)
 
       if (partialMatches && partialMatches.length > 0) {
-        console.log(`✓ Found partial match in saved_foods: "${partialMatches[0].name}"`)
-        await this.updateUsageStats(partialMatches[0].id)
-        return partialMatches[0]
+        console.log(`✓ Found partial match in saved_foods: "${partialMatches[0]!.name}"`)
+        await this.updateUsageStats(partialMatches[0]!.id)
+        return partialMatches[0]!
       }
 
       return null
@@ -373,7 +373,7 @@ Your estimate:`
 
     // If only one item, use the standard estimate method
     if (foodDescriptions.length === 1) {
-      const estimate = await this.estimate(foodDescriptions[0], context)
+      const estimate = await this.estimate(foodDescriptions[0]!, context)
       return [estimate]
     }
 
@@ -422,13 +422,13 @@ Your estimate:`
 
     // Fill in the LLM estimates
     needsEstimation.forEach((item, i) => {
-      results[item.index] = llmEstimates[i]
+      results[item.index] = llmEstimates[i]!
     })
 
     // Save all LLM estimates to database for future use
     await Promise.all(
       needsEstimation.map((item, i) =>
-        this.saveToDatabase(item.food, llmEstimates[i], context)
+        this.saveToDatabase(item.food, llmEstimates[i]!, context)
       )
     )
 
