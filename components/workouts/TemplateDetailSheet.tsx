@@ -67,7 +67,17 @@ export function TemplateDetailSheet({
   console.log(`[${instanceId}] TemplateDetailSheet - isWorkoutActive:`, isWorkoutActive, 'template:', template?.name)
   console.log(`[${instanceId}] TemplateDetailSheet - !isWorkoutActive:`, !isWorkoutActive, 'should render button:', !isWorkoutActive)
 
-  const [exercises, setExercises] = useState<any[]>([])
+  interface TemplateExercise {
+    _id?: string
+    exercise_id: string
+    name?: string
+    sets: number
+    reps: string
+    weight?: number
+    rest?: number
+  }
+
+  const [exercises, setExercises] = useState<TemplateExercise[]>([])
   const [editingExercise, setEditingExercise] = useState<number | null>(null)
   const [duration, setDuration] = useState<'short' | 'normal' | 'long'>('normal')
   const [condition, setCondition] = useState<number>(100)
@@ -79,7 +89,7 @@ export function TemplateDetailSheet({
   useEffect(() => {
     if (template) {
       // Add unique IDs to exercises if they don't have them
-      const exercisesWithIds = ((template.exercises as any[]) || []).map((ex, idx) => ({
+      const exercisesWithIds = ((template.exercises as unknown as TemplateExercise[]) || []).map((ex, idx) => ({
         ...ex,
         _id: ex._id || `ex-${Date.now()}-${idx}`,
         weight: ex.weight || 0,
@@ -110,11 +120,11 @@ export function TemplateDetailSheet({
     hapticFeedback('light')
   }
 
-  const saveExercises = async (updatedExercises: any[]) => {
+  const saveExercises = async (updatedExercises: TemplateExercise[]) => {
     if (template && onUpdateTemplate) {
       try {
         await onUpdateTemplate(template.id, {
-          exercises: updatedExercises as any
+          exercises: updatedExercises as unknown as WorkoutTemplate['exercises']
         })
       } catch (error) {
         console.error('Failed to save exercises:', error)
@@ -123,7 +133,7 @@ export function TemplateDetailSheet({
   }
 
   // Debounced save - waits 2 seconds after last change before saving
-  const debouncedSave = (updatedExercises: any[]) => {
+  const debouncedSave = (updatedExercises: TemplateExercise[]) => {
     // Clear existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
@@ -132,14 +142,14 @@ export function TemplateDetailSheet({
     // Set new timeout to save after 2 seconds of inactivity
     saveTimeoutRef.current = setTimeout(() => {
       saveExercises(updatedExercises).catch(err => console.error('Failed to save reorder:', err))
-    }, 2000)
+    }, 2000) as unknown as NodeJS.Timeout
   }
 
-  const handleSelectExercises = async (selectedExercises: any[]) => {
+  const handleSelectExercises = async (selectedExercises: Array<{ id: string; name: string }>) => {
     const existingIds = new Set(exercises.map(ex => ex.exercise_id))
 
     // Filter out exercises that are already in the list
-    const newExercises = selectedExercises
+    const newExercises: TemplateExercise[] = selectedExercises
       .filter(ex => !existingIds.has(ex.id))
       .map((ex, idx) => ({
         _id: `ex-${Date.now()}-${exercises.length + idx}`,
@@ -426,7 +436,7 @@ export function TemplateDetailSheet({
                       }}
                       className="space-y-3 mb-4"
                     >
-                      {exercises.map((exercise: any, index: number) => {
+                      {exercises.map((exercise, index: number) => {
                         // Find completion info for this exercise
                         const exerciseLog = exerciseLogs.find(log => log.exercise_id === exercise.exercise_id)
                         const completedSets = exerciseLog?.sets?.length || 0
@@ -574,7 +584,15 @@ function ExerciseCardSimple({
   onEdit,
   onRemove
 }: {
-  exercise: any
+  exercise: {
+    _id?: string
+    exercise_id: string
+    name?: string
+    sets: number
+    reps: string
+    weight?: number
+    rest?: number
+  }
   index: number
   isReorderMode?: boolean
   completedSets?: number

@@ -1,146 +1,130 @@
+import { withAuth } from '@/lib/api/middleware'
 import { calorieEstimator } from '@/lib/calorie-estimator'
 import { getUserEmailServices } from '@/lib/email-service'
 import { getMealTimeFromDate } from '@/lib/meal-utils'
 import { supabaseAdmin } from '@/lib/supabase'
+import type { Database } from '@/lib/supabase/database.types'
 import { createClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+
+interface ParsedExpense {
+  amount: number
+  currency: string
+  transactionDate: string
+  merchant: string
+  source: string
+  emailSubject?: string
+  category?: string
+  emailUid?: string
+  emailAccount?: string
+  transactionType?: string
+}
+
+interface SuccessfulExpense {
+  expense: ParsedExpense
+  expenseId: string
+}
 
 export const dynamic = 'force-dynamic'
 
-export async function POST() {
-  try {
-    // Get authenticated user from session
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+export const POST = withAuth(async (_request, user) => {
+  // Create authenticated Supabase client (respects RLS)
+  const supabase = createClient()
+  
+  // get user-specific email services from database using authenticated client
+  const emailServices = await getUserEmailServices(supabase, user.id)
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in to sync emails.' },
-        { status: 401 }
-      )
-    }
-
-    // get user-specific email services from database
-    const emailServices = await getUserEmailServices(user.id)
-
-    // check if any email accounts are configured
-    if (emailServices.length === 0) {
-      return NextResponse.json(
-        { error: 'No email accounts configured. Please add your email settings in Settings.' },
-        { status: 400 }
-      )
-    }
-
-    console.log(`Syncing from ${emailServices.length} email account(s)...`)
-    console.log(`Associating expenses with user: ${user.id} (${user.email})`)
-
-    // Get already-processed email UIDs from database to avoid duplicates
-    console.log('Fetching already-processed email UIDs from database...')
-    const { data: processedRecords, error: fetchError } = await supabaseAdmin
-      .from('processed_emails')
-      .select('email_uid, email_account')
-      .eq('user_id', user.id)
-
-    if (fetchError) {
-      console.error('Error fetching processed emails:', fetchError)
-      // Continue anyway - worst case we might get duplicates
-    }
-
-    // Create a Set for fast lookup: "email@example.com:12345"
-    const processedUids = new Set<string>(
-      (processedRecords || []).map(r => `${r.email_account}:${r.email_uid}`)
+  // check if any email accounts are configured
+  if (emailServices.length === 0) {
+    return NextResponse.json(
+      { error: 'No email accounts configured. Please add your email settings in Settings.' },
+      { status: 400 }
     )
-    console.log(`Found ${processedUids.size} already-processed emails`)
+  }
 
-    // Fetch expenses from all configured email accounts
-    const fetchPromises = emailServices.map((service, index) => {
-      console.log(`Fetching from email account ${index + 1}...`)
-      return service.fetchUnreadExpenses(processedUids)
+  console.log(`Syncing from ${emailServices.length} email account(s)...`)
+  console.log(`Associating expenses with user: ${user.id} (${user.email})`)
+
+  // Get already-processed email UIDs from database to avoid duplicates
+  console.log('Fetching already-processed email UIDs from database...')
+  const { data: processedRecords, error: fetchError } = await supabaseAdmin
+    .from('processed_emails')
+    .select('email_uid, email_account')
+    .eq('user_id', user.id)
+
+  if (fetchError) {
+    console.error('Error fetching processed emails:', fetchError)
+    // Continue anyway - worst case we might get duplicates
+  }
+
+  // Create a Set for fast lookup: "email@example.com:12345"
+  const processedUids = new Set<string>(
+    (processedRecords || []).map(r => `${r.email_account}:${r.email_uid}`)
+  )
+  console.log(`Found ${processedUids.size} already-processed emails`)
+
+  // Fetch expenses from all configured email accounts
+  const fetchPromises = emailServices.map((service, index) => {
+    console.log(`Fetching from email account ${index + 1}...`)
+    return service.fetchUnreadExpenses(processedUids)
+  })
+
+  const allExpensesArrays = await Promise.all(fetchPromises)
+  const expenses = allExpensesArrays.flat()
+
+  if (expenses.length === 0) {
+    return NextResponse.json({
+      message: 'No new expenses found',
+      newExpenses: 0,
+      count: 0,
+      duplicates: 0,
+      failed: 0,
+      mealsCreated: 0,
+      accounts: emailServices.length,
+      expenses: [],
     })
+  }
 
-    const allExpensesArrays = await Promise.all(fetchPromises)
-    const expenses = allExpensesArrays.flat()
+  console.log(`Found ${expenses.length} total expenses from all accounts`)
 
-    if (expenses.length === 0) {
-      return NextResponse.json({
-        message: 'No new expenses found',
-        newExpenses: 0,
-        count: 0,
-        duplicates: 0,
-        failed: 0,
-        mealsCreated: 0,
-        accounts: emailServices.length,
-        expenses: [],
-      })
-    }
+  // Insert expenses into database
+  const insertResults = []
+  let successful = 0
+  let failed = 0
+  let duplicates = 0
+  let mealsCreated = 0
 
-    console.log(`Found ${expenses.length} total expenses from all accounts`)
+  // First pass: Insert all expenses
+  const successfulExpenses: SuccessfulExpense[] = []
 
-    // Insert expenses into database
-    const insertResults = []
-    let successful = 0
-    let failed = 0
-    let duplicates = 0
-    let mealsCreated = 0
+  for (const expense of expenses) {
+    console.log(`Attempting to insert: ${expense.amount} ${expense.currency} at ${expense.merchant}`)
 
-    // First pass: Insert all expenses
-    const successfulExpenses: Array<{ expense: any; expenseId: string }> = []
+    const { data, error } = await supabaseAdmin.from('expenses').insert([
+      {
+        user_id: user.id,
+        transaction_type: expense.transactionType,
+        amount: expense.amount,
+        currency: expense.currency,
+        transaction_date: expense.transactionDate,
+        merchant: expense.merchant,
+        source: expense.source,
+        email_subject: expense.emailSubject,
+        category: expense.category,
+      },
+    ]).select()
 
-    for (const expense of expenses) {
-      console.log(`Attempting to insert: ${expense.amount} ${expense.currency} at ${expense.merchant}`)
+    if (error) {
+      console.error(`Failed to insert expense:`, error)
 
-      const { data, error } = await supabaseAdmin.from('expenses').insert([
-        {
-          user_id: user.id,
-          transaction_type: expense.transactionType,
-          amount: expense.amount,
-          currency: expense.currency,
-          transaction_date: expense.transactionDate,
-          merchant: expense.merchant,
-          source: expense.source,
-          email_subject: expense.emailSubject,
-          category: expense.category,
-        },
-      ]).select()
+      // Check if it's a duplicate (unique constraint violation)
+      if (error.code === '23505') {
+        console.log(`Duplicate expense detected (already exists in database)`)
+        console.log(`Expense UID: ${expense.emailUid}, Account: ${expense.emailAccount}`)
+        duplicates++
 
-      if (error) {
-        console.error(`Failed to insert expense:`, error)
-
-        // Check if it's a duplicate (unique constraint violation)
-        if (error.code === '23505') {
-          console.log(`Duplicate expense detected (already exists in database)`)
-          console.log(`Expense UID: ${expense.emailUid}, Account: ${expense.emailAccount}`)
-          duplicates++
-
-          // still store the uid to prevent re-parsing this email
-          if (expense.emailUid && expense.emailAccount) {
-            const { error: uidError } = await supabaseAdmin
-              .from('processed_emails')
-              .insert({
-                user_id: user.id,
-                email_account: expense.emailAccount,
-                email_uid: expense.emailUid,
-                subject: expense.emailSubject,
-                expense_id: null, // no expense id since insert failed
-              })
-
-            if (uidError && uidError.code !== '23505') {
-              console.error('Failed to store processed email UID for duplicate:', uidError)
-            } else if (!uidError) {
-              console.log(`✓ Stored UID for duplicate expense: ${expense.emailUid}`)
-            }
-          }
-        } else {
-          failed++
-        }
-
-        insertResults.push({ success: false, error: error.message, expense })
-      } else {
-        console.log(`✓ Successfully inserted expense with ID: ${data[0]?.id}`)
-        successful++
-        insertResults.push({ success: true, data, expense })
-
-        // Store processed email UID in database to prevent future duplicates
+        // still store the uid to prevent re-parsing this email
         if (expense.emailUid && expense.emailAccount) {
           const { error: uidError } = await supabaseAdmin
             .from('processed_emails')
@@ -149,155 +133,162 @@ export async function POST() {
               email_account: expense.emailAccount,
               email_uid: expense.emailUid,
               subject: expense.emailSubject,
-              expense_id: data[0]?.id,
+              expense_id: null, // no expense id since insert failed
             })
 
-          if (uidError) {
-            // Don't fail the whole sync, just log it
-            // Duplicate UID constraint violations are expected (23505)
-            if (uidError.code !== '23505') {
-              console.error('Failed to store processed email UID:', uidError)
-            }
-          } else {
-            console.log(`✓ Stored processed UID: ${expense.emailUid}`)
+          if (uidError && uidError.code !== '23505') {
+            console.error('Failed to store processed email UID for duplicate:', uidError)
+          } else if (!uidError) {
+            console.log(`✓ Stored UID for duplicate expense: ${expense.emailUid}`)
           }
         }
-
-        // Track successful Food expenses for batch meal estimation
-        if (expense.category === 'Food') {
-          successfulExpenses.push({ expense, expenseId: data[0]?.id })
-        }
+      } else {
+        failed++
       }
-    }
 
-    // Second pass: Batch process meal estimations for all Food expenses
-    if (successfulExpenses.length > 0) {
-      console.log(`🍔 Batch processing ${successfulExpenses.length} Food expense(s) for meal tracking...`)
+      insertResults.push({ success: false, error: error.message, expense })
+    } else {
+      console.log(`✓ Successfully inserted expense with ID: ${data[0]?.id}`)
+      successful++
+      insertResults.push({ success: true, data, expense })
 
-      try {
-        // Prepare food descriptions for batch estimation
-        const foodDescriptions = successfulExpenses.map((item) => item.expense.merchant)
-
-        // Make a SINGLE batch LLM call for all foods
-        const estimates = await calorieEstimator.estimateBatch(
-          foodDescriptions,
-          {
-            additionalInfo: 'Food orders from email sync (GrabFood/delivery)',
-          }
-        )
-
-        // Create meal entries for each estimate
-        const mealInserts = successfulExpenses.map((item, index) => {
-          const estimate = estimates[index]
-          const { expense, expenseId } = item
-
-          // Determine meal time based on transaction time (GMT+7)
-          const mealTime = getMealTimeFromDate(expense.transactionDate)
-
-          return {
+      // Store processed email UID in database to prevent future duplicates
+      if (expense.emailUid && expense.emailAccount) {
+        const { error: uidError } = await supabaseAdmin
+          .from('processed_emails')
+          .insert({
             user_id: user.id,
-            name: expense.merchant,
-            calories: estimate.calories,
-            protein: estimate.protein,
-            carbs: estimate.carbs,
-            fat: estimate.fat,
-            meal_time: mealTime,
-            meal_date: expense.transactionDate,
-            source: 'email' as const,
-            confidence: estimate.confidence,
-            expense_id: expenseId,
-            llm_reasoning: estimate.reasoning,
-            notes: `Auto-tracked from ${expense.merchant} (${expense.amount} ${expense.currency})`,
+            email_account: expense.emailAccount,
+            email_uid: expense.emailUid,
+            subject: expense.emailSubject,
+            expense_id: data[0]?.id,
+          })
+
+        if (uidError) {
+          // Don't fail the whole sync, just log it
+          // Duplicate UID constraint violations are expected (23505)
+          if (uidError.code !== '23505') {
+            console.error('Failed to store processed email UID:', uidError)
           }
-        })
-
-        // Batch insert all meals
-        const { data: mealDataArray, error: mealError } = await supabaseAdmin
-          .from('meals')
-          .insert(mealInserts)
-
-        if (mealError) {
-          console.error(`Failed to create meal entries:`, mealError)
         } else {
-          mealsCreated = (mealDataArray as unknown as { length: number }[])?.length ?? 0
-          console.log(`✓ Created ${mealsCreated} meal entries in a single batch`)
+          console.log(`✓ Stored processed UID: ${expense.emailUid}`)
         }
-      } catch (batchError) {
-        console.error(`Error in batch meal estimation:`, batchError)
-        // Don't fail the whole sync if meal tracking fails
+      }
+
+      // Track successful Food expenses for batch meal estimation
+      if (expense.category === 'Food' && data[0]?.id) {
+        successfulExpenses.push({ expense, expenseId: data[0].id })
       }
     }
+  }
 
-    console.log(`\n=== SYNC SUMMARY ===`)
-    console.log(`Total parsed: ${expenses.length}`)
-    console.log(`Successfully inserted: ${successful}`)
-    console.log(`Duplicates skipped: ${duplicates}`)
-    console.log(`Failed: ${failed}`)
-    console.log(`Meals auto-tracked: ${mealsCreated}`)
+  // Second pass: Batch process meal estimations for all Food expenses
+  if (successfulExpenses.length > 0) {
+    console.log(`🍔 Batch processing ${successfulExpenses.length} Food expense(s) for meal tracking...`)
 
-    // update last_sync_at timestamp for user's email settings
     try {
-      await (supabaseAdmin as any)
-        .from('user_email_settings')
-        .update({ last_sync_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-    } catch (syncUpdateError) {
-      // don't fail the whole sync if timestamp update fails
-      console.error('Failed to update last_sync_at:', syncUpdateError)
-    }
+      // Prepare food descriptions for batch estimation
+      const foodDescriptions = successfulExpenses.map((item) => item.expense.merchant)
 
-    return NextResponse.json({
-      message: `Synced ${successful} new expenses (${duplicates} duplicates skipped, ${failed} failed)`,
-      newExpenses: successful,
-      count: successful, // Keep for backwards compatibility
-      duplicates,
-      failed,
-      mealsCreated,
-      accounts: emailServices.length,
-      results: insertResults,
-    })
-  } catch (error) {
-    console.error('Error syncing emails:', error)
-    // Never expose internal error details that might contain credentials
-    return NextResponse.json(
-      { error: 'Failed to sync emails' },
-      { status: 500 }
-    )
-  }
-}
+      // Make a SINGLE batch LLM call for all foods
+      const estimates = await calorieEstimator.estimateBatch(
+        foodDescriptions,
+        {
+          additionalInfo: 'Food orders from email sync (GrabFood/delivery)',
+        }
+      )
 
-export async function GET() {
-  try {
-    // get authenticated user
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+      // Create meal entries for each estimate
+      const mealInserts = successfulExpenses.map((item, index) => {
+        const estimate = estimates[index]
+        if (!estimate) {
+          throw new Error(`Missing estimate for index ${index}`)
+        }
+        const { expense, expenseId } = item
 
-    if (authError || !user) {
-      return NextResponse.json({
-        configured: false,
-        lastSync: null,
+        // Determine meal time based on transaction time (GMT+7)
+        const mealTime = getMealTimeFromDate(expense.transactionDate)
+
+        return {
+          user_id: user.id,
+          name: expense.merchant,
+          calories: estimate.calories,
+          protein: estimate.protein ?? null,
+          carbs: estimate.carbs ?? null,
+          fat: estimate.fat ?? null,
+          meal_time: mealTime,
+          meal_date: expense.transactionDate,
+          source: 'email' as const,
+          confidence: estimate.confidence ?? null,
+          expense_id: expenseId,
+          llm_reasoning: estimate.reasoning ?? null,
+          notes: `Auto-tracked from ${expense.merchant} (${expense.amount} ${expense.currency})`,
+        }
       })
+
+      // Batch insert all meals
+      const { data: mealDataArray, error: mealError } = await supabaseAdmin
+        .from('meals')
+        .insert(mealInserts)
+
+      if (mealError) {
+        console.error(`Failed to create meal entries:`, mealError)
+      } else {
+        mealsCreated = (mealDataArray as unknown as { length: number }[])?.length ?? 0
+        console.log(`✓ Created ${mealsCreated} meal entries in a single batch`)
+      }
+    } catch (batchError) {
+      console.error(`Error in batch meal estimation:`, batchError)
+      // Don't fail the whole sync if meal tracking fails
     }
-
-    // check if user has email settings configured (using any to bypass type check for new table)
-    const { data: settings } = await (supabaseAdmin as any)
-      .from('user_email_settings')
-      .select('last_sync_at, is_enabled')
-      .eq('user_id', user.id)
-      .eq('is_enabled', true)
-      .limit(1)
-
-    const configured = !!settings && settings.length > 0
-
-    return NextResponse.json({
-      configured,
-      lastSync: settings?.[0]?.last_sync_at || null,
-    })
-  } catch (error) {
-    console.error('Error checking sync status:', error)
-    return NextResponse.json(
-      { error: 'Failed to check sync status' },
-      { status: 500 }
-    )
   }
-}
+
+  console.log(`\n=== SYNC SUMMARY ===`)
+  console.log(`Total parsed: ${expenses.length}`)
+  console.log(`Successfully inserted: ${successful}`)
+  console.log(`Duplicates skipped: ${duplicates}`)
+  console.log(`Failed: ${failed}`)
+  console.log(`Meals auto-tracked: ${mealsCreated}`)
+
+  // update last_sync_at timestamp for user's email settings
+  try {
+    // Note: user_email_settings table may not have generated types yet
+    await (supabaseAdmin as SupabaseClient<Database>)
+      .from('user_email_settings' as never)
+      .update({ last_sync_at: new Date().toISOString() } as never)
+      .eq('user_id' as never, user.id as never)
+  } catch (syncUpdateError) {
+    // don't fail the whole sync if timestamp update fails
+    console.error('Failed to update last_sync_at:', syncUpdateError)
+  }
+
+  return NextResponse.json({
+    message: `Synced ${successful} new expenses (${duplicates} duplicates skipped, ${failed} failed)`,
+    newExpenses: successful,
+    count: successful, // Keep for backwards compatibility
+    duplicates,
+    failed,
+    mealsCreated,
+    accounts: emailServices.length,
+    results: insertResults,
+  })
+})
+
+export const GET = withAuth(async (_request, user) => {
+  // check if user has email settings configured
+  // Note: user_email_settings table may not have generated types yet
+  const { data: settings } = await (supabaseAdmin as SupabaseClient<Database>)
+    .from('user_email_settings' as never)
+    .select('last_sync_at, is_enabled' as never)
+    .eq('user_id' as never, user.id as never)
+    .eq('is_enabled' as never, true as never)
+    .limit(1)
+
+  const configured = !!settings && settings.length > 0
+  const lastSync = (settings?.[0] as { last_sync_at?: string } | undefined)?.last_sync_at || null
+
+  return NextResponse.json({
+    configured,
+    lastSync,
+  })
+})

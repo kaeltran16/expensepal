@@ -52,11 +52,12 @@ async function updateProfile(updates: Partial<UserProfile>): Promise<UserProfile
 }
 
 // Hook to fetch profile
-export function useProfile() {
+export function useProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['profile'],
     queryFn: fetchProfile,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: options?.enabled,
   })
 }
 

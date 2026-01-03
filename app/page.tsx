@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { BottomNavigation } from '@/components/bottom-navigation';
 import { BudgetAlerts } from '@/components/budget-alerts';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { FilterSheet } from '@/components/filter-sheet';
 import { FloatingActionMenu } from '@/components/floating-action-menu';
 import { Navbar } from '@/components/navbar';
@@ -18,17 +19,16 @@ import { QuickStatsOverview } from '@/components/quick-stats-overview';
 import { QuickStatsSkeleton } from '@/components/quick-stats-skeleton';
 import { SearchBar } from '@/components/search-bar';
 import { Button } from '@/components/ui/button';
-import {
-    AnalyticsInsightsView,
-    BudgetView,
-    CaloriesView,
-    ExpensesView,
-    GoalsView,
-    ProfileView,
-    SummaryView,
-    WorkoutsView
-} from '@/components/views';
+import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { WorkoutLogger } from '@/components/workout-logger';
+import {
+  BudgetViewSkeleton,
+  GoalsViewSkeleton,
+  AnalyticsViewSkeleton,
+  WorkoutsViewSkeleton,
+  CaloriesViewSkeleton,
+  ViewSkeleton,
+} from '@/components/views/skeletons';
 import type { ViewType } from '@/lib/constants/filters';
 import {
     useBudgets,
@@ -48,40 +48,71 @@ import {
     useUpdateTemplate,
     useWorkoutTemplates,
     useWorkouts,
+    queryKeys,
+    workoutKeys,
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
+import type { WorkoutTemplate, ExerciseLog } from '@/lib/types';
 import { hapticFeedback } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Filter } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Suspense } from 'react';
+// Lazy load view components for code splitting and better performance
+const ExpensesView = lazy(() => import('@/components/views').then(mod => ({ default: mod.ExpensesView })));
+const AnalyticsInsightsView = lazy(() => import('@/components/views').then(mod => ({ default: mod.AnalyticsInsightsView })));
+const BudgetView = lazy(() => import('@/components/views').then(mod => ({ default: mod.BudgetView })));
+const GoalsView = lazy(() => import('@/components/views').then(mod => ({ default: mod.GoalsView })));
+const SummaryView = lazy(() => import('@/components/views').then(mod => ({ default: mod.SummaryView })));
+const CaloriesView = lazy(() => import('@/components/views').then(mod => ({ default: mod.CaloriesView })));
+const WorkoutsView = lazy(() => import('@/components/views').then(mod => ({ default: mod.WorkoutsView })));
+const ProfileView = lazy(() => import('@/components/views').then(mod => ({ default: mod.ProfileView })));
 
 function HomeContent() {
-  // TanStack Query hooks for server state
+  // Client-side UI state (needs to be before hooks that depend on it)
+  const searchParams = useSearchParams();
+  const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
+
+  // Core hooks - always loaded for expenses view (default)
   const { data: expenses = [], isLoading: expensesLoading, refetch: refetchExpenses } = useExpenses();
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useStats();
+  const { isLoading: statsLoading, refetch: refetchStats } = useStats();
+
+  // Conditionally load data based on active view
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const { data: budgets = [], isLoading: budgetsLoading } = useBudgets({ month: currentMonth });
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: budgets = [], isLoading: budgetsLoading } = useBudgets(
+    { month: currentMonth },
+    { enabled: ['budget', 'expenses'].includes(activeView) } // Load for budget view + expenses (for alerts)
+  );
+
+  const { data: profile, isLoading: profileLoading } = useProfile({
+    enabled: activeView === 'profile'
+  });
   const { mutateAsync: updateProfile } = useUpdateProfile();
 
-  // workout tracking hooks
+  // Workout tracking hooks - only load when viewing workouts
   const weekAgo = useMemo(() => {
     const date = new Date()
     date.setDate(date.getDate() - 7)
     return date.toISOString()
   }, [])
-  const { data: workoutTemplates = [], isLoading: templatesLoading } = useWorkoutTemplates()
-  const { data: workouts = [] } = useWorkouts({ startDate: weekAgo })
-  const { data: exercises = [] } = useExercises()
+  const { data: workoutTemplates = [], isLoading: templatesLoading } = useWorkoutTemplates({
+    enabled: activeView === 'workouts'
+  })
+  const { data: workouts = [] } = useWorkouts(
+    { startDate: weekAgo },
+    { enabled: activeView === 'workouts' }
+  )
+  const { data: exercises = [] } = useExercises({
+    enabled: activeView === 'workouts'
+  })
   const { mutateAsync: createWorkout } = useCreateWorkout()
   const { mutateAsync: createTemplate } = useCreateTemplate()
   const { mutateAsync: updateTemplate } = useUpdateTemplate()
   const { mutateAsync: deleteTemplate } = useDeleteTemplate()
 
-  // Derived loading state
+  // Derived loading state for expenses view
   const loading = expensesLoading || statsLoading || budgetsLoading;
 
   // Client-side UI state
@@ -89,10 +120,8 @@ function HomeContent() {
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [showAllExpenses, setShowAllExpenses] = useState(false);
   const [showAllMeals, setShowAllMeals] = useState(false);
-  const [activeWorkout, setActiveWorkout] = useState<any>(null);
-  const [exerciseLogs, setExerciseLogs] = useState<any[]>([]);
-  const searchParams = useSearchParams();
-  const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
+  const [activeWorkout, setActiveWorkout] = useState<WorkoutTemplate | null>(null);
+  const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -146,6 +175,48 @@ function HomeContent() {
     { enabled: activeView === 'calories' && meals.length > 0 }
   );
 
+  // Prefetch data for likely next views to make navigation instant
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    // When on expenses view, prefetch budget view data (most common navigation)
+    if (activeView === 'expenses') {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.budgets.list({ month: currentMonth }),
+        queryFn: async () => {
+          const params = new URLSearchParams();
+          params.append('month', currentMonth);
+          const response = await fetch(`/api/budgets?${params.toString()}`);
+          if (!response.ok) throw new Error('Failed to fetch budgets');
+          const data = await response.json();
+          return data.budgets || data || [];
+        },
+      });
+    }
+
+    // When on budget view, prefetch insights data
+    if (activeView === 'budget' && expenses.length > 0) {
+      // No specific prefetch needed as insights use already-loaded expenses
+    }
+
+    // When on any view, prefetch workouts if user might navigate there
+    // This is lower priority, only prefetch after a delay
+    const prefetchTimer = setTimeout(() => {
+      if (activeView !== 'workouts') {
+        queryClient.prefetchQuery({
+          queryKey: workoutKeys.templates,
+          queryFn: async () => {
+            const res = await fetch('/api/workout-templates');
+            if (!res.ok) throw new Error('failed to fetch workout templates');
+            const data = await res.json();
+            return data.templates;
+          },
+        });
+      }
+    }, 2000); // Prefetch after 2 seconds
+
+    return () => clearTimeout(prefetchTimer);
+  }, [activeView, currentMonth, expenses.length, queryClient]);
+
   // Check if should show onboarding
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
@@ -188,7 +259,15 @@ function HomeContent() {
     hapticFeedback('light');
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: {
+    amount: number
+    merchant: string
+    category: string
+    transaction_date: string
+    transaction_type?: string
+    currency?: string
+    notes?: string
+  }) => {
     await handleExpenseSubmit(data, editingExpense, {
       onBeforeSubmit: () => {
         setShowForm(false);
@@ -375,37 +454,63 @@ function HomeContent() {
           )}
 
           {activeView === 'expenses' ? (
-            <ExpensesView
-              expenses={expenses}
-              filteredExpenses={filteredExpenses}
-              loading={loading}
-              showAllExpenses={showAllExpenses}
-              isSyncing={isSyncing}
-              onShowForm={() => setShowForm(true)}
-              onSync={handleSync}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
-              onUpdate={handleUpdateNotes}
-              onClearFilters={clearFilters}
-            />
+            <Suspense fallback={<ViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load expenses" errorDescription="Something went wrong while loading your expenses">
+                <ExpensesView
+                  expenses={expenses}
+                  filteredExpenses={filteredExpenses}
+                  loading={loading}
+                  showAllExpenses={showAllExpenses}
+                  isSyncing={isSyncing}
+                  onShowForm={() => setShowForm(true)}
+                  onSync={handleSync}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  onUpdate={handleUpdateNotes}
+                  onClearFilters={clearFilters}
+                />
+              </ErrorBoundary>
+            </Suspense>
           ) : activeView === 'insights' ? (
-            <AnalyticsInsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
+            <Suspense fallback={<AnalyticsViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load insights" errorDescription="Unable to generate spending insights">
+                <AnalyticsInsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
+              </ErrorBoundary>
+            </Suspense>
           ) : activeView === 'budget' ? (
-            <BudgetView expenses={expenses} loading={loading} />
+            <Suspense fallback={<BudgetViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load budget" errorDescription="Something went wrong while loading your budget">
+                <BudgetView expenses={expenses} loading={loading} />
+              </ErrorBoundary>
+            </Suspense>
           ) : activeView === 'goals' ? (
-            <GoalsView loading={loading} />
+            <Suspense fallback={<GoalsViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load goals" errorDescription="Unable to load your savings goals">
+                <GoalsView loading={loading} />
+              </ErrorBoundary>
+            </Suspense>
           ) : activeView === 'summary' ? (
-            <SummaryView expenses={expenses} loading={loading} />
+            <Suspense fallback={<ViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load summary" errorDescription="Unable to load weekly summary">
+                <SummaryView expenses={expenses} loading={loading} />
+              </ErrorBoundary>
+            </Suspense>
           ) : activeView === 'calories' ? (
-            <CaloriesView
-              meals={meals}
-              calorieStats={calorieStats}
-              loading={loadingMeals}
-              showAllMeals={showAllMeals}
-              onToggleShowAll={() => setShowAllMeals(!showAllMeals)}
-            />
+            <Suspense fallback={<CaloriesViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load calories" errorDescription="Unable to load your calorie tracking data">
+                <CaloriesView
+                  meals={meals}
+                  calorieStats={calorieStats}
+                  loading={loadingMeals}
+                  showAllMeals={showAllMeals}
+                  onToggleShowAll={() => setShowAllMeals(!showAllMeals)}
+                />
+              </ErrorBoundary>
+            </Suspense>
           ) : activeView === 'workouts' ? (
-            <WorkoutsView
+            <Suspense fallback={<WorkoutsViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load workouts" errorDescription="Unable to load your workout data">
+                <WorkoutsView
               templates={workoutTemplates}
               recentWorkouts={workouts}
               loading={templatesLoading}
@@ -416,10 +521,10 @@ function HomeContent() {
                 hapticFeedback('medium')
               }}
               onCreateTemplate={async (templateData) => {
-                await createTemplate(templateData as any)
+                await createTemplate(templateData)
               }}
               onUpdateTemplate={async (id, templateData) => {
-                await updateTemplate({ id, ...templateData } as any)
+                await updateTemplate({ id, ...templateData })
               }}
               onDeleteTemplate={async (id) => {
                 await deleteTemplate(id)
@@ -431,12 +536,18 @@ function HomeContent() {
                 setActiveView('summary')
               }}
             />
+            </ErrorBoundary>
+            </Suspense>
           ) : activeView === 'profile' ? (
-            <ProfileView
-              profile={profile ?? null}
-              loading={profileLoading}
-              onUpdate={updateProfile}
-            />
+            <Suspense fallback={<ViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load profile" errorDescription="Unable to load your profile settings">
+                <ProfileView
+                  profile={profile ?? null}
+                  loading={profileLoading}
+                  onUpdate={updateProfile}
+                />
+              </ErrorBoundary>
+            </Suspense>
           ) : null}
         </div>
         {/* Floating Action Menu */}

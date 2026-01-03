@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Apple, Coffee, Moon, Sun } from 'lucide-react';
+import type { IconType } from '@/lib/types';
 
 type QuickFilterType = 'all' | 'today' | 'week' | 'month';
 type MealTimeFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
@@ -15,7 +16,7 @@ const QUICK_FILTERS = [
   { id: 'month', label: 'Month' },
 ];
 
-const MEAL_TIME_FILTERS: { id: MealTimeFilter; label: string; icon: any }[] = [
+const MEAL_TIME_FILTERS: { id: MealTimeFilter; label: string; icon: IconType | null }[] = [
   { id: 'all', label: 'All', icon: null },
   { id: 'breakfast', label: 'Breakfast', icon: Coffee },
   { id: 'lunch', label: 'Lunch', icon: Sun },

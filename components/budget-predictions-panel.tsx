@@ -36,7 +36,7 @@ export function BudgetPredictionsPanel({ onSetBudget }: BudgetPredictionsPanelPr
   }, [data?.alerts, dismissedAlerts])
 
   // Handle budget action - open edit mode with pre-filled value
-  const handleBudgetAction = (alert: any) => {
+  const handleBudgetAction = (alert: { id: string; category: string; action?: { value: number; label: string } }) => {
     if (!alert.action || !onSetBudget) return
 
     // Call the parent callback to open edit mode with pre-filled value

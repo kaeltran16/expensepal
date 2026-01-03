@@ -1,24 +1,17 @@
-import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { withAuth } from '@/lib/api/middleware'
 
 // GET /api/workouts/[id] - get single workout with exercises
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: { id: string } }
 ) {
-  try {
+  return withAuth(async (req, user) => {
+    const { id } = context.params
     const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { data: workout, error } = await supabaseAdmin
+    const { data: workout, error } = await supabase
       .from('workouts')
       .select(`
         *,
@@ -27,13 +20,12 @@ export async function GET(
           exercises (*)
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .single()
 
     if (error) {
-      console.error('error fetching workout:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: error.message }, { status: error.code === 'PGRST116' ? 404 : 500 })
     }
 
     if (!workout) {
@@ -41,34 +33,20 @@ export async function GET(
     }
 
     return NextResponse.json({ workout })
-  } catch (error) {
-    console.error('error in GET /api/workouts/[id]:', error)
-    return NextResponse.json(
-      { error: 'internal server error' },
-      { status: 500 }
-    )
-  }
+  })(request)
 }
 
 // PUT /api/workouts/[id] - update workout
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: { id: string } }
 ) {
-  try {
+  return withAuth(async (req, user) => {
+    const { id } = context.params
     const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const body = await req.json()
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-
-    const { data: workout, error } = await supabaseAdmin
+    const { data: workout, error } = await supabase
       .from('workouts')
       .update({
         notes: body.notes,
@@ -76,59 +54,38 @@ export async function PUT(
         completed_at: body.completed_at,
         duration_minutes: body.duration_minutes,
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .select()
       .single()
 
     if (error) {
-      console.error('error updating workout:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      throw new Error(error.message)
     }
 
     return NextResponse.json({ workout })
-  } catch (error) {
-    console.error('error in PUT /api/workouts/[id]:', error)
-    return NextResponse.json(
-      { error: 'internal server error' },
-      { status: 500 }
-    )
-  }
+  })(request)
 }
 
 // DELETE /api/workouts/[id] - delete workout
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: { id: string } }
 ) {
-  try {
+  return withAuth(async (req, user) => {
+    const { id } = context.params
     const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('workouts')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
 
     if (error) {
-      console.error('error deleting workout:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      throw new Error(error.message)
     }
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('error in DELETE /api/workouts/[id]:', error)
-    return NextResponse.json(
-      { error: 'internal server error' },
-      { status: 500 }
-    )
-  }
+  })(request)
 }

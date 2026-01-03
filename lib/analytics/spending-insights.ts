@@ -5,7 +5,7 @@ export interface SpendingPattern {
   title: string
   description: string
   impact: 'positive' | 'negative' | 'neutral'
-  data?: any
+  data?: Record<string, unknown>
 }
 
 export interface CategoryTrend {

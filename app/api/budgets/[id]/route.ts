@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { withAuth } from '@/lib/api/middleware'
+
+// Helper to extract route params
+async function getBudgetId(params: Promise<{ id: string }>) {
+  const { id } = await params
+  return id
+}
 
 // PUT update budget
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
+  return withAuth(async (req, user) => {
+    const id = await getBudgetId(context.params)
     const supabase = createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const { id } = await params
+    const body = await req.json()
 
     const { data, error } = await supabase
       .from('budgets')
@@ -25,34 +24,24 @@ export async function PUT(
       .eq('id', id)
       .eq('user_id', user.id)
       .select()
+      .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      throw new Error(error.message)
     }
 
-    return NextResponse.json({ budget: data[0] })
-  } catch (error) {
-    console.error('Error updating budget:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+    return NextResponse.json({ budget: data })
+  })(request)
 }
 
 // DELETE budget
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
+  return withAuth(async (_req, user) => {
+    const id = await getBudgetId(context.params)
     const supabase = createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
 
     const { error } = await supabase
       .from('budgets')
@@ -61,12 +50,9 @@ export async function DELETE(
       .eq('user_id', user.id)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      throw new Error(error.message)
     }
 
     return NextResponse.json({ message: 'Budget deleted' })
-  } catch (error) {
-    console.error('Error deleting budget:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  })(request)
 }

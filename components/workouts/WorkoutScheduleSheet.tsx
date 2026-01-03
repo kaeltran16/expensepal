@@ -107,7 +107,7 @@ export function WorkoutScheduleSheet({
                 <Label className="ios-subheadline">Select Template</Label>
                 <div className="space-y-2">
                   {templates.map((template) => {
-                    const exercises = (template.exercises as any[]) || []
+                    const exercises = (template.exercises as unknown as Array<{ exercise_id: string }>) || []
                     const isSelected = selectedTemplate?.id === template.id
 
                     return (

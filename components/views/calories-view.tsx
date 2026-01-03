@@ -3,21 +3,37 @@
 import { CalorieTracker } from '@/components/calorie-tracker';
 import { MealList } from '@/components/meal-list';
 import { MealPlanner } from '@/components/meal-planner';
-import { NutritionCharts } from '@/components/nutrition-charts';
 import { QuickMealForm } from '@/components/quick-meal-form';
 import { MealFilterSheet } from '@/components/meal-filter-sheet';
 import { InsightCardSkeleton } from '@/components/skeleton-loader';
+import { NutritionChartSkeleton } from '@/components/ui/chart-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { hapticFeedback } from '@/lib/utils';
 import { useMealFilters } from '@/lib/hooks';
+import type { Meal, Expense } from '@/lib/supabase';
 import { Filter } from 'lucide-react';
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
+
+// Lazy load heavy Recharts component to reduce initial bundle size
+const NutritionCharts = lazy(() => import('@/components/nutrition-charts').then(mod => ({ default: mod.NutritionCharts })));
+
+interface CalorieStats {
+  totalCalories: number
+  totalProtein: number
+  totalCarbs: number
+  totalFat: number
+  goalCalories: number
+  goalProtein?: number
+  goalCarbs?: number
+  goalFat?: number
+  mealCount: number
+}
 
 interface CaloriesViewProps {
-  meals: any[];
-  calorieStats: any;
+  meals: (Meal & { expenses?: Expense[] })[];
+  calorieStats: CalorieStats | null;
   loading: boolean;
   showAllMeals?: boolean;
   onToggleShowAll?: () => void;
@@ -110,7 +126,9 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
       {calorieStats && calorieStats.mealCount > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-3">Nutrition Analytics</h2>
-          <NutritionCharts stats={calorieStats} />
+          <Suspense fallback={<NutritionChartSkeleton />}>
+            <NutritionCharts stats={calorieStats} />
+          </Suspense>
         </div>
       )}
 

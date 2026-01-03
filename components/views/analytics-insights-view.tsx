@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart3, Lightbulb } from 'lucide-react'
-import { AnalyticsCharts } from '@/components/analytics-charts'
 import { CategoryInsights } from '@/components/category-insights'
 import { InsightsCards } from '@/components/insights-cards'
 import { SpendingAdvisor } from '@/components/spending-advisor'
 import { ChartSkeleton, InsightCardSkeleton } from '@/components/skeleton-loader'
 import { hapticFeedback } from '@/lib/utils'
 import type { Expense } from '@/lib/supabase'
+
+// Lazy load heavy Recharts component to reduce initial bundle size
+const AnalyticsCharts = lazy(() => import('@/components/analytics-charts').then(mod => ({ default: mod.AnalyticsCharts })))
 import {
   getComprehensiveInsights,
   analyzeCategoryTrends,
@@ -76,7 +78,9 @@ export function AnalyticsInsightsView({ expenses, loading, onNavigate }: Analyti
       >
         {activeTab === 'charts' ? (
           <div className="space-y-4">
-            <AnalyticsCharts expenses={expenses} />
+            <Suspense fallback={<ChartSkeleton />}>
+              <AnalyticsCharts expenses={expenses} />
+            </Suspense>
             <CategoryInsights expenses={expenses} />
           </div>
         ) : (

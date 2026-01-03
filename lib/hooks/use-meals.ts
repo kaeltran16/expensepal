@@ -182,7 +182,7 @@ export function useCreateMealOptimistic() {
         protein: newMeal.protein || 0,
         carbs: newMeal.carbs || 0,
         fat: newMeal.fat || 0,
-        meal_time: newMeal.meal_time as any,
+        meal_time: newMeal.meal_time as 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other',
         meal_date: newMeal.meal_date,
         source: newMeal.source || 'manual',
         confidence: null,

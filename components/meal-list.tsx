@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SwipeableCard } from '@/components/ui/swipeable-card'
 import { useDeleteMealOptimistic } from '@/lib/hooks'
-import type { Meal } from '@/lib/supabase'
+import type { Meal, Expense } from '@/lib/supabase'
 import { formatTimeGMT7 } from '@/lib/timezone'
 import { hapticFeedback } from '@/lib/utils'
 import {
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 interface MealListProps {
-  meals: (Meal & { expenses?: any })[]
+  meals: (Meal & { expenses?: Expense[] })[]
   onMealDeleted?: () => void
   showAll?: boolean
 }

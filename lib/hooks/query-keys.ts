@@ -34,6 +34,12 @@ export const queryKeys = {
       [...queryKeys.analytics.all, 'budget-adjustment-check', expenseCount, budgetCount] as const,
   },
 
+  // Insights (cached expensive calculations)
+  insights: {
+    all: ['insights'] as const,
+    byExpenses: (expenseCount: number) => [...queryKeys.insights.all, expenseCount] as const,
+  },
+
   // Budgets
   budgets: {
     all: ['budgets'] as const,

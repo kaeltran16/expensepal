@@ -1,8 +1,9 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 import Imap from 'imap'
 import { simpleParser } from 'mailparser'
 import { emailParser, ParsedExpense } from './email-parser'
-import { supabaseAdmin } from './supabase'
-import crypto from 'crypto'
+import type { Database } from './supabase/database.types'
 
 export interface EmailConfig {
   user: string
@@ -51,7 +52,7 @@ export class EmailService {
       const TRUSTED_SENDERS = this.config.trustedSenders || ['info@card.vib.com.vn', 'no-reply@grab.com']
 
       imap.once('ready', () => {
-        imap.openBox('INBOX', false, (err, box) => {
+        imap.openBox('INBOX', false, (err) => {
           if (err) {
             reject(err)
             return
@@ -61,7 +62,7 @@ export class EmailService {
           // Only emails from the last 7 days (to prevent overwhelming)
           const sevenDaysAgo = new Date()
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-          const sinceDate = sevenDaysAgo.toISOString().split('T')[0].replace(/-/g, '-')
+          const sinceDate = sevenDaysAgo.toISOString().split('T')[0]?.replace(/-/g, '-') || ''
 
           // IMAP search criteria: ALL emails (not UNSEEN), from trusted senders, since 7 days ago
           // Database UID tracking handles duplicate detection, not read/unread status
@@ -101,8 +102,6 @@ export class EmailService {
 
             fetch.on('message', (msg, seqno) => {
               // Get the UID for this message
-              let messageUid: number | undefined
-              let attributesProcessed = false
               let shouldSkip = false
 
               // promise that resolves when attributes are ready
@@ -112,24 +111,20 @@ export class EmailService {
               })
 
               msg.once('attributes', (attrs) => {
-                messageUid = attrs.uid
                 uidMap.set(seqno, attrs.uid)
 
                 // check if already processed
                 const uidKey = `${this.config.user}:${attrs.uid}`
                 if (processedUids.has(uidKey)) {
-                  console.log(`Skipping already-processed UID: ${attrs.uid}`)
                   shouldSkip = true
-                } else {
-                  console.log(`Message UID: ${attrs.uid}, Seqno: ${seqno}`)
                 }
 
-                attributesProcessed = true
                 resolveAttributes() // signal that attributes are ready
               })
 
               msg.on('body', (stream) => {
                 const parsingPromise = new Promise<void>((resolveMsg) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   simpleParser(stream as any, async (err, parsed) => {
                     if (err) {
                       console.error('Error parsing email:', err)
@@ -142,7 +137,6 @@ export class EmailService {
 
                     // check if should skip after attributes are ready
                     if (shouldSkip) {
-                      console.log(`Skipping body for already-processed seqno: ${seqno}`)
                       resolveMsg()
                       return
                     }
@@ -267,20 +261,26 @@ export function getEmailServices(): EmailService[] {
 }
 
 // Backward compatibility - returns first email service
-export function getEmailService(): EmailService {
+export function getEmailService(): EmailService | null {
   const services = getEmailServices()
   if (services.length === 0) {
-    throw new Error('No email services configured')
+    return null
   }
-  return services[0]
+  return services[0] ?? null
 }
 
 // decrypt app password when retrieving from database
 function decryptPassword(encrypted: string): string {
   const ENCRYPTION_KEY = process.env.EMAIL_ENCRYPTION_KEY || 'default-key-please-change-in-production!!!'
   const parts = encrypted.split(':')
-  const iv = Buffer.from(parts[0], 'hex')
+  const ivHex = parts[0]
   const encryptedText = parts[1]
+  
+  if (!ivHex || !encryptedText) {
+    throw new Error('Invalid encrypted password format')
+  }
+  
+  const iv = Buffer.from(ivHex, 'hex')
   const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32)
   const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
 
@@ -291,10 +291,14 @@ function decryptPassword(encrypted: string): string {
 }
 
 // get user-specific email services from database
-export async function getUserEmailServices(userId: string): Promise<EmailService[]> {
+// Accepts a Supabase client to respect RLS policies
+export async function getUserEmailServices(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<EmailService[]> {
   try {
-    // fetch user's email settings from database
-    const { data: settingsArray, error } = await (supabaseAdmin as any)
+    // fetch user's email settings from database using the authenticated client
+    const { data: settingsArray, error } = await supabase
       .from('user_email_settings')
       .select('*')
       .eq('user_id', userId)
@@ -306,25 +310,29 @@ export async function getUserEmailServices(userId: string): Promise<EmailService
     }
 
     if (!settingsArray || settingsArray.length === 0) {
-      console.log('No email settings configured for this user')
       return []
     }
 
     // create email service instances for each configured account
-    const services = settingsArray.map((settings: any) => {
-      const decryptedPassword = decryptPassword(settings.app_password)
+    const services: EmailService[] = []
+    
+    for (const settings of settingsArray) {
+      try {
+        const decryptedPassword = decryptPassword(settings.app_password)
 
-      return new EmailService({
-        user: settings.email_address,
-        password: decryptedPassword,
-        host: settings.imap_host,
-        port: settings.imap_port,
-        tls: settings.imap_tls,
-        trustedSenders: settings.trusted_senders || ['info@card.vib.com.vn', 'no-reply@grab.com'],
-      })
-    })
+        services.push(new EmailService({
+          user: settings.email_address,
+          password: decryptedPassword,
+          host: settings.imap_host,
+          port: settings.imap_port,
+          tls: settings.imap_tls,
+          trustedSenders: settings.trusted_senders || ['info@card.vib.com.vn', 'no-reply@grab.com'],
+        }))
+      } catch (decryptError) {
+        console.error(`Failed to decrypt password for ${settings.email_address}. Please re-save your email settings.`)
+      }
+    }
 
-    console.log(`Loaded ${services.length} email account(s) for user ${userId}`)
     return services
   } catch (error) {
     console.error('Error in getUserEmailServices:', error)

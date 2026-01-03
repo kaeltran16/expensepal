@@ -79,6 +79,8 @@ export {
   useBudgetAdjustmentCheck,
 } from './use-budget-recommendations'
 export { useAIInsights } from './use-ai-insights'
+export { useInsights, useBudgetPredictions as useCachedBudgetPredictions } from './use-insights'
+export type { Insight } from '@/lib/analytics/generate-insights'
 
 // Budget Predictions & Alerts
 export {
@@ -110,5 +112,6 @@ export {
   useExerciseHistory,
   usePersonalRecords,
   useCreatePersonalRecord,
+  workoutKeys,
 } from './use-workouts'
 export type { WorkoutFilters } from './use-workouts'

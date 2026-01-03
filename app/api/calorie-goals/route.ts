@@ -1,94 +1,49 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { createClient } from '@/lib/supabase/server'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { CreateCalorieGoalSchema, UpdateCalorieGoalSchema } from '@/lib/api/schemas'
 
 // GET /api/calorie-goals - Get active calorie goal
-export async function GET(request: Request) {
-  try {
-    // Get authenticated user from session
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+export const GET = withAuth(async (_request, user) => {
+  const today = new Date().toISOString().split('T')[0]
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in to view calorie goals.' },
-        { status: 401 }
-      )
-    }
+  const { data, error } = await supabaseAdmin
+    .from('calorie_goals')
+    .select('*')
+    .eq('user_id', user.id)
+    .lte('start_date', today)
+    .or(`end_date.gte.${today},end_date.is.null`)
+    .order('start_date', { ascending: false })
+    .limit(1)
+    .single()
 
-    const today = new Date().toISOString().split('T')[0]
-
-    const { data, error } = await supabaseAdmin
-      .from('calorie_goals')
-      .select('*')
-      .eq('user_id', user.id)
-      .lte('start_date', today)
-      .or(`end_date.gte.${today},end_date.is.null`)
-      .order('start_date', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (error && error.code !== 'PGRST116') {
-      // PGRST116 = no rows returned
-      console.error('Error fetching calorie goal:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    // If no goal found, return default
-    if (!data) {
-      return NextResponse.json({
-        daily_calories: 2000,
-        protein_target: 100,
-        carbs_target: 250,
-        fat_target: 65,
-        goal_type: 'maintenance',
-      })
-    }
-
-    return NextResponse.json(data)
-  } catch (error) {
-    console.error('Error in GET /api/calorie-goals:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows returned
+    console.error('Error fetching calorie goal:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+
+  // If no goal found, return default
+  if (!data) {
+    return NextResponse.json({
+      daily_calories: 2000,
+      protein_target: 100,
+      carbs_target: 250,
+      fat_target: 65,
+      goal_type: 'maintenance',
+    })
+  }
+
+  return NextResponse.json(data)
+})
 
 // POST /api/calorie-goals - Create new calorie goal
-export async function POST(request: Request) {
-  try {
-    // Get authenticated user from session
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in to create calorie goals.' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const {
-      daily_calories,
-      protein_target,
-      carbs_target,
-      fat_target,
-      goal_type,
-      notes,
-      start_date,
-    } = body
-
-    if (!daily_calories) {
-      return NextResponse.json(
-        { error: 'Missing required field: daily_calories' },
-        { status: 400 }
-      )
-    }
+export const POST = withAuthAndValidation(
+  CreateCalorieGoalSchema,
+  async (_request, user, validatedData) => {
+    const today = new Date().toISOString().split('T')[0]
 
     // End previous goals for this user
-    const today = new Date().toISOString().split('T')[0]
     await supabaseAdmin
       .from('calorie_goals')
       .update({ end_date: today })
@@ -100,13 +55,8 @@ export async function POST(request: Request) {
       .from('calorie_goals')
       .insert({
         user_id: user.id,
-        daily_calories,
-        protein_target,
-        carbs_target,
-        fat_target,
-        goal_type: goal_type || 'maintenance',
-        notes,
-        start_date: start_date || today,
+        ...validatedData,
+        start_date: validatedData.start_date || today,
       })
       .select()
       .single()
@@ -117,44 +67,13 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(data, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/calorie-goals:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
   }
-}
+)
 
 // PUT /api/calorie-goals - Update current calorie goal
-export async function PUT(request: Request) {
-  try {
-    // Get authenticated user from session
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in to update calorie goals.' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const {
-      daily_calories,
-      protein_target,
-      carbs_target,
-      fat_target,
-    } = body
-
-    if (!daily_calories) {
-      return NextResponse.json(
-        { error: 'Missing required field: daily_calories' },
-        { status: 400 }
-      )
-    }
-
+export const PUT = withAuthAndValidation(
+  UpdateCalorieGoalSchema,
+  async (_request, user, validatedData) => {
     const today = new Date().toISOString().split('T')[0]
 
     // Get the current active goal
@@ -173,10 +92,7 @@ export async function PUT(request: Request) {
       const { data, error } = await supabaseAdmin
         .from('calorie_goals')
         .update({
-          daily_calories,
-          protein_target,
-          carbs_target,
-          fat_target,
+          ...validatedData,
           updated_at: new Date().toISOString(),
         })
         .eq('id', currentGoal.id)
@@ -195,10 +111,7 @@ export async function PUT(request: Request) {
         .from('calorie_goals')
         .insert({
           user_id: user.id,
-          daily_calories,
-          protein_target,
-          carbs_target,
-          fat_target,
+          ...validatedData,
           goal_type: 'maintenance',
           start_date: today,
         })
@@ -212,11 +125,5 @@ export async function PUT(request: Request) {
 
       return NextResponse.json(data, { status: 201 })
     }
-  } catch (error) {
-    console.error('Error in PUT /api/calorie-goals:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
   }
-}
+)

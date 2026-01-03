@@ -8,9 +8,19 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import type { Expense } from '@/lib/supabase'
 
+interface ExpenseFormData {
+  transactionType: string
+  amount: number
+  currency: string
+  transactionDate: string
+  merchant: string
+  category: string
+  notes: string
+}
+
 interface ExpenseFormProps {
   expense?: Expense
-  onSubmit: (data: any) => Promise<void>
+  onSubmit: (data: ExpenseFormData) => Promise<void>
   onCancel?: () => void
 }
 

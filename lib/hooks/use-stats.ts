@@ -96,7 +96,7 @@ export interface EmailSyncResponse {
   failed: number
   mealsCreated?: number
   accounts?: number
-  results?: any[]
+  results?: Array<Record<string, unknown>>
 }
 
 /**

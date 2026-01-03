@@ -1,82 +1,55 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase/server'
 import { calorieEstimator } from '@/lib/calorie-estimator'
+import { withAuth } from '@/lib/api/middleware'
+import type { Database } from '@/lib/supabase/database.types'
+
+type MealInsert = Database['public']['Tables']['meals']['Insert']
 
 // GET /api/meals - List meals with filters
-export async function GET(request: Request) {
-  try {
-    // Get authenticated user from session
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+export const GET = withAuth(async (request, user) => {
+  const { searchParams } = new URL(request.url)
+  const limit = parseInt(searchParams.get('limit') || '50')
+  const offset = parseInt(searchParams.get('offset') || '0')
+  const startDate = searchParams.get('startDate')
+  const endDate = searchParams.get('endDate')
+  const mealTime = searchParams.get('mealTime')
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in to view meals.' },
-        { status: 401 }
-      )
-    }
+  let query = supabaseAdmin
+    .from('meals')
+    .select('*, expenses(*)', { count: 'exact' })
+    .eq('user_id', user.id)
+    .order('meal_date', { ascending: false })
+    .range(offset, offset + limit - 1)
 
-    const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-    const mealTime = searchParams.get('mealTime')
-
-    let query = supabaseAdmin
-      .from('meals')
-      .select('*, expenses(*)', { count: 'exact' })
-      .eq('user_id', user.id)
-      .order('meal_date', { ascending: false })
-      .range(offset, offset + limit - 1)
-
-    // Apply filters
-    if (startDate) {
-      query = query.gte('meal_date', startDate)
-    }
-    if (endDate) {
-      query = query.lte('meal_date', endDate)
-    }
-    if (mealTime && mealTime !== 'all') {
-      query = query.eq('meal_time', mealTime)
-    }
-
-    const { data, error, count } = await query
-
-    if (error) {
-      console.error('Error fetching meals:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({
-      meals: data || [],
-      total: count || 0,
-    })
-  } catch (error) {
-    console.error('Error in GET /api/meals:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+  // Apply filters
+  if (startDate) {
+    query = query.gte('meal_date', startDate)
   }
-}
+  if (endDate) {
+    query = query.lte('meal_date', endDate)
+  }
+  if (mealTime && mealTime !== 'all') {
+    query = query.eq('meal_time', mealTime)
+  }
+
+  const { data, error, count } = await query
+
+  if (error) {
+    console.error('Error fetching meals:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    meals: data || [],
+    total: count || 0,
+  })
+})
 
 // POST /api/meals - Create new meal (with optional LLM estimation)
-export async function POST(request: Request) {
-  try {
-    // Get authenticated user from session
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in to create meals.' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
+export const POST = withAuth(async (request, user) => {
+  const body = await request.json()
     const {
       name,
       calories,
@@ -99,7 +72,7 @@ export async function POST(request: Request) {
       )
     }
 
-    let mealData: any = {
+    let mealData: Partial<MealInsert> = {
       user_id: user.id,
       name,
       meal_time: meal_time || 'other',
@@ -151,11 +124,4 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(data, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/meals:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+})

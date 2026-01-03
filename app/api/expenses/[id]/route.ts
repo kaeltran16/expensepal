@@ -3,22 +3,22 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getMealTimeFromDate } from '@/lib/meal-utils'
 import { calorieEstimator } from '@/lib/calorie-estimator'
+import { withAuth } from '@/lib/api/middleware'
+
+// Helper to extract route params
+async function getExpenseId(params: Promise<{ id: string }>) {
+  const { id } = await params
+  return id
+}
 
 // GET single expense
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
+  return withAuth(async (_req, user) => {
+    const id = await getExpenseId(context.params)
     const supabase = createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     const { data, error } = await supabase
       .from('expenses')
@@ -32,29 +32,18 @@ export async function GET(
     }
 
     return NextResponse.json({ expense: data })
-  } catch (error) {
-    console.error('Error fetching expense:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  })(request)
 }
 
 // PUT update expense
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
+  return withAuth(async (req, user) => {
+    const id = await getExpenseId(context.params)
     const supabase = createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await request.json()
+    const body = await req.json()
 
     // Get the old expense to check if category changed
     const { data: oldExpense } = await supabase
@@ -177,27 +166,17 @@ export async function PUT(
     }
 
     return NextResponse.json({ expense: updatedExpense })
-  } catch (error) {
-    console.error('Error updating expense:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  })(request)
 }
 
 // DELETE expense
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
+  return withAuth(async (_req, user) => {
+    const id = await getExpenseId(context.params)
     const supabase = createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     // Delete associated meals first (if any)
     try {
@@ -219,12 +198,9 @@ export async function DELETE(
       .eq('user_id', user.id)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      throw new Error(error.message)
     }
 
     return NextResponse.json({ message: 'Expense deleted' })
-  } catch (error) {
-    console.error('Error deleting expense:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  })(request)
 }

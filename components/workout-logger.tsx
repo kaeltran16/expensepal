@@ -1,37 +1,42 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useExerciseHistory } from '@/lib/hooks'
 import type { WorkoutTemplate } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/utils'
-import { detectPersonalRecords, getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, Minus, Plus, Timer, TrendingUp, X, Zap } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Check, Timer, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ExerciseSetTracker, type Set } from './workouts/exercise-set-tracker'
+import { PersonalRecordBadge } from './workouts/personal-record-badge'
+import { RestTimer } from './workouts/rest-timer'
+import { WorkoutProgress } from './workouts/workout-progress'
+import { WorkoutSummary, type ExerciseLog } from './workouts/workout-summary'
 
-interface Set {
-  set_number: number
-  reps: number
-  weight: number
-  completed: boolean
-  rest: number
+interface TemplateExercise {
+  exercise_id: string
+  sets: number
+  reps: string
+  rest?: number
 }
 
-interface ExerciseLog {
-  exercise_id: string
-  exercise_name: string
-  sets: Set[]
-  target_sets: number
-  target_reps: string
-  target_rest: number
+interface WorkoutData {
+  template_id: string
+  exercises_completed: ExerciseLog[]
+  duration_minutes: number
+  total_volume: number
+  personal_records?: Array<{ type: string; value: number; unit: string }>
+}
+
+interface PersonalRecord {
+  type: string
+  value: number
+  unit: string
 }
 
 interface WorkoutLoggerProps {
   template: WorkoutTemplate
   exercises: { id: string; name: string }[]
-  onComplete: (workoutData: any) => Promise<void>
+  onComplete: (workoutData: WorkoutData) => Promise<void>
   onCancel: () => void
   onEditExercises?: () => void
   onExerciseLogsChange?: (logs: ExerciseLog[]) => void
@@ -50,14 +55,16 @@ export function WorkoutLogger({
   const [restTimer, setRestTimer] = useState<number>(0)
   const [isResting, setIsResting] = useState(false)
   const [startTime] = useState(new Date())
-  const [detectedPRs, setDetectedPRs] = useState<any[]>([])
+  const [detectedPRs, setDetectedPRs] = useState<PersonalRecord[]>([])
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [showSummary, setShowSummary] = useState(false)
   const [editingSetNumber, setEditingSetNumber] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [durationMinutes, setDurationMinutes] = useState(0)
 
-  // initialize exercise logs from template
+  // Initialize exercise logs from template
   useEffect(() => {
-    const templateExercises = (template.exercises as any[]) || []
+    const templateExercises = (template.exercises as unknown as TemplateExercise[]) || []
     const logs: ExerciseLog[] = templateExercises.map((te) => {
       const exercise = exercises.find((e) => e.id === te.exercise_id)
       return {
@@ -71,24 +78,7 @@ export function WorkoutLogger({
     })
     setExerciseLogs(logs)
     onExerciseLogsChange?.(logs)
-  }, [template, exercises])
-
-  // rest timer countdown
-  useEffect(() => {
-    if (isResting && restTimer > 0) {
-      const interval = setInterval(() => {
-        setRestTimer((prev) => {
-          if (prev <= 1) {
-            setIsResting(false)
-            hapticFeedback('medium')
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-      return () => clearInterval(interval)
-    }
-  }, [isResting, restTimer])
+  }, [template, exercises, onExerciseLogsChange])
 
   const currentExercise = exerciseLogs[currentExerciseIndex]
 
@@ -177,17 +167,19 @@ export function WorkoutLogger({
     setIsSubmitting(true)
     try {
       const endTime = new Date()
-      const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+      const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+      setDurationMinutes(duration)
 
       const workoutData = {
         template_id: template.id,
         started_at: startTime.toISOString(),
         completed_at: endTime.toISOString(),
-        duration_minutes: durationMinutes,
+        duration_minutes: duration,
         exerciseLogs
       }
 
       await onComplete(workoutData)
+      setShowSummary(true)
       hapticFeedback('heavy')
     } catch (error) {
       console.error('Failed to finish workout:', error)
@@ -195,12 +187,15 @@ export function WorkoutLogger({
     }
   }
 
+  const handleSkipRest = () => {
+    setIsResting(false)
+    setRestTimer(0)
+  }
+
 
   if (!currentExercise) {
     return null
   }
-
-  const progress = ((currentExerciseIndex + 1) / exerciseLogs.length) * 100
 
   return (
     <motion.div
@@ -209,7 +204,7 @@ export function WorkoutLogger({
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-background z-50 overflow-auto"
     >
-      {/* header */}
+      {/* Header with Progress */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border/50">
         <div className="flex items-center justify-between p-4">
           <Button
@@ -224,20 +219,16 @@ export function WorkoutLogger({
               }
             }}
             className="ios-touch"
+            aria-label="Close workout"
           >
             <X className="h-5 w-5" />
           </Button>
-          <div className="text-center flex-1">
-            <h2 className="font-semibold">{template.name}</h2>
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <span className="font-medium text-primary">
-                Exercise {currentExerciseIndex + 1}
-              </span>
-              <span>/</span>
-              <span>{exerciseLogs.length}</span>
-              <span className="text-muted-foreground/50">•</span>
-              <span className="font-medium">{Math.round(progress)}%</span>
-            </div>
+          <div className="flex-1">
+            <WorkoutProgress
+              currentExerciseIndex={currentExerciseIndex}
+              totalExercises={exerciseLogs.length}
+              templateName={template.name}
+            />
           </div>
           <Button
             variant="ghost"
@@ -245,76 +236,20 @@ export function WorkoutLogger({
             onClick={handleFinishWorkout}
             disabled={isSubmitting}
             className="ios-touch text-green-600 disabled:opacity-50"
+            aria-label="Finish workout"
           >
             <Check className="h-5 w-5" />
           </Button>
         </div>
-
-        {/* progress bar */}
-        <div className="h-2 bg-muted rounded-full overflow-hidden relative">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            className="h-full bg-gradient-to-r from-primary via-primary to-primary/80 rounded-full relative overflow-hidden"
-            transition={{
-              type: "spring",
-              stiffness: 100,
-              damping: 15
-            }}
-          >
-            {/* Shimmer effect */}
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-              animate={{
-                x: ['-100%', '200%']
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-            />
-          </motion.div>
-        </div>
       </div>
 
-      {/* pr celebration overlay */}
-      <AnimatePresence>
-        {detectedPRs.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-30 flex items-center justify-center"
-            onClick={() => setDetectedPRs([])}
-          >
-            <div className="text-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', bounce: 0.6 }}
-                className="text-8xl mb-4"
-              >
-                🏆
-              </motion.div>
-              <h2 className="ios-title1 mb-2">new personal record!</h2>
-              {detectedPRs.map((pr, idx) => (
-                <p key={idx} className="ios-body text-primary">
-                  {pr.type}: {pr.value} {pr.unit}
-                </p>
-              ))}
-              <Button
-                onClick={() => setDetectedPRs([])}
-                className="mt-6 min-h-touch"
-              >
-                awesome!
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Personal Record Celebration */}
+      <PersonalRecordBadge
+        personalRecords={detectedPRs}
+        onDismiss={() => setDetectedPRs([])}
+      />
 
-      {/* cancel workout confirmation dialog */}
+      {/* Cancel Workout Confirmation Dialog */}
       <AnimatePresence>
         {showCancelConfirm && (
           <motion.div
@@ -360,151 +295,21 @@ export function WorkoutLogger({
         )}
       </AnimatePresence>
 
-      {/* rest timer overlay - semi-transparent to show workout behind */}
-      <AnimatePresence>
-        {isResting && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 flex items-center justify-center p-4"
-            onClick={(e) => {
-              // Allow clicking background to skip rest
-              if (e.target === e.currentTarget) {
-                setIsResting(false)
-                setRestTimer(0)
-                hapticFeedback('medium')
-              }
-            }}
-          >
-            <motion.div
-              className="text-center max-w-md w-full bg-background/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-primary/20"
-              initial={{ scale: 0.8, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: 50 }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 25
-              }}
-            >
-              <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0]
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              >
-                <Timer className="h-16 w-16 mx-auto mb-4 text-primary" />
-              </motion.div>
-              <motion.div
-                className="text-7xl font-bold mb-2 tabular-nums"
-                key={restTimer}
-                initial={{ scale: 1.2, opacity: 0.5 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 500,
-                  damping: 25
-                }}
-              >
-                {restTimer}s
-              </motion.div>
-              <motion.p
-                className="text-lg text-muted-foreground mb-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-              >
-                Rest Time
-              </motion.p>
-              {currentExercise && (
-                <p className="text-sm text-muted-foreground/70 mb-6">
-                  Next: {currentExercise.exercise_name}
-                </p>
-              )}
+      {/* Rest Timer */}
+      <RestTimer
+        isResting={isResting}
+        restTimer={restTimer}
+        setRestTimer={setRestTimer}
+        onSkip={handleSkipRest}
+        currentExerciseName={currentExercise.exercise_name}
+      />
 
-              {/* Slider for time adjustment */}
-              <div className="mb-6">
-                <input
-                  type="range"
-                  min="0"
-                  max="300"
-                  step="5"
-                  value={restTimer}
-                  onChange={(e) => setRestTimer(parseInt(e.target.value))}
-                  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                  <span>0s</span>
-                  <span>5min</span>
-                </div>
-              </div>
-
-              {/* Quick adjustment buttons */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setRestTimer(prev => Math.max(0, prev - 15))
-                    hapticFeedback('light')
-                  }}
-                  className="min-h-touch text-sm"
-                >
-                  -15s
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setRestTimer(prev => Math.min(300, prev + 30))
-                    hapticFeedback('light')
-                  }}
-                  className="min-h-touch text-sm"
-                >
-                  +30s
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setRestTimer(prev => Math.min(300, prev + 60))
-                    hapticFeedback('light')
-                  }}
-                  className="min-h-touch text-sm"
-                >
-                  +1min
-                </Button>
-              </div>
-
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() => {
-                  setIsResting(false)
-                  setRestTimer(0)
-                  hapticFeedback('medium')
-                }}
-                className="w-full min-h-touch"
-              >
-                Skip Rest
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* content - optimized single scroll context */}
+      {/* Content */}
       <div className="p-4 pb-24 space-y-6 overflow-y-auto flex-1">
-        {/* exercise info */}
+        {/* Exercise Info Card */}
         <div className={`ios-card p-6 text-center relative overflow-hidden ${
-          currentExercise.sets.length >= currentExercise.target_sets 
-            ? 'ring-2 ring-green-500/50 bg-green-500/5' 
+          currentExercise.sets.length >= currentExercise.target_sets
+            ? 'ring-2 ring-green-500/50 bg-green-500/5'
             : ''
         }`}>
           {/* Completed badge with confetti animation */}
@@ -591,121 +396,21 @@ export function WorkoutLogger({
           )}
         </div>
 
-        {/* completed sets only - tap to edit */}
-        {currentExercise.sets.length > 0 && (
-          <motion.div
-            className="space-y-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 25
-            }}
-          >
-            <motion.div
-              className="flex items-center justify-between px-1"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              <h3 className="ios-headline">Completed Sets</h3>
-              <motion.span
-                className="text-sm text-muted-foreground"
-                key={currentExercise.sets.length}
-                initial={{ scale: 1.3 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 500,
-                  damping: 15
-                }}
-              >
-                {currentExercise.sets.length} of {currentExercise.target_sets}
-              </motion.span>
-            </motion.div>
-            <div className="space-y-2">
-              {currentExercise.sets.map((set, index) => (
-                <motion.div
-                  key={set.set_number}
-                  initial={{ opacity: 0, x: -30, scale: 0.9 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  transition={{
-                    delay: index * 0.05,
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 25
-                  }}
-                  whileHover={{
-                    scale: 1.02,
-                    x: 4,
-                    transition: { type: "spring", stiffness: 500, damping: 20 }
-                  }}
-                  whileTap={{
-                    scale: 0.98,
-                    transition: { duration: 0.1 }
-                  }}
-                  className="ios-card p-4 cursor-pointer"
-                  onClick={() => {
-                    setEditingSetNumber(set.set_number)
-                    hapticFeedback('light')
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <motion.span
-                      className="font-medium"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.05 + 0.1 }}
-                    >
-                      Set {set.set_number}
-                    </motion.span>
-                    <div className="flex items-center gap-3">
-                      <motion.span
-                        className="text-muted-foreground"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 + 0.15 }}
-                      >
-                        {set.weight}kg × {set.reps} reps
-                      </motion.span>
-                      <motion.div
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{
-                          delay: index * 0.05 + 0.2,
-                          type: "spring",
-                          stiffness: 500,
-                          damping: 15
-                        }}
-                      >
-                        <Check className="h-5 w-5 text-green-600" />
-                      </motion.div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* add/edit set form with AI suggestions */}
-        {(currentExercise.sets.length < currentExercise.target_sets || editingSetNumber) && (
-          <EnhancedSetInputForm
-            setNumber={editingSetNumber || currentExercise.sets.length + 1}
-            exerciseId={currentExercise.exercise_id}
-            lastSet={editingSetNumber
-              ? currentExercise.sets.find(s => s.set_number === editingSetNumber)
-              : currentExercise.sets[currentExercise.sets.length - 1]
-            }
-            targetReps={currentExercise.target_reps}
-            onAddSet={handleAddSet}
-            onPRDetected={(prs) => setDetectedPRs(prs)}
-            isEditing={!!editingSetNumber}
-            onCancelEdit={() => setEditingSetNumber(null)}
-            onDelete={editingSetNumber ? () => handleDeleteSet(editingSetNumber) : undefined}
-          />
-        )}
+        {/* Exercise Set Tracker */}
+        <ExerciseSetTracker
+          exerciseId={currentExercise.exercise_id}
+          exerciseName={currentExercise.exercise_name}
+          completedSets={currentExercise.sets}
+          targetSets={currentExercise.target_sets}
+          targetReps={currentExercise.target_reps}
+          targetRest={currentExercise.target_rest}
+          onAddSet={handleAddSet}
+          onDeleteSet={handleDeleteSet}
+          onEditSet={(setNumber) => setEditingSetNumber(setNumber)}
+          editingSetNumber={editingSetNumber}
+          onCancelEdit={() => setEditingSetNumber(null)}
+          onPRDetected={(prs) => setDetectedPRs(prs)}
+        />
       </div>
 
       {/* navigation footer */}
@@ -790,231 +495,19 @@ export function WorkoutLogger({
           )}
         </div>
       </motion.div>
+
+      {/* Workout Summary */}
+      <WorkoutSummary
+        show={showSummary}
+        templateName={template.name}
+        exerciseLogs={exerciseLogs}
+        durationMinutes={durationMinutes}
+        personalRecords={detectedPRs}
+        onClose={() => {
+          setShowSummary(false)
+          onCancel() // Close the workout logger after viewing summary
+        }}
+      />
     </motion.div>
-  )
-}
-
-// enhanced set input form with progressive overload suggestions
-function EnhancedSetInputForm({
-  setNumber,
-  exerciseId,
-  lastSet,
-  targetReps,
-  onAddSet,
-  onPRDetected,
-  isEditing = false,
-  onCancelEdit,
-  onDelete
-}: {
-  setNumber: number
-  exerciseId: string
-  lastSet?: Set
-  targetReps: string
-  onAddSet: (reps: number, weight: number) => void
-  onPRDetected: (prs: any[]) => void
-  isEditing?: boolean
-  onCancelEdit?: () => void
-  onDelete?: () => void
-}) {
-  // fetch exercise history for suggestions
-  const { data: history = [] } = useExerciseHistory(exerciseId, 5)
-
-  // parse target reps range
-  const [targetMin, targetMax] = useMemo(() => {
-    const match = targetReps.match(/(\d+)-(\d+)/)
-    if (match) {
-      return [parseInt(match[1]), parseInt(match[2])]
-    }
-    const single = parseInt(targetReps)
-    return [single, single]
-  }, [targetReps])
-
-  // get progressive overload suggestion
-  const suggestion = useMemo(() => {
-    return getProgressiveOverloadSuggestion(history, targetMin, targetMax)
-  }, [history, targetMin, targetMax])
-
-  // initialize with suggested or last weight
-  const [reps, setReps] = useState(targetMin || 10)
-  const [weight, setWeight] = useState(() => {
-    if (lastSet) return lastSet.weight
-    if (suggestion.recommendedWeight) return suggestion.recommendedWeight
-    if (history.length > 0 && history[0].sets.length > 0) {
-      return Math.max(...history[0].sets.map((s: any) => s.weight || 0))
-    }
-    return 20
-  })
-
-  const handleSubmit = () => {
-    onAddSet(reps, weight)
-
-    // check for PRs if we have history with actual data to compare
-    if (history.length > 0 && history[0].sets?.length > 0) {
-      const previousBest = history[0]
-      
-      // Only check PRs if we have meaningful previous data
-      if (previousBest.maxWeight > 0) {
-        const currentSet = { set_number: setNumber, reps, weight, completed: true, rest: 60 }
-        
-        // Calculate max reps from a single set in previous history (not totalReps which is sum of all sets)
-        const previousMaxReps = Math.max(...previousBest.sets.map((s: any) => s.reps || 0))
-        
-        const prs = detectPersonalRecords([currentSet], {
-          max_weight: previousBest.maxWeight,
-          max_reps: previousMaxReps, // Use max reps from single set, not total
-          max_volume: previousBest.totalVolume,
-          estimated_1rm: previousBest.estimated1RM,
-        })
-
-        if (prs.length > 0) {
-          onPRDetected(prs)
-          hapticFeedback('heavy')
-        }
-      }
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* ai suggestion card */}
-      {suggestion.type !== 'maintain' && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="frosted-card p-4 border-l-4 border-l-primary"
-        >
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-full bg-primary/10">
-              {suggestion.type === 'increase_weight' && <TrendingUp className="h-5 w-5 text-primary" />}
-              {suggestion.type === 'increase_reps' && <Zap className="h-5 w-5 text-primary" />}
-              {suggestion.type === 'decrease_weight' && <TrendingUp className="h-5 w-5 text-orange-500 rotate-180" />}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="ios-headline">ai coach</span>
-                <Badge variant="outline" className="text-xs">
-                  {suggestion.type.replace('_', ' ')}
-                </Badge>
-              </div>
-              <p className="ios-caption text-muted-foreground">
-                {suggestion.suggestion}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* previous performance */}
-      {history.length > 0 && history[0].sets.length > 0 && (
-        <div className="ios-card p-4">
-          <div className="flex items-center justify-between">
-            <span className="ios-caption text-muted-foreground">last workout</span>
-            <div className="text-right">
-              <p className="ios-headline">
-                {Math.max(...history[0].sets.map((s: any) => s.weight || 0))}kg × {' '}
-                {Math.max(...history[0].sets.map((s: any) => s.reps || 0))} reps
-              </p>
-              <p className="ios-caption text-muted-foreground">
-                {history[0].totalSets} sets • {Math.round(history[0].totalVolume)}kg volume
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* set input */}
-      <div className="ios-card p-6 space-y-4">
-        <h3 className="ios-headline text-center">
-          {isEditing ? `Edit Set ${setNumber}` : `Log Set ${setNumber}`}
-        </h3>
-
-        {/* reps input */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">reps</label>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setReps(Math.max(1, reps - 1))}
-              className="h-12 w-12"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Input
-              type="number"
-              value={reps}
-              onChange={(e) => setReps(Number(e.target.value))}
-              className="text-center text-2xl font-bold h-12"
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setReps(reps + 1)}
-              className="h-12 w-12"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* weight input */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">weight (kg)</label>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setWeight(Math.max(0, weight - 2.5))}
-              className="h-12 w-12"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Input
-              type="number"
-              value={weight}
-              onChange={(e) => setWeight(Number(e.target.value))}
-              step="2.5"
-              className="text-center text-2xl font-bold h-12"
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setWeight(weight + 2.5)}
-              className="h-12 w-12"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          {isEditing && onCancelEdit && (
-            <Button
-              variant="outline"
-              onClick={onCancelEdit}
-              className="flex-1 min-h-touch"
-            >
-              Cancel
-            </Button>
-          )}
-          {isEditing && onDelete && (
-            <Button
-              variant="destructive"
-              onClick={onDelete}
-              className="flex-1 min-h-touch"
-            >
-              Delete Set
-            </Button>
-          )}
-          <Button
-            onClick={handleSubmit}
-            className={`${isEditing ? 'flex-1' : 'w-full'} min-h-touch gap-2`}
-          >
-            <Check className="h-4 w-4" />
-            {isEditing ? 'Update Set' : 'Complete Set'}
-          </Button>
-        </div>
-      </div>
-    </div>
   )
 }

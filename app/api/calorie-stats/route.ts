@@ -1,47 +1,37 @@
-import { supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { withAuth } from '@/lib/api/middleware'
+import { createMealQuery } from '@/lib/api/query-builder'
+import type { Database } from '@/lib/supabase/database.types'
+
+type Meal = Database['public']['Tables']['meals']['Row']
 
 export const dynamic = 'force-dynamic'
 
 // GET /api/calorie-stats - Get calorie statistics
-export async function GET(request: Request) {
-  try {
-    // Get authenticated user from session
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+export const GET = withAuth(async (request: NextRequest, user) => {
+  const supabase = createClient()
+  const { searchParams } = new URL(request.url)
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in to view calorie stats.' },
-        { status: 401 }
-      )
-    }
+  const startDate = searchParams.get('startDate')
+  const endDate = searchParams.get('endDate')
+  const timezoneOffset = parseInt(searchParams.get('timezoneOffset') || '0', 10)
 
-    const { searchParams } = new URL(request.url)
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-    const timezoneOffset = parseInt(searchParams.get('timezoneOffset') || '0', 10)
+  // Default to last 14 days if no dates provided
+  const end = endDate || new Date().toISOString()
+  const start =
+    startDate ||
+    new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
 
-    // Default to last 14 days if no dates provided (increased from 30/7)
-    const end = endDate || new Date().toISOString()
-    const start =
-      startDate ||
-      new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+  // Fetch meals using query builder
+  const { data: meals, error } = await createMealQuery(supabase, user.id)
+    .byDateRange(start, end)
+    .orderByDate(true) // ascending
+    .execute()
 
-    // Fetch meals in date range FOR THIS USER ONLY
-    const { data: meals, error } = await supabaseAdmin
-      .from('meals')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('meal_date', start)
-      .lte('meal_date', end)
-      .order('meal_date', { ascending: true })
-
-    if (error) {
-      console.error('Error fetching meals for stats:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+  if (error) {
+    throw new Error(error.message)
+  }
 
     // Calculate statistics
     const stats = {
@@ -61,16 +51,18 @@ export async function GET(request: Request) {
       byDate: {} as Record<string, { calories: number; protein: number; carbs: number; fat: number; meals: number }>,
     }
 
-    meals?.forEach((meal) => {
+    meals?.forEach((meal: Meal) => {
       stats.totalCalories += meal.calories
       stats.totalProtein += meal.protein || 0
       stats.totalCarbs += meal.carbs || 0
-      stats.totalFat += meal.fat || 0 
+      stats.totalFat += meal.fat || 0
 
       // By meal time
       const mealTime = (meal.meal_time || 'other') as 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other'
-      stats.byMealTime[mealTime].count++
-      stats.byMealTime[mealTime].calories += meal.calories
+      if (stats.byMealTime[mealTime]) {
+        stats.byMealTime[mealTime].count++
+        stats.byMealTime[mealTime].calories += meal.calories
+      }
 
       // By date
       // Convert UTC date to user's local time for correct grouping
@@ -82,27 +74,22 @@ export async function GET(request: Request) {
       // So to get local time: UTC time - (offset * 60 * 1000)
       const localDate = new Date(mealDate.getTime() - (timezoneOffset * 60 * 1000))
       const date = localDate.toISOString().split('T')[0]
-      
-      if (!stats.byDate[date]) {
-        stats.byDate[date] = { calories: 0, protein: 0, carbs: 0, fat: 0, meals: 0 }
+
+      if (date) {
+        if (!stats.byDate[date]) {
+          stats.byDate[date] = { calories: 0, protein: 0, carbs: 0, fat: 0, meals: 0 }
+        }
+        stats.byDate[date].calories += meal.calories
+        stats.byDate[date].protein += meal.protein || 0
+        stats.byDate[date].carbs += meal.carbs || 0
+        stats.byDate[date].fat += meal.fat || 0
+        stats.byDate[date].meals++
       }
-      stats.byDate[date].calories += meal.calories
-      stats.byDate[date].protein += meal.protein || 0
-      stats.byDate[date].carbs += meal.carbs || 0
-      stats.byDate[date].fat += meal.fat || 0
-      stats.byDate[date].meals++
     })
 
-    // Calculate average per day
-    const days = Object.keys(stats.byDate).length
-    stats.averageCaloriesPerDay = days > 0 ? Math.round(stats.totalCalories / days) : 0
+  // Calculate average per day
+  const days = Object.keys(stats.byDate).length
+  stats.averageCaloriesPerDay = days > 0 ? Math.round(stats.totalCalories / days) : 0
 
-    return NextResponse.json(stats)
-  } catch (error) {
-    console.error('Error in GET /api/calorie-stats:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+  return NextResponse.json(stats)
+})

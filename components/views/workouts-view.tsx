@@ -17,6 +17,12 @@ import { hapticFeedback } from '@/lib/utils'
 import { format, isThisWeek, isToday } from 'date-fns'
 import { useState } from 'react'
 
+interface ExerciseLog {
+  exercise_id: string
+  sets: { completed: boolean }[]
+  target_sets: number
+}
+
 interface WorkoutsViewProps {
   templates: WorkoutTemplate[]
   recentWorkouts: Workout[]
@@ -26,7 +32,7 @@ interface WorkoutsViewProps {
   onUpdateTemplate?: (id: string, template: Partial<WorkoutTemplateUpdate>) => Promise<void>
   onDeleteTemplate?: (id: string) => Promise<void>
   activeWorkout?: WorkoutTemplate | null
-  exerciseLogs?: any[]
+  exerciseLogs?: ExerciseLog[]
   onReturnToWorkout?: () => void
 }
 

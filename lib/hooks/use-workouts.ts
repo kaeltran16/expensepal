@@ -19,7 +19,7 @@ export interface WorkoutFilters {
 }
 
 // useWorkouts - fetch user's workout sessions
-export function useWorkouts(filters: WorkoutFilters = {}) {
+export function useWorkouts(filters: WorkoutFilters = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: workoutKeys.list(filters),
     queryFn: async () => {
@@ -35,11 +35,12 @@ export function useWorkouts(filters: WorkoutFilters = {}) {
     // Cache for 12 hours - workouts rarely change
     staleTime: 12 * 60 * 60 * 1000,
     placeholderData: (previousData) => previousData,
+    enabled: options?.enabled,
   })
 }
 
 // useWorkoutTemplates - fetch available workout templates
-export function useWorkoutTemplates() {
+export function useWorkoutTemplates(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: workoutKeys.templates,
     queryFn: async () => {
@@ -51,11 +52,13 @@ export function useWorkoutTemplates() {
     // Cache for 12 hours - templates rarely change
     staleTime: 12 * 60 * 60 * 1000,
     placeholderData: (previousData) => previousData,
+    enabled: options?.enabled,
   })
 }
 
 // useExercises - fetch all exercises
-export function useExercises(category?: string) {
+export function useExercises(options?: { category?: string; enabled?: boolean }) {
+  const category = options?.category
   return useQuery({
     queryKey: [...workoutKeys.exercises, { category }],
     queryFn: async () => {
@@ -68,6 +71,7 @@ export function useExercises(category?: string) {
     // Cache for 24 hours - exercises database rarely changes
     staleTime: 24 * 60 * 60 * 1000,
     placeholderData: (previousData) => previousData,
+    enabled: options?.enabled,
   })
 }
 
@@ -84,7 +88,11 @@ export function useCreateWorkout() {
       notes?: string
       exerciseLogs: Array<{
         exercise_id: string
-        sets: any[]
+        sets: Array<{
+          reps: number
+          weight?: number
+          completed?: boolean
+        }>
         notes?: string
       }>
     }) => {
@@ -121,7 +129,16 @@ export function useCreateTemplate() {
       description?: string
       difficulty: 'beginner' | 'intermediate' | 'advanced'
       duration_minutes: number
-      exercises: any[]
+      exercises: Array<{
+        exercise_id: string
+        name: string
+        category: string
+        sets: number
+        reps: string
+        rest_seconds: number
+        notes?: string
+        order?: number
+      }>
     }) => {
       const res = await fetch('/api/workout-templates', {
         method: 'POST',
@@ -157,7 +174,16 @@ export function useUpdateTemplate() {
       description?: string
       difficulty: 'beginner' | 'intermediate' | 'advanced'
       duration_minutes: number
-      exercises: any[]
+      exercises: Array<{
+        exercise_id: string
+        name: string
+        category: string
+        sets: number
+        reps: string
+        rest_seconds: number
+        notes?: string
+        order?: number
+      }>
     }) => {
       const { id, ...templateData } = params
       const res = await fetch(`/api/workout-templates/${id}`, {
@@ -218,7 +244,15 @@ export function useExerciseHistory(exerciseId: string, limit = 10) {
       const res = await fetch(`/api/exercises/${exerciseId}/history?limit=${limit}`)
       if (!res.ok) throw new Error('failed to fetch exercise history')
       const data = await res.json()
-      return data.history as any[]
+      return data.history as Array<{
+        id: string
+        workout_id: string
+        exercise_id: string
+        sets: number
+        reps: number
+        weight?: number
+        performed_at: string
+      }>
     },
     enabled: !!exerciseId,
   })
@@ -233,7 +267,16 @@ export function usePersonalRecords(exerciseId?: string) {
       const res = await fetch(`/api/personal-records${params}`)
       if (!res.ok) throw new Error('failed to fetch personal records')
       const data = await res.json()
-      return data.personalRecords as any[]
+      return data.personalRecords as Array<{
+        id: string
+        exercise_id: string
+        exercise_name: string
+        record_type: '1rm' | 'max_reps' | 'max_volume' | 'max_weight'
+        value: number
+        unit?: string
+        achieved_at: string
+        notes?: string
+      }>
     },
   })
 }

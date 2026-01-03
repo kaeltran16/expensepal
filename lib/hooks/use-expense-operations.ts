@@ -107,7 +107,15 @@ export function useExpenseOperations(expenses: Expense[]) {
   };
 
   const handleSubmit = async (
-    data: any,
+    data: {
+      amount: number
+      merchant: string
+      category: string
+      transaction_date: string
+      transaction_type?: string
+      currency?: string
+      notes?: string
+    },
     editingExpense: Expense | undefined,
     callbacks: {
       onBeforeSubmit: () => void;

@@ -67,7 +67,14 @@ export function AnalyticsCharts({ expenses, onCategoryFilter }: AnalyticsChartsP
     }
   })
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: {
+    active?: boolean
+    payload?: Array<{
+      name: string
+      value: number
+      color?: string
+    }>
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border rounded-lg p-3 shadow-lg">

@@ -37,7 +37,7 @@ export function useSyncOperations() {
       setSyncStatus('success');
       setSyncProgress('Sync complete!');
 
-      const mealsCount = (data as any).mealsCreated || 0;
+      const mealsCount = data.mealsCreated || 0;
       const detailMessage =
         mealsCount > 0
           ? `Added ${data.newExpenses || 0} expense(s) & ${mealsCount} meal(s)`

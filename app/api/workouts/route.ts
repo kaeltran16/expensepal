@@ -1,68 +1,50 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase/server'
+import { withAuth } from '@/lib/api/middleware'
 
-// GET /api/workouts - list user's workout sessions
-export async function GET(request: Request) {
-  try {
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const startDate = searchParams.get('startDate')
-
-    let query = supabaseAdmin
-      .from('workouts')
-      .select('*, workout_templates(*)')
-      .eq('user_id', user.id)
-      .order('workout_date', { ascending: false })
-      .limit(limit)
-
-    if (startDate) {
-      query = query.gte('workout_date', startDate)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error('error fetching workouts:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({
-      workouts: data || [],
-    })
-  } catch (error) {
-    console.error('error in GET /api/workouts:', error)
-    return NextResponse.json(
-      { error: 'internal server error' },
-      { status: 500 }
-    )
-  }
+interface ExerciseLog {
+  exercise_id: string
+  sets: Array<{
+    reps?: number
+    weight?: number
+    rpe?: number
+  }>
+  notes?: string
 }
 
+// GET /api/workouts - list user's workout sessions
+export const GET = withAuth(async (request, user) => {
+  const { searchParams } = new URL(request.url)
+  const limit = parseInt(searchParams.get('limit') || '50')
+  const startDate = searchParams.get('startDate')
+
+  let query = supabaseAdmin
+    .from('workouts')
+    .select('*, workout_templates(*)')
+    .eq('user_id', user.id)
+    .order('workout_date', { ascending: false })
+    .limit(limit)
+
+  if (startDate) {
+    query = query.gte('workout_date', startDate)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('error fetching workouts:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    workouts: data || [],
+  })
+})
+
 // POST /api/workouts - create workout session
-export async function POST(request: Request) {
-  try {
-    const supabase = createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
+export const POST = withAuth(async (request, user) => {
+  const body = await request.json()
 
     // create workout record
     const { data: workout, error: workoutError } = await supabaseAdmin
@@ -86,7 +68,7 @@ export async function POST(request: Request) {
 
     // create workout exercises if provided
     if (body.exerciseLogs && body.exerciseLogs.length > 0) {
-      const exercisesToInsert = body.exerciseLogs.map((log: any, index: number) => ({
+      const exercisesToInsert = body.exerciseLogs.map((log: ExerciseLog, index: number) => ({
         workout_id: workout.id,
         exercise_id: log.exercise_id,
         exercise_order: index,
@@ -105,11 +87,4 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ workout })
-  } catch (error) {
-    console.error('error in POST /api/workouts:', error)
-    return NextResponse.json(
-      { error: 'internal server error' },
-      { status: 500 }
-    )
-  }
-}
+})

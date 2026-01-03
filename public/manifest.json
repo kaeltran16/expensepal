@@ -99,6 +99,30 @@
       ]
     },
     {
+      "name": "View Budget",
+      "short_name": "Budget",
+      "description": "Check your budgets",
+      "url": "/?view=budget",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Log Workout",
+      "short_name": "Workout",
+      "description": "Track your workout",
+      "url": "/?view=workouts&action=add",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
       "name": "View Analytics",
       "short_name": "Analytics",
       "description": "View spending analytics",
@@ -109,6 +133,30 @@
           "sizes": "96x96"
         }
       ]
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["image/*", "application/pdf"]
+        }
+      ]
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/?action=add&source=file",
+      "accept": {
+        "image/*": [".jpg", ".jpeg", ".png", ".webp"],
+        "application/pdf": [".pdf"]
+      }
     }
   ],
   "related_applications": [],

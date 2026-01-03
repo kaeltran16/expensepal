@@ -160,7 +160,7 @@ export class LLMService {
   /**
    * Parse JSON response from LLM (handles markdown code blocks)
    */
-  parseJSON<T = any>(content: string): T | null {
+  parseJSON<T = unknown>(content: string): T | null {
     try {
       // Remove markdown code blocks if present
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [
@@ -209,7 +209,7 @@ export class LLMService {
    * Batch completion - make a single LLM call for multiple items
    * More efficient than multiple sequential calls
    */
-  async batchCompletion<T = any>(
+  async batchCompletion<T = unknown>(
     items: string[],
     promptBuilder: (items: string[]) => string,
     options?: {

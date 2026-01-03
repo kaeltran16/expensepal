@@ -3,25 +3,42 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import type { Expense } from '@/lib/supabase'
-import { motion } from 'framer-motion'
-import { Sparkles, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Sparkles, X, Plus, StickyNote, ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { useCategories } from '@/lib/hooks'
 
+interface ExpenseFormData {
+  amount: number
+  merchant: string
+  category: string
+  notes: string
+  transactionDate: string
+  transactionType: string
+  currency: string
+  source: string
+}
+
 interface QuickExpenseFormProps {
   expense?: Expense
-  onSubmit: (data: any) => Promise<void>
+  onSubmit: (data: ExpenseFormData) => Promise<void>
   onCancel?: () => void
 }
 
+// Top 5 most common categories to show by default
+const COMMON_CATEGORIES = ['Food', 'Transport', 'Shopping', 'Bills', 'Other']
+
 export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFormProps) {
   const { data: categories = [] } = useCategories()
-  
+
   const [loading, setLoading] = useState(false)
   const [dateOption, setDateOption] = useState<'today' | 'yesterday'>('today')
   const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null)
+  const [showNotes, setShowNotes] = useState(!!expense?.notes)
+  const [showAllCategories, setShowAllCategories] = useState(false)
   const [formData, setFormData] = useState({
     amount: expense?.amount?.toString() || '',
     merchant: expense?.merchant || '',
@@ -122,7 +139,7 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 pb-8">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 pb-8">
           {/* Amount - Big and prominent */}
           <div className="space-y-2">
             <Label htmlFor="amount" className="text-sm text-muted-foreground">
@@ -164,56 +181,69 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
             />
           </div>
 
-          {/* Category Pills */}
-          <div className="space-y-3">
+          {/* Category Pills - Compact */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-sm text-muted-foreground">Category</Label>
               {suggestedCategory && (
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Sparkles className="h-3 w-3" />
-                  Suggested: {suggestedCategory}
+                  {suggestedCategory}
                 </span>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
+              {categories
+                .filter((cat) =>
+                  showAllCategories ||
+                  COMMON_CATEGORIES.includes(cat.name) ||
+                  cat.name === formData.category ||
+                  cat.name === suggestedCategory
+                )
+                .map((cat) => (
+                  <button
+                    key={cat.name}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, category: cat.name })}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all relative ${
+                      formData.category === cat.name
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-secondary hover:bg-secondary/80'
+                    }`}
+                  >
+                    <span className="mr-1">{cat.icon}</span>
+                    {cat.name}
+                    {suggestedCategory === cat.name && formData.category !== cat.name && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                      </span>
+                    )}
+                  </button>
+                ))}
+              {!showAllCategories && categories.length > COMMON_CATEGORIES.length && (
                 <button
-                  key={cat.name}
                   type="button"
-                  onClick={() => setFormData({ ...formData, category: cat.name })}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all relative ${
-                    formData.category === cat.name
-                      ? 'bg-primary text-primary-foreground shadow-lg scale-105'
-                      : 'bg-secondary hover:bg-secondary/80'
-                  }`}
+                  onClick={() => setShowAllCategories(true)}
+                  className="px-3 py-1.5 rounded-full text-sm font-medium bg-secondary/50 hover:bg-secondary transition-all"
                 >
-                  <span className="mr-1">{cat.icon}</span>
-                  {cat.name}
-                  {suggestedCategory === cat.name && formData.category !== cat.name && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                    </span>
-                  )}
+                  <Plus className="h-3 w-3 inline mr-1" />
+                  More
                 </button>
-              ))}
-            </div>
+              )}
             </div>
           </div>
 
-          {/* Date */}
+          {/* Date - Compact */}
           <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">
-              Date
-            </Label>
+            <Label className="text-sm text-muted-foreground">Date</Label>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setDateOption('today')}
-                className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   dateOption === 'today'
-                    ? 'bg-primary text-primary-foreground shadow-lg scale-105'
+                    ? 'bg-primary text-primary-foreground shadow-md'
                     : 'bg-secondary hover:bg-secondary/80'
                 }`}
               >
@@ -222,9 +252,9 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
               <button
                 type="button"
                 onClick={() => setDateOption('yesterday')}
-                className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   dateOption === 'yesterday'
-                    ? 'bg-primary text-primary-foreground shadow-lg scale-105'
+                    ? 'bg-primary text-primary-foreground shadow-md'
                     : 'bg-secondary hover:bg-secondary/80'
                 }`}
               >
@@ -233,23 +263,63 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
             </div>
           </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes" className="text-sm text-muted-foreground">
-              Notes (optional)
-            </Label>
-            <Input
-              id="notes"
-              name="notes"
-              placeholder="Add a note..."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="h-12"
-            />
-          </div>
+          {/* Notes - Collapsible */}
+          <AnimatePresence>
+            {!showNotes ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNotes(true)}
+                  className="w-full text-muted-foreground hover:text-foreground"
+                >
+                  <StickyNote className="h-4 w-4 mr-2" />
+                  Add note (optional)
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="notes" className="text-sm text-muted-foreground">
+                    Notes
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNotes(false)
+                      setFormData({ ...formData, notes: '' })
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  placeholder="Add details about this expense..."
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="resize-none"
+                  rows={2}
+                  autoFocus
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-2">
             {onCancel && (
               <Button
                 type="button"

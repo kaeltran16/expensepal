@@ -1,51 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { withAuth } from '@/lib/api/middleware'
 import { llmService } from '@/lib/llm-service'
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { expenses, budgets } = await request.json()
-
-    if (!expenses || expenses.length === 0) {
-      return NextResponse.json({
-        insights: [],
-        message: 'Not enough data for AI insights'
-      })
-    }
-
-    // Prepare data summary for LLM (don't send raw transactions for privacy)
-    const dataSummary = prepareDataSummary(expenses, budgets)
-
-    // Call LLM API
-    const aiInsights = await generateAIInsights(dataSummary)
-
-    return NextResponse.json({
-      insights: aiInsights,
-      generatedAt: new Date().toISOString()
-    })
-  } catch (error) {
-    console.error('Error generating AI insights:', error)
-    return NextResponse.json({
-      error: 'Failed to generate insights',
-      insights: []
-    }, { status: 500 })
-  }
+// Type definitions
+interface Expense {
+  transaction_date: string
+  amount: number
+  category: string
+  merchant: string
 }
+
+interface Budget {
+  category: string
+  amount: number
+}
+
+interface MerchantData {
+  merchant: string
+  count: number
+  total: number
+}
+
+interface BudgetComparison {
+  category: string
+  budget: number
+  spent: number
+  percentUsed: number
+}
+
+interface DataSummary {
+  timeframe: string
+  totalSpent: number
+  lastMonthTotal: number
+  percentChange: number
+  transactionCount: number
+  categoryBreakdown: Record<string, number>
+  topMerchants: MerchantData[]
+  budgetComparison: BudgetComparison[]
+  avgTransactionSize: number
+}
+
+interface AIInsight {
+  id: string
+  type: 'savings' | 'warning' | 'opportunity' | 'pattern'
+  title: string
+  description: string
+  impact: 'high' | 'medium' | 'low'
+  action: string
+  isAI: boolean
+}
+
+interface LLMInsightResponse {
+  insights: Array<{
+    title: string
+    description: string
+    type?: 'savings' | 'warning' | 'opportunity' | 'pattern'
+    impact?: 'high' | 'medium' | 'low'
+    action: string
+  }>
+}
+
+export const POST = withAuth(async (request, _user) => {
+  const { expenses, budgets } = await request.json()
+
+  if (!expenses || expenses.length === 0) {
+    return NextResponse.json({
+      insights: [],
+      message: 'Not enough data for AI insights'
+    })
+  }
+
+  // Prepare data summary for LLM (don't send raw transactions for privacy)
+  const dataSummary = prepareDataSummary(expenses, budgets)
+
+  // Call LLM API
+  const aiInsights = await generateAIInsights(dataSummary)
+
+  return NextResponse.json({
+    insights: aiInsights,
+    generatedAt: new Date().toISOString()
+  })
+})
 
 /**
  * Prepare anonymized data summary for LLM
  * Don't send raw transactions - just aggregated stats
  */
-function prepareDataSummary(expenses: any[], budgets: any[]) {
+function prepareDataSummary(expenses: Expense[], budgets: Budget[]): DataSummary {
   const now = new Date()
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -70,11 +111,12 @@ function prepareDataSummary(expenses: any[], budgets: any[]) {
   // Merchant analysis (top 5)
   const merchantTotals: Record<string, { count: number; total: number }> = {}
   currentMonthExpenses.forEach(e => {
-    if (!merchantTotals[e.merchant]) {
-      merchantTotals[e.merchant] = { count: 0, total: 0 }
+    const merchant = e.merchant
+    if (!merchantTotals[merchant]) {
+      merchantTotals[merchant] = { count: 0, total: 0 }
     }
-    merchantTotals[e.merchant].count++
-    merchantTotals[e.merchant].total += e.amount
+    merchantTotals[merchant].count++
+    merchantTotals[merchant].total += e.amount
   })
   const topMerchants = Object.entries(merchantTotals)
     .sort((a, b) => b[1].total - a[1].total)
@@ -108,7 +150,7 @@ function prepareDataSummary(expenses: any[], budgets: any[]) {
 /**
  * Generate AI insights using LLM service
  */
-async function generateAIInsights(dataSummary: any) {
+async function generateAIInsights(dataSummary: DataSummary): Promise<AIInsight[]> {
   // Check if LLM service is configured
   if (!llmService.isConfigured()) {
     console.warn('LLM service not configured - skipping AI insights')
@@ -127,17 +169,17 @@ Data Summary:
 - Average transaction: ₫${(dataSummary.avgTransactionSize / 1000).toFixed(0)}k VND
 
 Category Breakdown:
-${Object.entries(dataSummary.categoryBreakdown as Record<string, number>)
-  .map(([cat, amt]) => `- ${cat}: ₫${(amt as number / 1000).toFixed(0)}k VND`)
+${Object.entries(dataSummary.categoryBreakdown)
+  .map(([cat, amt]) => `- ${cat}: ₫${(amt / 1000).toFixed(0)}k VND`)
   .join('\n')}
 
 Top Merchants:
-${dataSummary.topMerchants.map((m: any) =>
+${dataSummary.topMerchants.map((m) =>
   `- ${m.merchant}: ${m.count} visits, ₫${(m.total / 1000).toFixed(0)}k VND`
 ).join('\n')}
 
 Budget Status:
-${dataSummary.budgetComparison.map((b: any) =>
+${dataSummary.budgetComparison.map((b) =>
   `- ${b.category}: ${b.percentUsed.toFixed(0)}% used (₫${(b.spent / 1000).toFixed(0)}k / ₫${(b.budget / 1000).toFixed(0)}k)`
 ).join('\n')}
 
@@ -175,13 +217,13 @@ Be concise, specific, and actionable. Use Vietnamese Dong (₫) in amounts.`
     return []
   }
 
-  const parsed = llmService.parseJSON<{ insights: any[] }>(response.content)
+  const parsed = llmService.parseJSON<LLMInsightResponse>(response.content)
 
   if (!parsed || !parsed.insights) {
     return []
   }
 
-  return parsed.insights.map((insight: any) => ({
+  return parsed.insights.map((insight): AIInsight => ({
     id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     type: insight.type || 'opportunity',
     title: insight.title,

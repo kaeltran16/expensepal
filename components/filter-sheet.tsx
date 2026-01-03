@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { QUICK_FILTERS, CATEGORY_FILTERS, type QuickFilterType } from '@/lib/constants/filters';
-import type { Expense } from '@/lib/supabase';
+import type { Expense, Budget } from '@/lib/supabase';
 import { formatCurrency, hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -15,7 +15,7 @@ interface FilterSheetProps {
   onCategoryFilterChange: (category: string) => void;
   onReset: () => void;
   expenses: Expense[];
-  budgets: any[];
+  budgets: Budget[];
   currentMonth: string;
 }
 
@@ -42,7 +42,7 @@ export function FilterSheet({
   };
 
   const getBudgetForCategory = (category: string) => {
-    return budgets.find((b: any) => b.category === category)?.amount || 0;
+    return budgets.find((b) => b.category === category)?.amount || 0;
   };
 
   const getBudgetPercentage = (category: string) => {

@@ -43,7 +43,7 @@ function TemplateCard({
   onClick: () => void
   onEdit?: () => void
 }) {
-  const exercises = (template.exercises as any[]) || []
+  const exercises = (template.exercises as unknown as Array<{ exercise_id: string }>) || []
   const config = difficultyConfig[template.difficulty as keyof typeof difficultyConfig] || difficultyConfig.beginner
 
   return (

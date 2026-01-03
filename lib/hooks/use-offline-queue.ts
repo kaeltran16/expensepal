@@ -2,33 +2,40 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 export type PendingMutation = {
   id: string
   type: 'create' | 'update' | 'delete'
-  entity: 'expense' | 'budget' | 'goal' | 'meal'
-  data: any
+  entity: 'expense' | 'budget' | 'goal' | 'meal' | 'workout'
+  data: Record<string, unknown>
   timestamp: number
   retryCount: number
 }
 
 const QUEUE_KEY = 'offline_mutation_queue'
 const MAX_RETRIES = 3
+const DB_NAME = 'expensepal-offline'
+const DB_VERSION = 1
+const STORE_NAME = 'pending-requests'
 
 /**
- * Hook for managing offline mutation queue
+ * Enhanced hook for managing offline mutation queue
+ * Uses Service Worker + IndexedDB for robust offline support
  * Automatically retries failed mutations when back online
  */
 export function useOfflineQueue() {
   const [queue, setQueue] = useState<PendingMutation[]>([])
+  const [queueCount, setQueueCount] = useState(0)
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   )
   const [isProcessing, setIsProcessing] = useState(false)
   const queryClient = useQueryClient()
 
-  // Load queue from localStorage on mount
+  // Load queue from both localStorage (legacy) and IndexedDB on mount
   useEffect(() => {
+    // Load from localStorage for backward compatibility
     const stored = localStorage.getItem(QUEUE_KEY)
     if (stored) {
       try {
@@ -37,7 +44,33 @@ export function useOfflineQueue() {
         console.error('Failed to load offline queue:', error)
       }
     }
+
+    // Update count from IndexedDB (service worker queue)
+    updateQueueCount()
   }, [])
+
+  // Listen for service worker messages
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'SYNC_COMPLETE') {
+        const { syncedCount, totalCount } = event.data
+        setIsProcessing(false)
+
+        if (syncedCount > 0) {
+          toast.success(`Synced ${syncedCount} offline ${syncedCount === 1 ? 'item' : 'items'}`)
+          updateQueueCount()
+          queryClient.invalidateQueries()
+        } else if (totalCount > 0) {
+          toast.error('Failed to sync some items')
+        }
+      }
+    }
+
+    navigator.serviceWorker.addEventListener('message', handleMessage)
+    return () => navigator.serviceWorker.removeEventListener('message', handleMessage)
+  }, [queryClient])
 
   // Save queue to localStorage whenever it changes
   useEffect(() => {
@@ -189,14 +222,144 @@ export function useOfflineQueue() {
     }
   }, [isOnline, processQueue])
 
+  /**
+   * Update queue count from IndexedDB (service worker queue)
+   */
+  const updateQueueCount = async () => {
+    try {
+      const count = await getIndexedDBQueueCount()
+      setQueueCount(count)
+
+      // Update app badge
+      if ('setAppBadge' in navigator && count > 0) {
+        await (navigator as Navigator & { setAppBadge: (count: number) => Promise<void> }).setAppBadge(count)
+      } else if ('clearAppBadge' in navigator && count === 0) {
+        await (navigator as Navigator & { clearAppBadge: () => Promise<void> }).clearAppBadge()
+      }
+    } catch (error) {
+      console.error('Error getting queue count:', error)
+    }
+  }
+
+  /**
+   * Trigger service worker background sync manually
+   */
+  const triggerBackgroundSync = async () => {
+    if (!('serviceWorker' in navigator)) {
+      toast.error('Background sync not supported')
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+      const registration = await navigator.serviceWorker.ready
+
+      if ('sync' in registration) {
+        await (registration as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } }).sync.register('sync-expenses')
+        toast.info('Sync started...')
+      } else {
+        // Fallback to manual processing
+        await processQueue()
+      }
+    } catch (error) {
+      console.error('Error triggering sync:', error)
+      toast.error('Failed to start sync')
+      setIsProcessing(false)
+    }
+  }
+
+  /**
+   * Register periodic background sync for email import
+   */
+  const registerPeriodicSync = async () => {
+    if (!('serviceWorker' in navigator)) return
+
+    try {
+      const registration = await navigator.serviceWorker.ready
+
+      if ('periodicSync' in registration) {
+        const status = await (navigator as Navigator & {
+          permissions: {
+            query: (descriptor: { name: string }) => Promise<{ state: string }>
+          }
+        }).permissions.query({
+          name: 'periodic-background-sync',
+        })
+
+        if (status.state === 'granted') {
+          await (registration as ServiceWorkerRegistration & {
+            periodicSync: {
+              register: (tag: string, options: { minInterval: number }) => Promise<void>
+            }
+          }).periodicSync.register('sync-emails', {
+            minInterval: 12 * 60 * 60 * 1000, // 12 hours
+          })
+          console.log('Periodic sync registered for email import')
+        }
+      }
+    } catch (error) {
+      console.error('Error registering periodic sync:', error)
+    }
+  }
+
+  // Auto-trigger sync when back online
+  useEffect(() => {
+    if (isOnline && (queue.length > 0 || queueCount > 0) && !isProcessing) {
+      triggerBackgroundSync()
+    }
+  }, [isOnline])
+
   return {
     queue,
     isOnline,
     isProcessing,
-    queueLength: queue.length,
+    queueLength: queue.length + queueCount,
+    queueCount, // Service worker queue
+    localQueueLength: queue.length, // Local storage queue
     addToQueue,
     removeFromQueue,
     clearQueue,
     retryQueue,
+    triggerBackgroundSync,
+    registerPeriodicSync,
+    updateQueueCount,
   }
+}
+
+// Helper: Get IndexedDB queue count
+async function getIndexedDBQueueCount(): Promise<number> {
+  try {
+    const db = await openDB()
+    const tx = db.transaction(STORE_NAME, 'readonly')
+    const store = tx.objectStore(STORE_NAME)
+
+    return new Promise((resolve) => {
+      const request = store.count()
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => resolve(0)
+    })
+  } catch {
+    return 0
+  }
+}
+
+// Helper: Open IndexedDB
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION)
+
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve(request.result)
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, {
+          keyPath: 'id',
+          autoIncrement: true,
+        })
+        store.createIndex('timestamp', 'timestamp', { unique: false })
+      }
+    }
+  })
 }

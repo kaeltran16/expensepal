@@ -78,11 +78,11 @@ export function TemplateBuilder({
     if (template && allExercises.length > 0) {
       setName(template.name)
       setDescription(template.description || '')
-      setDifficulty(template.difficulty as any || 'beginner')
+      setDifficulty((template.difficulty as 'beginner' | 'intermediate' | 'advanced') || 'beginner')
       setDurationMinutes(template.duration_minutes || 45)
 
       // parse exercises from jsonb and hydrate with full exercise data
-      const exercises = template.exercises as any[]
+      const exercises = (template.exercises as unknown as TemplateExercise[]) || []
       const hydratedExercises = exercises.map((ex) => ({
         ...ex,
         exercise: allExercises.find((e) => e.id === ex.exercise_id),
@@ -135,7 +135,7 @@ export function TemplateBuilder({
   const handleUpdateExercise = (
     index: number,
     field: keyof TemplateExercise,
-    value: any
+    value: string | number
   ) => {
     const newExercises = [...templateExercises]
     newExercises[index] = { ...newExercises[index], [field]: value }
@@ -261,7 +261,7 @@ export function TemplateBuilder({
                     <Label htmlFor="difficulty">difficulty</Label>
                     <Select
                       value={difficulty}
-                      onValueChange={(value: any) => setDifficulty(value)}
+                      onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') => setDifficulty(value)}
                     >
                       <SelectTrigger id="difficulty">
                         <SelectValue />
@@ -381,7 +381,7 @@ function ExerciseConfigCard({
   index: number
   canMoveUp: boolean
   canMoveDown: boolean
-  onUpdate: (field: keyof TemplateExercise, value: any) => void
+  onUpdate: (field: keyof TemplateExercise, value: string | number) => void
   onRemove: () => void
   onMoveUp: () => void
   onMoveDown: () => void
