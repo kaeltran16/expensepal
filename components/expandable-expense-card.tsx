@@ -30,7 +30,7 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
   const [contentHeight, setContentHeight] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const categoryConfig = CATEGORY_CONFIG[expense.category || 'Other'] || CATEGORY_CONFIG.Other;
+  const categoryConfig = (CATEGORY_CONFIG[expense.category || 'Other'] || CATEGORY_CONFIG.Other)!;
 
   // Use ResizeObserver for automatic height measurement
   useEffect(() => {

@@ -244,14 +244,30 @@ export function useExerciseHistory(exerciseId: string, limit = 10) {
       const res = await fetch(`/api/exercises/${exerciseId}/history?limit=${limit}`)
       if (!res.ok) throw new Error('failed to fetch exercise history')
       const data = await res.json()
+      // API returns workout_exercises with nested workouts and sets array
       return data.history as Array<{
         id: string
         workout_id: string
         exercise_id: string
-        sets: number
-        reps: number
-        weight?: number
-        performed_at: string
+        sets: Array<{
+          set_number?: number
+          reps?: number
+          weight?: number
+          rpe?: number
+          completed?: boolean
+        }>
+        workouts: {
+          id: string
+          workout_date: string
+          completed_at: string
+          status: string
+        }
+        maxWeight: number
+        totalVolume: number
+        totalSets: number
+        totalReps: number
+        avgRpe: number | null
+        estimated1RM: number
       }>
     },
     enabled: !!exerciseId,

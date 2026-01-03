@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Calendar, Clock, Dumbbell, ChevronRight } from 'lucide-react'
+import { X, Calendar, Dumbbell, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'

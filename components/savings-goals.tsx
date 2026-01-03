@@ -20,7 +20,6 @@ export function SavingsGoals() {
   // Use the custom hook for all operations
   const {
     showForm,
-    setShowForm,
     editingGoal,
     deleteDialogOpen,
     setDeleteDialogOpen,

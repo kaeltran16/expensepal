@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Repeat, TrendingUp, AlertCircle, CheckCircle, Calendar, DollarSign } from 'lucide-react'
+import { Repeat, AlertCircle, CheckCircle, Calendar, DollarSign } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { detectRecurringExpenses, type RecurringExpense } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase'

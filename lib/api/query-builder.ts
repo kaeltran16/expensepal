@@ -1,5 +1,5 @@
 import type { Database } from '@/lib/supabase/database.types'
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient, PostgrestError } from '@supabase/supabase-js'
 
 /**
  * Query Builder for Supabase queries
@@ -63,14 +63,20 @@ export abstract class BaseQueryBuilder<T extends keyof Database['public']['Table
   /**
    * Execute the query and return results
    */
-  execute() {
-    return this.query
+  async execute(): Promise<{
+    data: Database['public']['Tables'][T]['Row'][] | null
+    error: PostgrestError | null
+  }> {
+    return await this.query
   }
 
   /**
    * Execute the query and return a single result
    */
-  async single() {
+  async single(): Promise<{
+    data: Database['public']['Tables'][T]['Row'] | null
+    error: PostgrestError | null
+  }> {
     return await this.query.single()
   }
 

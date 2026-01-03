@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Clock, Wifi, WifiOff } from 'lucide-react';
+import { Clock, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface NetworkStatusProps {

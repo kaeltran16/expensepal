@@ -95,7 +95,7 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
   const intervals: number[] = []
   for (let i = 1; i < sorted.length; i++) {
     const days = Math.round(
-      (sorted[i].date.getTime() - sorted[i - 1].date.getTime()) / (1000 * 60 * 60 * 24)
+      (sorted[i]!.date.getTime() - sorted[i - 1]!.date.getTime()) / (1000 * 60 * 60 * 24)
     )
     intervals.push(days)
   }
@@ -121,7 +121,7 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
   const frequency = categorizeFrequency(avgInterval)
 
   // Calculate next expected date
-  const lastDate = sorted[sorted.length - 1].date
+  const lastDate = sorted[sorted.length - 1]!.date
   const nextExpected = new Date(lastDate.getTime() + avgInterval * 24 * 60 * 60 * 1000)
 
   // Check if payment might be missed (7 days past expected)
@@ -135,7 +135,7 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
   const currentYear = new Date().getFullYear()
   const totalSpentThisYear = sorted
     .filter(s => s.date.getFullYear() === currentYear)
-    .reduce((sum, s) => sum + s.amount, 0)
+    .reduce((sum, s) => sum + (s.amount || 0), 0)
 
   return {
     merchant,

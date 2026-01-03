@@ -53,7 +53,7 @@ export function calculateMonthOverMonthTrends(
 
   // Find significant changes (>25%)
   Object.keys(thisMonthByCategory).forEach((category) => {
-    const thisMonth = thisMonthByCategory[category]
+    const thisMonth = thisMonthByCategory[category] || 0
     const lastMonth = lastMonthByCategory[category] || 0
 
     if (lastMonth > 0) {
@@ -130,7 +130,7 @@ export function detectNewCategories(
 
   // Find new categories with significant spending
   Object.keys(thisMonthByCategory).forEach((category) => {
-    const thisMonth = thisMonthByCategory[category]
+    const thisMonth = thisMonthByCategory[category] || 0
     const lastMonth = lastMonthByCategory[category] || 0
 
     if (lastMonth === 0 && thisMonth > 100000) {

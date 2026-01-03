@@ -35,7 +35,7 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
     ['rgba(239, 68, 68, 0.1)', 'rgba(0, 0, 0, 0)', 'rgba(59, 130, 246, 0.1)']
   )
 
-  const categoryColors = getCategoryColor(expense.category || 'Other')
+  const categoryColors = getCategoryColor(expense.category || 'Other')!
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 80

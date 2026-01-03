@@ -5,8 +5,6 @@ import { motion } from 'framer-motion'
 import { Card } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
 import {
-  TrendingUp,
-  TrendingDown,
   DollarSign,
   ShoppingBag,
   Calendar,

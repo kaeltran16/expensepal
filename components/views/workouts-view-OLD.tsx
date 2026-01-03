@@ -435,8 +435,8 @@ function TemplateDetailSheet({
 }) {
   const [exercises, setExercises] = useState<any[]>([])
   const [editingExercise, setEditingExercise] = useState<number | null>(null)
-  const [duration, setDuration] = useState<'short' | 'normal' | 'long'>('normal')
-  const [condition, setCondition] = useState<number>(100)
+  const [duration] = useState<'short' | 'normal' | 'long'>('normal')
+  const [condition] = useState<number>(100)
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null)
 

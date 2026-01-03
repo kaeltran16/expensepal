@@ -19,7 +19,6 @@ import { QuickStatsOverview } from '@/components/quick-stats-overview';
 import { QuickStatsSkeleton } from '@/components/quick-stats-skeleton';
 import { SearchBar } from '@/components/search-bar';
 import { Button } from '@/components/ui/button';
-import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { WorkoutLogger } from '@/components/workout-logger';
 import {
   BudgetViewSkeleton,
@@ -52,13 +51,53 @@ import {
     workoutKeys,
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
-import type { WorkoutTemplate, ExerciseLog } from '@/lib/types';
+import type { WorkoutTemplate } from '@/lib/types';
+import type { ExerciseLog } from '@/components/workouts/workout-summary';
 import { hapticFeedback } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Filter } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+
+// Type definitions for template operations
+type TemplateExercise = {
+  exercise_id: string
+  name: string
+  category: string
+  sets: number
+  reps: string
+  rest_seconds: number
+  notes?: string
+  order?: number
+}
+
+type TemplateData = {
+  name: string
+  description?: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  duration_minutes: number
+  exercises: TemplateExercise[]
+}
+
+type UpdateTemplateData = TemplateData & { id: string }
+
+type WorkoutCompletionData = {
+  template_id?: string
+  started_at: string
+  completed_at: string
+  duration_minutes: number
+  notes?: string
+  exerciseLogs: {
+    exercise_id: string
+    sets: {
+      reps: number
+      weight?: number
+      completed?: boolean
+    }[]
+    notes?: string
+  }[]
+}
 
 // Lazy load view components for code splitting and better performance
 const ExpensesView = lazy(() => import('@/components/views').then(mod => ({ default: mod.ExpensesView })));
@@ -133,7 +172,7 @@ function HomeContent() {
     filteredExpenses,
     quickFilter,
     categoryFilter,
-    searchQuery,
+    searchQuery: _searchQuery,
     setQuickFilter,
     setCategoryFilter,
     setSearchQuery,
@@ -500,7 +539,7 @@ function HomeContent() {
               <ErrorBoundary errorTitle="Failed to load calories" errorDescription="Unable to load your calorie tracking data">
                 <CaloriesView
                   meals={meals}
-                  calorieStats={calorieStats}
+                  calorieStats={calorieStats ?? null}
                   loading={loadingMeals}
                   showAllMeals={showAllMeals}
                   onToggleShowAll={() => setShowAllMeals(!showAllMeals)}
@@ -521,10 +560,12 @@ function HomeContent() {
                 hapticFeedback('medium')
               }}
               onCreateTemplate={async (templateData) => {
-                await createTemplate(templateData)
+                // Convert from Partial to required type
+                await createTemplate(templateData as TemplateData)
               }}
               onUpdateTemplate={async (id, templateData) => {
-                await updateTemplate({ id, ...templateData })
+                // Convert from Partial to required type with id
+                await updateTemplate({ id, ...templateData } as UpdateTemplateData)
               }}
               onDeleteTemplate={async (id) => {
                 await deleteTemplate(id)
@@ -571,7 +612,17 @@ function HomeContent() {
           {showForm && (
             <QuickExpenseForm
               expense={editingExpense}
-              onSubmit={handleSubmit}
+              onSubmit={async (data) => {
+                await handleSubmit({
+                  amount: data.amount,
+                  merchant: data.merchant,
+                  category: data.category,
+                  transaction_date: data.transactionDate,
+                  transaction_type: data.transactionType,
+                  currency: data.currency,
+                  notes: data.notes,
+                })
+              }}
               onCancel={() => {
                 setShowForm(false);
                 setEditingExpense(undefined);
@@ -625,7 +676,20 @@ function HomeContent() {
                 template={activeWorkout}
                 exercises={exercises}
                 onComplete={async (workoutData) => {
-                  await createWorkout(workoutData)
+                  // Transform workout data to API format
+                  const now = new Date().toISOString()
+                  const apiData: WorkoutCompletionData = {
+                    template_id: workoutData.template_id,
+                    started_at: now,  // These would ideally come from the component
+                    completed_at: now,
+                    duration_minutes: workoutData.duration_minutes,
+                    exerciseLogs: workoutData.exercises_completed.map((log) => ({
+                      exercise_id: log.exercise_id,
+                      sets: log.sets,
+                      notes: log.exercise_name,  // Preserve exercise name in notes
+                    })),
+                  }
+                  await createWorkout(apiData)
                   setActiveWorkout(null)
                   setExerciseLogs([])
                 }}

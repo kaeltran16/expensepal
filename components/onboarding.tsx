@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { X, Plus, RefreshCw, Target, ChevronRight } from 'lucide-react'
+import { X, ChevronRight } from 'lucide-react'
 import { hapticFeedback } from '@/lib/utils'
 
 interface OnboardingProps {
@@ -80,7 +80,7 @@ export function Onboarding({ onComplete, onAddExpense, onSyncEmails }: Onboardin
 
   if (!show) return null
 
-  const step = STEPS[currentStep]
+  const step = STEPS[currentStep]!
 
   return (
     <AnimatePresence>

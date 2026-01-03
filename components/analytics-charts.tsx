@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,12 +52,12 @@ export function AnalyticsCharts({ expenses, onCategoryFilter }: AnalyticsChartsP
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date()
     date.setDate(date.getDate() - (6 - i))
-    return date.toISOString().split('T')[0]
+    return date.toISOString().split('T')[0]!
   })
 
   const dailyData = last7Days.map((date) => {
     const dayExpenses = expenses.filter((e) => {
-      const expenseDate = new Date(e.transaction_date).toISOString().split('T')[0]
+      const expenseDate = new Date(e.transaction_date).toISOString().split('T')[0]!
       return expenseDate === date
     })
     const total = dayExpenses.reduce((sum, e) => sum + e.amount, 0)
@@ -75,12 +75,13 @@ export function AnalyticsCharts({ expenses, onCategoryFilter }: AnalyticsChartsP
       color?: string
     }>
   }) => {
-    if (active && payload && payload.length) {
+    if (active && payload && payload.length > 0) {
+      const data = payload[0]!
       return (
         <div className="bg-background border rounded-lg p-3 shadow-lg">
-          <p className="font-semibold">{payload[0].name}</p>
+          <p className="font-semibold">{data.name}</p>
           <p className="text-sm text-muted-foreground">
-            {formatCurrency(payload[0].value, 'VND')}
+            {formatCurrency(data.value, 'VND')}
           </p>
         </div>
       )
@@ -189,12 +190,13 @@ export function AnalyticsCharts({ expenses, onCategoryFilter }: AnalyticsChartsP
             />
             <Tooltip
               content={({ active, payload }) => {
-                if (active && payload && payload.length) {
+                if (active && payload && payload.length > 0) {
+                  const data = payload[0]!
                   return (
                     <div className="bg-background border rounded-lg p-3 shadow-lg">
-                      <p className="font-semibold">{payload[0].payload.date}</p>
+                      <p className="font-semibold">{data.payload.date}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatCurrency(payload[0].value as number, 'VND')}
+                        {formatCurrency(data.value as number, 'VND')}
                       </p>
                     </div>
                   )

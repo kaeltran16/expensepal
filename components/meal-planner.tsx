@@ -38,7 +38,7 @@ export function MealPlanner() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [mealName, setMealName] = useState('')
   const [mealTime, setMealTime] = useState<PlannedMeal['mealTime']>('lunch')
-  const [mealDate, setMealDate] = useState(new Date().toISOString().split('T')[0])
+  const [mealDate, setMealDate] = useState(new Date().toISOString().split('T')[0]!)
   const [estimatedCalories, setEstimatedCalories] = useState('')
 
   // hook for creating meals in database
@@ -61,7 +61,7 @@ export function MealPlanner() {
     setPlannedMeals([...plannedMeals, newMeal])
     setMealName('')
     setEstimatedCalories('')
-    setMealDate(new Date().toISOString().split('T')[0])
+    setMealDate(new Date().toISOString().split('T')[0]!)
     setIsDialogOpen(false)
     hapticFeedback('light')
     toast.success('Meal added to plan')
@@ -101,7 +101,7 @@ export function MealPlanner() {
     if (!acc[meal.date]) {
       acc[meal.date] = []
     }
-    acc[meal.date].push(meal)
+    acc[meal.date]!.push(meal)
     return acc
   }, {} as Record<string, PlannedMeal[]>)
 
@@ -313,7 +313,7 @@ export function MealPlanner() {
 
               <div className="space-y-2">
                 <AnimatePresence mode="popLayout">
-                  {groupedMeals[date].map((meal) => {
+                  {groupedMeals[date]!.map((meal) => {
                     const Icon = MEAL_TIME_ICONS[meal.mealTime]
                     const colorClass = MEAL_TIME_COLORS[meal.mealTime]
 

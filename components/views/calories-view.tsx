@@ -7,7 +7,6 @@ import { QuickMealForm } from '@/components/quick-meal-form';
 import { MealFilterSheet } from '@/components/meal-filter-sheet';
 import { InsightCardSkeleton } from '@/components/skeleton-loader';
 import { NutritionChartSkeleton } from '@/components/ui/chart-skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { hapticFeedback } from '@/lib/utils';
@@ -24,7 +23,7 @@ interface CalorieStats {
   totalProtein: number
   totalCarbs: number
   totalFat: number
-  goalCalories: number
+  goalCalories?: number
   goalProtein?: number
   goalCarbs?: number
   goalFat?: number
@@ -127,7 +126,7 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
         <div>
           <h2 className="text-lg font-semibold mb-3">Nutrition Analytics</h2>
           <Suspense fallback={<NutritionChartSkeleton />}>
-            <NutritionCharts stats={calorieStats} />
+            <NutritionCharts stats={calorieStats as any} />
           </Suspense>
         </div>
       )}

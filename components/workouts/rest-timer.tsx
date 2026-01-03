@@ -45,6 +45,7 @@ export function RestTimer({
       }, 1000)
       return () => clearInterval(interval)
     }
+    return undefined
   }, [isResting, restTimer, onSkip, setRestTimer])
 
   const handleSkip = () => {

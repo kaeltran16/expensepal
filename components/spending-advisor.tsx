@@ -1,6 +1,5 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useBudgets, useAIInsights } from '@/lib/hooks'
@@ -68,14 +67,14 @@ export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) 
       if (!categoryTotals[e.category || 'Other']) {
         categoryTotals[e.category || 'Other'] = { current: 0, last: 0 }
       }
-      categoryTotals[e.category || 'Other'].current += e.amount
+      categoryTotals[e.category || 'Other']!.current += e.amount
     })
 
     lastMonthExpenses.forEach((e) => {
       if (!categoryTotals[e.category || 'Other']) {
         categoryTotals[e.category || 'Other'] = { current: 0, last: 0 }
       }
-      categoryTotals[e.category || 'Other'].last += e.amount
+      categoryTotals[e.category || 'Other']!.last += e.amount
     })
 
     // 1. Detect unusual spending spikes
@@ -141,7 +140,7 @@ export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) 
       .sort((a, b) => b[1] - a[1])
 
     if (frequentMerchants.length > 0) {
-      const [merchant, count] = frequentMerchants[0]
+      const [merchant, count] = frequentMerchants[0]!
       const merchantTotal = currentMonthExpenses
         .filter((e) => e.merchant === merchant)
         .reduce((sum, e) => sum + e.amount, 0)

@@ -30,7 +30,7 @@ interface EmailSettings {
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user: _user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [scrolled, setScrolled] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)

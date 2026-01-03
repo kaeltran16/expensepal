@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Bell, BellOff, X } from 'lucide-react'
+import { Bell, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { hapticFeedback } from '@/lib/utils'
 

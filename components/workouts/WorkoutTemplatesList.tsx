@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, ChevronRight, Clock, Dumbbell, Edit, ArrowLeft, X } from 'lucide-react'
+import { Plus, ChevronRight, Clock, Dumbbell, Edit, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'

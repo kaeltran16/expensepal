@@ -10,8 +10,6 @@ import {
   ChevronUp,
   ChevronDown,
   Dumbbell,
-  Clock,
-  TrendingUp,
   Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -124,8 +122,8 @@ export function TemplateBuilder({
     if (targetIndex < 0 || targetIndex >= newExercises.length) return
 
     ;[newExercises[index], newExercises[targetIndex]] = [
-      newExercises[targetIndex],
-      newExercises[index],
+      newExercises[targetIndex]!,
+      newExercises[index]!,
     ]
 
     setTemplateExercises(newExercises)
@@ -138,7 +136,7 @@ export function TemplateBuilder({
     value: string | number
   ) => {
     const newExercises = [...templateExercises]
-    newExercises[index] = { ...newExercises[index], [field]: value }
+    newExercises[index] = { ...newExercises[index]!, [field]: value } as TemplateExercise
     setTemplateExercises(newExercises)
   }
 
@@ -157,6 +155,8 @@ export function TemplateBuilder({
     // prepare exercises for jsonb (remove full exercise object)
     const exercisesForDb = templateExercises.map((ex) => ({
       exercise_id: ex.exercise_id,
+      name: ex.exercise?.name || '',
+      category: ex.exercise?.category || '',
       sets: ex.sets,
       reps: ex.reps,
       rest_seconds: ex.rest_seconds,

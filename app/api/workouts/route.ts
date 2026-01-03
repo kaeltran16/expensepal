@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { createClient } from '@/lib/supabase/server'
 import { withAuth } from '@/lib/api/middleware'
 
 interface ExerciseLog {

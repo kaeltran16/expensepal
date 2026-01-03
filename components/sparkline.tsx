@@ -50,13 +50,6 @@ export function Sparkline({
     })
     .join(' ');
 
-  // Calculate path length for animation
-  const pathLength = points.reduce((acc, point, index) => {
-    if (index === 0) return 0;
-    const prev = points[index - 1];
-    return acc + Math.sqrt(Math.pow(point.x - prev.x, 2) + Math.pow(point.y - prev.y, 2));
-  }, 0);
-
   return (
     <svg
       width={width}

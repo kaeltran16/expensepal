@@ -21,6 +21,9 @@ function encryptPassword(password: string): string {
 // decrypt app password when retrieving from database
 function decryptPassword(encrypted: string): string {
   const parts = encrypted.split(':')
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error('Invalid encrypted password format')
+  }
   const iv = Buffer.from(parts[0], 'hex')
   const encryptedText = parts[1]
   const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32)

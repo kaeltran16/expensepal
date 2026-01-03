@@ -13,26 +13,31 @@ export interface ProgressiveOverloadSuggestion {
 }
 
 interface WorkoutSet {
-  set_number: number
-  reps: number
-  weight: number
+  set_number?: number
+  reps?: number
+  weight?: number
   rpe?: number
   completed?: boolean
 }
 
-interface ExerciseHistory {
+// Renamed to avoid conflict with database ExerciseHistory type
+// This interface represents the structure needed for workout analysis functions
+// The API may return additional fields which are ignored by these functions
+export interface ExerciseHistoryData {
   sets: WorkoutSet[]
   workouts: {
     workout_date: string
     completed_at: string
+    [key: string]: any // Allow additional fields from API
   }
+  [key: string]: any // Allow additional top-level fields from API
 }
 
 /**
  * analyze exercise history and provide progressive overload suggestion
  */
 export function getProgressiveOverloadSuggestion(
-  history: ExerciseHistory[],
+  history: ExerciseHistoryData[],
   targetRepsMin: number = 8,
   targetRepsMax: number = 12
 ): ProgressiveOverloadSuggestion {

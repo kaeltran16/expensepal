@@ -81,7 +81,7 @@ export function NutritionCharts({ stats }: NutritionChartsProps) {
     .map(([date, data]) => {
       // Parse date string YYYY-MM-DD directly to avoid timezone issues
       const [year, month, day] = date.split('-').map(Number)
-      const dateObj = new Date(year, month - 1, day)
+      const dateObj = new Date(year!, month! - 1, day!)
       
       return {
         date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),

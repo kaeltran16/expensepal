@@ -136,7 +136,6 @@ export function FilterSheet({
                   <div className="flex flex-wrap gap-2">
                     {CATEGORY_FILTERS.map((cat) => {
                       const budget = getBudgetForCategory(cat);
-                      const spent = getCategorySpent(cat);
                       const percentage = getBudgetPercentage(cat);
                       const hasBudget = budget > 0 && cat !== 'All';
 

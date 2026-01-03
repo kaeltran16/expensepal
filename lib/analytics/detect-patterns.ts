@@ -50,7 +50,7 @@ export function detectWeekendWeekdayPatterns(
 
   // Find significant weekend/weekday differences (>30%)
   Object.keys(weekendByCategory).forEach((category) => {
-    const weekendTotal = weekendByCategory[category]
+    const weekendTotal = weekendByCategory[category] || 0
     const weekdayTotal = weekdayByCategory[category] || 0
 
     if (weekdayTotal > 0) {

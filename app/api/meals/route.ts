@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { createClient } from '@/lib/supabase/server'
 import { calorieEstimator } from '@/lib/calorie-estimator'
 import { withAuth } from '@/lib/api/middleware'
 import type { Database } from '@/lib/supabase/database.types'
@@ -114,7 +113,7 @@ export const POST = withAuth(async (request, user) => {
 
     const { data, error } = await supabaseAdmin
       .from('meals')
-      .insert(mealData)
+      .insert(mealData as MealInsert)
       .select()
       .single()
 

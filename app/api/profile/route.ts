@@ -1,5 +1,4 @@
 import { supabaseAdmin } from '@/lib/supabase'
-import type { UserProfileUpdate } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { UpdateProfileSchema } from '@/lib/api/schemas'

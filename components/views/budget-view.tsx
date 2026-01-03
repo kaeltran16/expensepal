@@ -50,9 +50,6 @@ export function BudgetView({ expenses, loading }: BudgetViewProps) {
   }
 
   const recurringCount = recurringExpenses.length
-  const totalMonthlyRecurring = recurringExpenses
-    .filter(r => r.frequency === 'monthly')
-    .reduce((sum, r) => sum + r.averageAmount, 0)
 
   return (
     <div className="space-y-4 pb-24">

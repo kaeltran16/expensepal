@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { hapticFeedback } from '@/lib/utils'
-import { format, isToday, isSameDay, addDays, startOfWeek } from 'date-fns'
+import { format, isToday, addDays, startOfWeek } from 'date-fns'
 import type { ScheduledWorkout } from '@/lib/hooks/use-workout-schedule'
 
 interface WorkoutCalendarProps {
@@ -96,7 +96,7 @@ export function WorkoutCalendar({
           transition={{ delay: 0.25, type: "spring", stiffness: 300 }}
           key={weekOffset}
         >
-          {weekOffset === 0 ? 'This Week' : format(weekDates[0], 'MMM d')} - {format(weekDates[6], 'MMM d')}
+          {weekOffset === 0 ? 'This Week' : format(weekDates[0]!, 'MMM d')} - {format(weekDates[6]!, 'MMM d')}
         </motion.h3>
 
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

@@ -70,17 +70,19 @@ export function TemplateDetailSheet({
   interface TemplateExercise {
     _id?: string
     exercise_id: string
-    name?: string
+    name: string
     sets: number
     reps: string
-    weight?: number
-    rest?: number
+    weight: number
+    rest: number
+    image_url?: string | null
+    gif_url?: string | null
   }
 
   const [exercises, setExercises] = useState<TemplateExercise[]>([])
   const [editingExercise, setEditingExercise] = useState<number | null>(null)
-  const [duration, setDuration] = useState<'short' | 'normal' | 'long'>('normal')
-  const [condition, setCondition] = useState<number>(100)
+  const [duration, _setDuration] = useState<'short' | 'normal' | 'long'>('normal')
+  const [condition, _setCondition] = useState<number>(100)
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null)
   const [isReorderMode, setIsReorderMode] = useState(false)
@@ -145,7 +147,7 @@ export function TemplateDetailSheet({
     }, 2000) as unknown as NodeJS.Timeout
   }
 
-  const handleSelectExercises = async (selectedExercises: Array<{ id: string; name: string }>) => {
+  const handleSelectExercises = async (selectedExercises: Array<{ id: string; name: string; image_url?: string | null; gif_url?: string | null }>) => {
     const existingIds = new Set(exercises.map(ex => ex.exercise_id))
 
     // Filter out exercises that are already in the list
@@ -526,15 +528,16 @@ export function TemplateDetailSheet({
           <ExerciseDetailSheet
             isOpen={selectedExerciseIndex !== null}
             exerciseIndex={selectedExerciseIndex}
-            exercise={selectedExerciseIndex !== null ? exercises[selectedExerciseIndex] : null}
+            exercise={selectedExerciseIndex !== null ? exercises[selectedExerciseIndex] ?? null : null}
             onClose={() => {
               setSelectedExerciseIndex(null)
             }}
             onUpdate={(updates) => {
-              if (selectedExerciseIndex !== null) {
+              if (selectedExerciseIndex !== null && exercises[selectedExerciseIndex]) {
                 const newExercises = [...exercises]
+                const currentExercise = newExercises[selectedExerciseIndex]!
                 newExercises[selectedExerciseIndex] = {
-                  ...newExercises[selectedExerciseIndex],
+                  ...currentExercise,
                   sets: updates.sets,
                   weight: updates.weight,
                   reps: updates.reps
@@ -592,6 +595,8 @@ function ExerciseCardSimple({
     reps: string
     weight?: number
     rest?: number
+    image_url?: string | null
+    gif_url?: string | null
   }
   index: number
   isReorderMode?: boolean
@@ -664,8 +669,8 @@ function ExerciseCardSimple({
             isComplete ? 'ring-2 ring-green-500/30' : ''
           }`}>
             <img
-              src={exercise.image_url || exercise.gif_url}
-              alt={exercise.name}
+              src={exercise.image_url || exercise.gif_url || ''}
+              alt={exercise.name || 'Exercise'}
               className="w-full h-full object-cover"
             />
           </div>
@@ -680,7 +685,7 @@ function ExerciseCardSimple({
             <span className="font-medium">{exercise.sets} sets</span>
             <span className="text-muted-foreground/40">×</span>
             <span className="font-medium">{exercise.reps} reps</span>
-            {exercise.weight > 0 && (
+            {exercise.weight !== undefined && exercise.weight > 0 && (
               <>
                 <span className="text-muted-foreground/40">@</span>
                 <span className="font-medium text-primary">{exercise.weight}kg</span>

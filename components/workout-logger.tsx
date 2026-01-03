@@ -91,10 +91,10 @@ export function WorkoutLogger({
 
     if (editingSetNumber) {
       // Update existing set
-      const setIndex = updatedLogs[currentExerciseIndex].sets.findIndex(s => s.set_number === editingSetNumber)
+      const setIndex = updatedLogs[currentExerciseIndex]!.sets.findIndex(s => s.set_number === editingSetNumber)
       if (setIndex >= 0) {
-        updatedLogs[currentExerciseIndex].sets[setIndex] = {
-          ...updatedLogs[currentExerciseIndex].sets[setIndex],
+        updatedLogs[currentExerciseIndex]!.sets[setIndex] = {
+          ...updatedLogs[currentExerciseIndex]!.sets[setIndex]!,
           reps,
           weight
         }
@@ -109,7 +109,7 @@ export function WorkoutLogger({
         completed: true,
         rest: currentExercise.target_rest
       }
-      updatedLogs[currentExerciseIndex].sets.push(newSet)
+      updatedLogs[currentExerciseIndex]!.sets.push(newSet)
 
       // Check if this was the last set of the current exercise
       const completedAllSets = setNumber >= currentExercise.target_sets
@@ -134,7 +134,7 @@ export function WorkoutLogger({
 
   const handleDeleteSet = (setNumber: number) => {
     const updatedLogs = [...exerciseLogs]
-    updatedLogs[currentExerciseIndex].sets = updatedLogs[currentExerciseIndex].sets
+    updatedLogs[currentExerciseIndex]!.sets = updatedLogs[currentExerciseIndex]!.sets
       .filter(s => s.set_number !== setNumber)
       .map((s, idx) => ({ ...s, set_number: idx + 1 })) // Renumber remaining sets
     setExerciseLogs(updatedLogs)
@@ -178,7 +178,7 @@ export function WorkoutLogger({
         exerciseLogs
       }
 
-      await onComplete(workoutData)
+      await onComplete(workoutData as any)
       setShowSummary(true)
       hapticFeedback('heavy')
     } catch (error) {

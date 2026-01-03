@@ -210,7 +210,7 @@ function SetInputForm({
   const [targetMin, targetMax] = useMemo(() => {
     const match = targetReps.match(/(\d+)-(\d+)/)
     if (match) {
-      return [parseInt(match[1]), parseInt(match[2])]
+      return [parseInt(match[1]!), parseInt(match[2]!)]
     }
     const single = parseInt(targetReps)
     return [single, single]
@@ -226,7 +226,7 @@ function SetInputForm({
   const [weight, setWeight] = useState(() => {
     if (lastSet) return lastSet.weight
     if (suggestion.recommendedWeight) return suggestion.recommendedWeight
-    if (history.length > 0 && history[0].sets.length > 0) {
+    if (history.length > 0 && history[0]?.sets && history[0].sets.length > 0) {
       return Math.max(...history[0].sets.map((s: { weight?: number }) => s.weight || 0))
     }
     return 20
@@ -236,11 +236,11 @@ function SetInputForm({
     onAddSet(reps, weight)
 
     // Check for PRs if we have history with actual data to compare
-    if (history.length > 0 && history[0].sets?.length > 0) {
+    if (history.length > 0 && history[0]?.sets && history[0].sets.length > 0) {
       const previousBest = history[0]
 
       // Only check PRs if we have meaningful previous data
-      if (previousBest.maxWeight > 0) {
+      if (previousBest.maxWeight && previousBest.maxWeight > 0 && previousBest.sets) {
         const currentSet = { set_number: setNumber, reps, weight, completed: true, rest: 60 }
 
         // Calculate max reps from a single set in previous history
@@ -249,8 +249,8 @@ function SetInputForm({
         const prs = detectPersonalRecords([currentSet], {
           max_weight: previousBest.maxWeight,
           max_reps: previousMaxReps,
-          max_volume: previousBest.totalVolume,
-          estimated_1rm: previousBest.estimated1RM,
+          max_volume: previousBest.totalVolume || 0,
+          estimated_1rm: previousBest.estimated1RM || 0,
         })
 
         if (prs.length > 0) {
@@ -292,7 +292,7 @@ function SetInputForm({
       )}
 
       {/* Previous Performance */}
-      {history.length > 0 && history[0].sets.length > 0 && (
+      {history.length > 0 && history[0]?.sets && history[0].sets.length > 0 && (
         <div className="ios-card p-4">
           <div className="flex items-center justify-between">
             <span className="ios-caption text-muted-foreground">last workout</span>
@@ -302,7 +302,7 @@ function SetInputForm({
                 {Math.max(...history[0].sets.map((s: { reps?: number }) => s.reps || 0))} reps
               </p>
               <p className="ios-caption text-muted-foreground">
-                {history[0].totalSets} sets • {Math.round(history[0].totalVolume)}kg volume
+                {history[0].totalSets || 0} sets • {Math.round(history[0].totalVolume || 0)}kg volume
               </p>
             </div>
           </div>

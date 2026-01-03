@@ -59,7 +59,7 @@ interface ExpenseCardHeaderProps {
 }
 
 export function ExpenseCardHeader({ expense, isExpanded, onClick }: ExpenseCardHeaderProps) {
-  const categoryConfig = CATEGORY_CONFIG[expense.category || 'Other'] || CATEGORY_CONFIG.Other;
+  const categoryConfig = (CATEGORY_CONFIG[expense.category || 'Other'] || CATEGORY_CONFIG.Other)!;
 
   // Memoize formatted date strings
   const formattedDate = useMemo(() => {
