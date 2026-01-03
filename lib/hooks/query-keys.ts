@@ -91,6 +91,33 @@ export const queryKeys = {
     all: ['calorieGoal'] as const,
     detail: () => [...queryKeys.calorieGoal.all, 'detail'] as const,
   },
+
+  // Workouts
+  workouts: {
+    all: ['workouts'] as const,
+    lists: () => [...queryKeys.workouts.all, 'list'] as const,
+    list: (filters?: WorkoutFilters) => [...queryKeys.workouts.lists(), filters] as const,
+    details: () => [...queryKeys.workouts.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.workouts.details(), id] as const,
+  },
+
+  // Exercises
+  exercises: {
+    all: ['exercises'] as const,
+    lists: () => [...queryKeys.exercises.all, 'list'] as const,
+    list: (filters?: ExerciseFilters) => [...queryKeys.exercises.lists(), filters] as const,
+    details: () => [...queryKeys.exercises.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.exercises.details(), id] as const,
+  },
+
+  // Exercise History
+  exerciseHistory: {
+    all: ['exerciseHistory'] as const,
+    lists: () => [...queryKeys.exerciseHistory.all, 'list'] as const,
+    list: (exerciseId?: string) => [...queryKeys.exerciseHistory.lists(), exerciseId] as const,
+    details: () => [...queryKeys.exerciseHistory.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.exerciseHistory.details(), id] as const,
+  },
 } as const
 
 // Filter types
@@ -118,4 +145,19 @@ export interface MealFilters {
   startDate?: string
   endDate?: string
   mealTime?: string
+}
+
+export interface WorkoutFilters {
+  limit?: number
+  offset?: number
+  startDate?: string
+  endDate?: string
+  templateId?: string
+}
+
+export interface ExerciseFilters {
+  category?: string
+  muscleGroup?: string
+  equipment?: string
+  favoriteOnly?: boolean
 }

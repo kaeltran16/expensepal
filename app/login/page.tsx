@@ -2,13 +2,88 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { motion } from 'framer-motion'
-import { Wallet, TrendingDown, PieChart } from 'lucide-react'
+import { PieChart, TrendingDown, Wallet } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+
+// Dev-only login form for testing (bypasses Google OAuth)
+function DevLoginForm() {
+  const [email, setEmail] = useState('test@test.com')
+  const [password, setPassword] = useState('test')
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+
+  const handleDevLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        toast.error(`Login failed: ${error.message}`)
+      } else {
+        toast.success('Logged in successfully')
+        router.push('/')
+      }
+    } catch (error) {
+      toast.error('An error occurred during login')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.8 }}
+      className="mt-6 p-4 border border-yellow-500/50 rounded-lg bg-yellow-50 dark:bg-yellow-900/10"
+    >
+      <p className="text-xs text-yellow-800 dark:text-yellow-200 mb-3 font-semibold">
+        🔧 Development Mode - Test Login
+      </p>
+      <form onSubmit={handleDevLogin} className="space-y-3">
+        <Input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-10"
+          data-testid="dev-email-input"
+        />
+        <Input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="h-10"
+          data-testid="dev-password-input"
+        />
+        <Button
+          type="submit"
+          variant="outline"
+          className="w-full"
+          disabled={isLoading}
+          data-testid="dev-login-btn"
+        >
+          {isLoading ? 'Signing in...' : 'Dev Login'}
+        </Button>
+      </form>
+    </motion.div>
+  )
+}
 
 export default function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth()
@@ -121,6 +196,7 @@ export default function LoginPage() {
               <Button
                 onClick={handleGoogleSignIn}
                 size="lg"
+                id='google-login-btn'
                 className="w-full bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 shadow-md"
               >
                 <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -144,6 +220,11 @@ export default function LoginPage() {
                 Continue with Google
               </Button>
             </motion.div>
+
+            {/* Dev/Test Login (Only in development) */}
+            {process.env.NODE_ENV === 'development' && (
+              <DevLoginForm />
+            )}
 
             {/* Privacy Note */}
             <motion.p
