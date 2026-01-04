@@ -1,5 +1,6 @@
 'use client'
 
+import { springs } from '@/lib/animation-config'
 import { hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { Dumbbell, Flame, Lightbulb, Target, Wallet } from 'lucide-react'
@@ -27,8 +28,8 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
     <motion.nav
       initial={{ y: 100 }}
       animate={{ y: 0 }}
-      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-      className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50"
+      transition={springs.default}
+      className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 will-animate"
     >
       {/* iOS hairline border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-border/30" />
@@ -45,13 +46,11 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
               onClick={() => handleNavClick(item.id)}
               className="relative flex flex-col items-center justify-center flex-1 py-1 ios-touch"
             >
-              {/* Icon */}
-              <motion.div
-                animate={{
-                  scale: isActive ? 1 : 0.94,
-                }}
-                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                className="relative mb-1"
+              {/* Icon - using CSS transform for better performance */}
+              <div
+                className={`relative mb-1 transition-transform duration-200 ease-out ${
+                  isActive ? 'scale-100' : 'scale-[0.94]'
+                }`}
               >
                 <Icon
                   className={`h-6 w-6 transition-colors duration-200 ${
@@ -59,21 +58,19 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
                   }`}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
-              </motion.div>
+              </div>
 
-              {/* Label */}
-              <motion.span
-                animate={{
-                  color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-                }}
-                transition={{ duration: 0.2 }}
-                className="text-[10px] font-medium"
+              {/* Label - using CSS for color transition */}
+              <span
+                className={`text-[10px] font-medium transition-colors duration-200 ${
+                  isActive ? 'text-primary' : 'text-muted-foreground'
+                }`}
                 style={{
                   letterSpacing: '-0.1px',
                 }}
               >
                 {item.label}
-              </motion.span>
+              </span>
             </button>
           )
         })}

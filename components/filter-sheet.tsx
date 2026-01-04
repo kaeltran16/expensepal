@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button';
+import { springs, variants, durations, easings } from '@/lib/animation-config';
 import { QUICK_FILTERS, CATEGORY_FILTERS, type QuickFilterType } from '@/lib/constants/filters';
 import type { Expense, Budget } from '@/lib/supabase';
 import { formatCurrency, hapticFeedback } from '@/lib/utils';
@@ -58,10 +59,8 @@ export function FilterSheet({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            {...variants.fade}
+            transition={{ duration: durations.fast, ease: easings.ios }}
             onClick={() => {
               onClose();
               hapticFeedback('light');
@@ -71,14 +70,9 @@ export function FilterSheet({
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{
-              duration: 0.35,
-              ease: [0.32, 0.72, 0, 1],
-            }}
-            className="fixed inset-x-0 bottom-0 z-50 bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50"
+            {...variants.bottomSheet}
+            transition={springs.gentle}
+            className="fixed inset-x-0 bottom-0 z-50 bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50 will-animate"
             style={{ maxHeight: '75vh' }}
           >
             <div

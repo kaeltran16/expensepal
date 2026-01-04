@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { springs, variants } from '@/lib/animation-config'
 import type { Expense } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, X, Plus, StickyNote } from 'lucide-react'
@@ -112,18 +113,14 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      {...variants.fade}
       className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onCancel}
     >
       <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="bg-background w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+        {...variants.bottomSheet}
+        transition={springs.gentle}
+        className="bg-background w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto will-animate"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -264,12 +261,12 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
           </div>
 
           {/* Notes - Collapsible */}
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {!showNotes ? (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                key="notes-button"
+                {...variants.fade}
+                transition={springs.default}
               >
                 <Button
                   type="button"
@@ -284,9 +281,9 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
               </motion.div>
             ) : (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                key="notes-field"
+                {...variants.slideUp}
+                transition={springs.default}
                 className="space-y-2"
               >
                 <div className="flex items-center justify-between">

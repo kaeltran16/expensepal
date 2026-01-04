@@ -322,4 +322,104 @@
   .animate-ios-spring {
     animation: ios-spring 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
+
+  /* =============================================================================
+     GPU ACCELERATION FOR ANIMATIONS
+     ============================================================================= */
+
+  /**
+   * Force GPU layer creation for smooth animations
+   * Use on elements that will animate frequently
+   */
+  .gpu-accelerate {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+
+  /**
+   * Prepare element for transform animations
+   * Apply to containers that animate scale/translate
+   */
+  .will-animate {
+    will-change: transform;
+  }
+
+  /**
+   * Prepare element for opacity animations
+   * Apply to elements that fade in/out
+   */
+  .will-fade {
+    will-change: opacity;
+  }
+
+  /**
+   * Prepare element for both transform and opacity
+   * Most common case for Framer Motion
+   */
+  .will-animate-all {
+    will-change: transform, opacity;
+  }
+
+  /* =============================================================================
+     ANIMATION PERFORMANCE UTILITIES
+     ============================================================================= */
+
+  /**
+   * Contain layout for animated containers
+   * Prevents layout thrashing during list animations
+   */
+  .contain-paint {
+    contain: paint;
+  }
+
+  .contain-layout {
+    contain: layout;
+  }
+
+  .contain-strict {
+    contain: strict;
+  }
+
+  /**
+   * Animated list container - prevents jank on list updates
+   */
+  .animated-list {
+    contain: layout style;
+  }
+
+  /**
+   * Optimized card for animations
+   */
+  .ios-card-animated {
+    transform: translateZ(0);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ios-card-animated:active {
+    transform: translateZ(0) scale(0.98);
+  }
+
+  /* =============================================================================
+     REDUCED MOTION SUPPORT
+     ============================================================================= */
+
+  /**
+   * Reduce motion for accessibility
+   * Respects user's system preference
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .motion-safe {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+
+    .gpu-accelerate,
+    .will-animate,
+    .will-fade,
+    .will-animate-all {
+      will-change: auto;
+    }
+  }
 }

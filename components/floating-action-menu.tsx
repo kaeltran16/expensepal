@@ -1,9 +1,10 @@
 'use client'
 
+import { springs, variants, durations, easings, getFabItemTransition } from '@/lib/animation-config'
+import { hapticFeedback } from '@/lib/utils'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Pencil, RefreshCw } from 'lucide-react'
-import { hapticFeedback } from '@/lib/utils'
 
 interface FloatingActionMenuProps {
   onAddExpense: () => void
@@ -53,10 +54,8 @@ export function FloatingActionMenu({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            {...variants.fade}
+            transition={{ duration: durations.fast, ease: easings.ios }}
             onClick={toggleMenu}
             className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
             style={{ WebkitBackdropFilter: 'blur(8px)' }}
@@ -73,10 +72,8 @@ export function FloatingActionMenu({
         <AnimatePresence mode="popLayout">
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              {...variants.fade}
+              transition={{ duration: durations.fast }}
               className="absolute bottom-16 right-0 flex flex-col gap-2.5 items-end mb-3"
             >
               {actions.map((action, index) => {
@@ -87,13 +84,8 @@ export function FloatingActionMenu({
                     initial={{ opacity: 0, scale: 0.5, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.5, y: 20 }}
-                    transition={{
-                      delay: index * 0.04,
-                      type: 'spring',
-                      damping: 20,
-                      stiffness: 400,
-                    }}
-                    className="flex items-center gap-2.5"
+                    transition={getFabItemTransition(index)}
+                    className="flex items-center gap-2.5 will-animate-all"
                   >
                     {/* Label Pill */}
                     <motion.span

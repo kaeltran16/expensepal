@@ -3,6 +3,7 @@
 import { ExpandableExpenseCard } from '@/components/expandable-expense-card';
 import { ExpenseCardSkeleton } from '@/components/skeleton-loader';
 import { EmptyState } from '@/components/ui/empty-state';
+import { springs, variants, getStaggerDelay } from '@/lib/animation-config';
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -167,15 +168,12 @@ export function ExpensesView({
           {displayedExpenses.map((expense, index) => (
             <motion.div
               key={expense.id}
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, filter: 'blur(4px)' }}
+              {...variants.listItem}
               transition={{
-                duration: 0.3,
-                delay: index < 10 ? index * 0.05 : 0,
-                ease: [0.4, 0, 0.2, 1],
+                ...springs.default,
+                delay: getStaggerDelay(index),
               }}
+              className="will-animate-all"
             >
               <ExpandableExpenseCard
                 expense={expense}
