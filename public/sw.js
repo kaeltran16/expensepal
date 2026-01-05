@@ -1,4 +1,5 @@
-const VERSION = 'v2.1.3'; // Fix all Response cloning errors
+// Version is auto-generated during build from git commit or deployment ID
+const VERSION = 'BUILD_VERSION_PLACEHOLDER';
 const STATIC_CACHE = `static-${VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${VERSION}`;
 const IMAGE_CACHE = `images-${VERSION}`;

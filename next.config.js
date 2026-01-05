@@ -16,6 +16,28 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Auto-version service worker using git commit SHA or deployment ID
+      const swVersion =
+        process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||  // First 7 chars of commit SHA
+        process.env.VERCEL_DEPLOYMENT_ID ||                 // Fallback to deployment ID
+        `dev-${Date.now()}`                                  // Local dev fallback
+
+      config.module.rules.push({
+        test: /sw\.js$/,
+        loader: 'string-replace-loader',
+        options: {
+          search: 'BUILD_VERSION_PLACEHOLDER',
+          replace: swVersion,
+          flags: 'g'
+        },
+      })
+
+      console.log(`📦 Service Worker will use version: ${swVersion}`)
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig

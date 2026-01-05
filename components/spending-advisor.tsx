@@ -272,6 +272,13 @@ export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) 
           text: 'text-indigo-600 dark:text-indigo-400',
           badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
         }
+      default:
+        return {
+          bg: 'bg-gray-50 dark:bg-gray-950/20',
+          border: 'border-l-gray-500',
+          text: 'text-gray-600 dark:text-gray-400',
+          badge: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300'
+        }
     }
   }
 
