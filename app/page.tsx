@@ -625,15 +625,7 @@ function HomeContent() {
             <QuickExpenseForm
               expense={editingExpense}
               onSubmit={async (data) => {
-                await handleSubmit({
-                  amount: data.amount,
-                  merchant: data.merchant,
-                  category: data.category,
-                  transaction_date: data.transactionDate,
-                  transaction_type: data.transactionType,
-                  currency: data.currency,
-                  notes: data.notes,
-                })
+                await handleSubmit(data)
               }}
               onCancel={() => {
                 setShowForm(false);
@@ -682,7 +674,6 @@ function HomeContent() {
         <AnimatePresence>
           {(() => {
             const shouldShow = activeWorkout && activeView !== 'workouts'
-            console.log('WorkoutLogger shouldShow:', shouldShow, 'activeWorkout:', activeWorkout?.name, 'activeView:', activeView)
             return shouldShow && (
               <WorkoutLogger
                 template={activeWorkout}

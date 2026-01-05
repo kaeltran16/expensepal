@@ -5,6 +5,8 @@ import { getMealTimeFromDate } from '@/lib/meal-utils'
 import { calorieEstimator } from '@/lib/calorie-estimator'
 import { withAuth } from '@/lib/api/middleware'
 
+export const dynamic = 'force-dynamic'
+
 // Helper to extract route params
 async function getExpenseId(params: Promise<{ id: string }>) {
   const { id } = await params
@@ -56,10 +58,10 @@ export async function PUT(
     const { data, error } = await supabase
       .from('expenses')
       .update({
-        transaction_type: body.transactionType || 'Expense',
+        transaction_type: body.transaction_type || 'Expense',
         amount: body.amount,
         currency: body.currency || 'VND',
-        transaction_date: body.transactionDate,
+        transaction_date: body.transaction_date,
         merchant: body.merchant,
         category: body.category || 'Other',
         notes: body.notes,
@@ -99,7 +101,7 @@ export async function PUT(
       try {
         console.log(`🍔 Category changed to Food, creating meal entry for "${body.merchant}"`)
 
-        const mealTime = getMealTimeFromDate(body.transactionDate)
+        const mealTime = getMealTimeFromDate(body.transaction_date)
         const estimation = await calorieEstimator.estimate(body.merchant, {
           mealTime,
           additionalInfo: body.notes,
@@ -115,7 +117,7 @@ export async function PUT(
             carbs: estimation.carbs,
             fat: estimation.fat,
             meal_time: mealTime,
-            meal_date: body.transactionDate,
+            meal_date: body.transaction_date,
             source: estimation.source,
             confidence: estimation.confidence,
             expense_id: id,
@@ -130,7 +132,7 @@ export async function PUT(
       try {
         console.log(`🔄 Updating associated meal for expense ${id}`)
 
-        const mealTime = getMealTimeFromDate(body.transactionDate)
+        const mealTime = getMealTimeFromDate(body.transaction_date)
         const estimation = await calorieEstimator.estimate(body.merchant, {
           mealTime,
           additionalInfo: body.notes,
@@ -154,7 +156,7 @@ export async function PUT(
               carbs: estimation.carbs,
               fat: estimation.fat,
               meal_time: mealTime,
-              meal_date: body.transactionDate,
+              meal_date: body.transaction_date,
               notes: body.notes,
               llm_reasoning: estimation.reasoning,
             })

@@ -9,10 +9,10 @@ import { Label } from '@/components/ui/label'
 import type { Expense } from '@/lib/supabase'
 
 interface ExpenseFormData {
-  transactionType: string
+  transaction_type: string
   amount: number
   currency: string
-  transactionDate: string
+  transaction_date: string
   merchant: string
   category: string
   notes: string
@@ -27,10 +27,10 @@ interface ExpenseFormProps {
 export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    transactionType: expense?.transaction_type || 'Expense',
+    transaction_type: expense?.transaction_type || 'Expense',
     amount: expense?.amount?.toString() || '',
     currency: expense?.currency || 'VND',
-    transactionDate: expense?.transaction_date
+    transaction_date: expense?.transaction_date
       ? new Date(expense.transaction_date).toISOString().slice(0, 16)
       : new Date().toISOString().slice(0, 16),
     merchant: expense?.merchant || '',
@@ -46,7 +46,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
       await onSubmit({
         ...formData,
         amount: parseFloat(formData.amount),
-        transactionDate: new Date(formData.transactionDate).toISOString(),
+        transaction_date: new Date(formData.transaction_date).toISOString(),
       })
     } finally {
       setLoading(false)
@@ -110,12 +110,12 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="transactionDate">Date</Label>
+                <Label htmlFor="transaction_date">Date</Label>
                 <Input
-                  id="transactionDate"
-                  name="transactionDate"
+                  id="transaction_date"
+                  name="transaction_date"
                   type="datetime-local"
-                  value={formData.transactionDate}
+                  value={formData.transaction_date}
                   onChange={handleChange}
                   required
                 />
@@ -123,11 +123,11 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="transactionType">Transaction Type</Label>
+              <Label htmlFor="transaction_type">Transaction Type</Label>
               <Input
-                id="transactionType"
-                name="transactionType"
-                value={formData.transactionType}
+                id="transaction_type"
+                name="transaction_type"
+                value={formData.transaction_type}
                 onChange={handleChange}
                 required
               />

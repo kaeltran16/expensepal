@@ -17,8 +17,8 @@ interface ExpenseFormData {
   merchant: string
   category: string
   notes: string
-  transactionDate: string
-  transactionType: string
+  transaction_date: string
+  transaction_type: string
   currency: string
   source: string
 }
@@ -101,8 +101,8 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
         merchant: formData.merchant,
         category: formData.category || 'Other',
         notes: formData.notes,
-        transactionDate: submitDate.toISOString(),
-        transactionType: 'Expense',
+        transaction_date: submitDate.toISOString(),
+        transaction_type: 'Expense',
         currency: 'VND',
         source: 'manual',
       })

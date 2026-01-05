@@ -6,6 +6,17 @@ import { toast } from 'sonner'
 export function ServiceWorkerRegistration() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
+      // Disable service worker in development
+      if (process.env.NODE_ENV === 'development') {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister()
+            console.log('Service Worker unregistered in development mode')
+          })
+        })
+        return
+      }
+
       // Register service worker
       navigator.serviceWorker
         .register('/sw.js')

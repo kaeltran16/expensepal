@@ -8,6 +8,8 @@ import { createExpenseQuery } from '@/lib/api/query-builder'
 import { createListResponse } from '@/lib/api/types'
 import type { GetExpensesResponse } from '@/lib/api/types'
 
+export const dynamic = 'force-dynamic'
+
 // GET all expenses
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
@@ -52,15 +54,15 @@ export const POST = withAuth(async (request, user) => {
     .insert([
       {
         user_id: user.id,
-        transaction_type: body.transactionType || 'Expense',
+        transaction_type: body.transaction_type || 'Expense',
         amount: body.amount,
         currency: body.currency || 'VND',
-        transaction_date: body.transactionDate,
+        transaction_date: body.transaction_date,
         merchant: body.merchant,
         category: body.category || 'Other',
         notes: body.notes,
         source: body.source || 'manual',
-        email_subject: body.emailSubject,
+        email_subject: body.email_subject,
       },
     ])
     .select()
@@ -77,7 +79,7 @@ export const POST = withAuth(async (request, user) => {
       console.log(`🍔 Food expense detected, auto-creating meal entry for "${body.merchant}"...`)
 
       // Determine meal time based on transaction date
-      const mealTime = getMealTimeFromDate(body.transactionDate)
+      const mealTime = getMealTimeFromDate(body.transaction_date)
       console.log(`⏰ Determined meal time: ${mealTime}`)
 
       // Use merchant name as meal name
@@ -101,7 +103,7 @@ export const POST = withAuth(async (request, user) => {
           carbs: estimation.carbs,
           fat: estimation.fat,
           meal_time: mealTime,
-          meal_date: body.transactionDate,
+          meal_date: body.transaction_date,
           source: estimation.source,
           confidence: estimation.confidence,
           expense_id: createdExpense.id,
