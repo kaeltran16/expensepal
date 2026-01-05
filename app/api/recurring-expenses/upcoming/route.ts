@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/recurring-expenses/upcoming
  * Get upcoming recurring expenses within X days

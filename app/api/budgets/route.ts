@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { withAuth } from '@/lib/api/middleware'
 
+export const dynamic = 'force-dynamic'
+
 // GET budgets for a specific month
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()

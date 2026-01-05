@@ -3,6 +3,8 @@ import { withAuth } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 import { detectRecurringExpenses } from '@/lib/analytics/detect-recurring'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/recurring-expenses/detect
  * Detect recurring patterns from transaction history
