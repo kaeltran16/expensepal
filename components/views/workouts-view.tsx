@@ -4,17 +4,15 @@ import {
   TemplateDetailSheet,
   TemplateFormDialog,
   WorkoutAnalyticsSheet,
-  WorkoutCalendar,
   WorkoutHero,
   WorkoutRecentActivity,
-  WorkoutScheduleSheet,
   WorkoutStats,
   WorkoutTemplatesList
 } from '@/components/workouts'
-import { useThisWeekScheduledWorkouts, useTodayScheduledWorkout } from '@/lib/hooks/use-workout-schedule'
+import { useTodayScheduledWorkout } from '@/lib/hooks/use-workout-schedule'
 import type { Workout, WorkoutTemplate, WorkoutTemplateInsert, WorkoutTemplateUpdate } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/utils'
-import { format, isThisWeek, isToday } from 'date-fns'
+import { isThisWeek, isToday } from 'date-fns'
 import { useState } from 'react'
 
 interface ExerciseLog {
@@ -33,6 +31,7 @@ interface WorkoutsViewProps {
   onDeleteTemplate?: (id: string) => Promise<void>
   activeWorkout?: WorkoutTemplate | null
   exerciseLogs?: ExerciseLog[]
+  editingWorkoutExercises?: boolean
   onReturnToWorkout?: () => void
 }
 
@@ -46,20 +45,21 @@ export function WorkoutsView({
   onDeleteTemplate,
   activeWorkout,
   exerciseLogs = [],
+  editingWorkoutExercises = false,
   onReturnToWorkout
 }: WorkoutsViewProps) {
   // State
   const [selectedTemplate, setSelectedTemplate] = useState<WorkoutTemplate | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null)
-  const [showScheduleSheet, setShowScheduleSheet] = useState(false)
-  const [selectedScheduleDate, setSelectedScheduleDate] = useState<Date | null>(null)
-  const [weekOffset, setWeekOffset] = useState(0)
   const [showAnalytics, setShowAnalytics] = useState(false)
 
-  // Only show template sheet when explicitly selected, not automatically for active workouts
-  // Active workouts should stay in the WorkoutLogger, not auto-open the template sheet
-  const templateToShow = selectedTemplate
+  // Show template sheet when explicitly selected OR when editing active workout exercises
+  // If editing workout exercises, show the active workout template
+  const templateToShow = editingWorkoutExercises && activeWorkout
+    ? activeWorkout
+    : selectedTemplate
+  // isWorkoutActive should be true whenever there's an active workout (including when editing)
   const isWorkoutActive = !!activeWorkout
 
   // If user explicitly wants to edit an active workout's exercises, use fresh template data
@@ -67,11 +67,8 @@ export function WorkoutsView({
     ? templates.find(t => t.id === activeWorkout.id) || templateToShow
     : templateToShow
 
-  console.log('WorkoutsView - activeWorkout:', activeWorkout?.name, 'isWorkoutActive:', isWorkoutActive)
-
   // Hooks for scheduled workouts
   const { data: todayWorkout } = useTodayScheduledWorkout()
-  const { data: weekScheduledWorkouts = [] } = useThisWeekScheduledWorkouts()
 
   if (loading) {
     return <WorkoutSkeleton />
@@ -85,11 +82,6 @@ export function WorkoutsView({
     w.completed_at && isThisWeek(new Date(w.completed_at))
   )
 
-  // Get completed dates for calendar
-  const completedDates = recentWorkouts
-    .filter(w => w.completed_at)
-    .map(w => format(new Date(w.completed_at!), 'yyyy-MM-dd'))
-
   // Check if today's workout is completed
   const todayCompleted = todaysWorkouts.length > 0 &&
     todayWorkout?.status === 'completed'
@@ -100,12 +92,6 @@ export function WorkoutsView({
       onStartWorkout(todayWorkout.template)
       hapticFeedback('medium')
     }
-  }
-
-  // Handle calendar date click
-  const handleDateClick = (date: Date) => {
-    setSelectedScheduleDate(date)
-    setShowScheduleSheet(true)
   }
 
   // Handle template click
@@ -130,19 +116,11 @@ export function WorkoutsView({
         todayCompleted={todayCompleted}
         completedCount={todaysWorkouts.length}
         onQuickStart={todayWorkout?.template ? handleQuickStart : undefined}
+        hasTemplates={templates.length > 0}
       />
 
       {/* Weekly Stats */}
       <WorkoutStats weekWorkouts={weekWorkouts} />
-
-      {/* Calendar Week View */}
-      <WorkoutCalendar
-        scheduledWorkouts={weekScheduledWorkouts}
-        completedDates={completedDates}
-        onDateClick={handleDateClick}
-        weekOffset={weekOffset}
-        onWeekChange={setWeekOffset}
-      />
 
       {/* Templates List */}
       <WorkoutTemplatesList
@@ -159,26 +137,17 @@ export function WorkoutsView({
         maxVisible={3}
       />
 
-      {/* Schedule Sheet */}
-      <WorkoutScheduleSheet
-        isOpen={showScheduleSheet}
-        selectedDate={selectedScheduleDate}
-        templates={templates}
-        onClose={() => {
-          setShowScheduleSheet(false)
-          setSelectedScheduleDate(null)
-        }}
-        onSuccess={() => {
-          // Refetch scheduled workouts happens automatically via TanStack Query
-        }}
-      />
-
       {/* Template Detail Sheet */}
       <TemplateDetailSheet
         template={templateToShowWithFreshData}
         onClose={() => {
-          setSelectedTemplate(null)
-          // Don't automatically navigate away - let user stay on workouts tab
+          if (editingWorkoutExercises && onReturnToWorkout) {
+            // User was editing exercises during active workout - return to workout
+            onReturnToWorkout()
+          } else {
+            // User was just viewing a template - close the sheet
+            setSelectedTemplate(null)
+          }
         }}
         onStart={() => {
           if (templateToShow) {
@@ -245,16 +214,6 @@ function WorkoutSkeleton() {
         <div className="grid grid-cols-3 gap-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-20 bg-muted rounded-2xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-
-      {/* Calendar skeleton */}
-      <div className="ios-card p-4">
-        <div className="h-5 w-32 bg-muted rounded mb-4 mx-auto animate-pulse" />
-        <div className="grid grid-cols-7 gap-2">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
           ))}
         </div>
       </div>

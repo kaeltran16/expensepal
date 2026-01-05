@@ -1,13 +1,14 @@
 'use client'
 
 import { springs } from '@/lib/animation-config'
+import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { Dumbbell, Flame, Lightbulb, Target, Wallet } from 'lucide-react'
 
 interface BottomNavProps {
-  activeView: 'expenses' | 'insights' | 'budget' | 'goals' | 'summary' | 'calories' | 'workouts' | 'profile'
-  onViewChange: (view: 'expenses' | 'insights' | 'budget' | 'goals' | 'summary' | 'calories' | 'workouts' | 'profile') => void
+  activeView: ViewType
+  onViewChange: (view: ViewType) => void
 }
 
 const NAV_ITEMS = [

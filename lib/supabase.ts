@@ -66,3 +66,7 @@ export type WorkoutUpdate = Database['public']['Tables']['workouts']['Update']
 export type WorkoutExercise = Database['public']['Tables']['workout_exercises']['Row']
 export type WorkoutExerciseInsert = Database['public']['Tables']['workout_exercises']['Insert']
 export type WorkoutExerciseUpdate = Database['public']['Tables']['workout_exercises']['Update']
+
+export type RecurringExpense = Database['public']['Tables']['recurring_expenses']['Row']
+export type RecurringExpenseInsert = Database['public']['Tables']['recurring_expenses']['Insert']
+export type RecurringExpenseUpdate = Database['public']['Tables']['recurring_expenses']['Update']

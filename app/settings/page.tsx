@@ -13,7 +13,7 @@ import { hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { AlertCircle, CheckCircle2, ExternalLink, Eye, EyeOff, Mail, Plus, Save, Trash2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 interface EmailSettings {
@@ -32,8 +32,6 @@ export default function SettingsPage() {
   const router = useRouter()
   const { user: _user } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [scrolled, setScrolled] = useState(false)
-  const contentRef = useRef<HTMLDivElement>(null)
   const [saving, setSaving] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [newSender, setNewSender] = useState('')
@@ -49,25 +47,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadEmailSettings()
-  }, [])
-
-  // Scroll detection
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!contentRef.current) return
-      setScrolled(contentRef.current.scrollTop > 20)
-    }
-
-    const ref = contentRef.current
-    if (ref) {
-      ref.addEventListener('scroll', handleScroll, { passive: true })
-    }
-
-    return () => {
-      if (ref) {
-        ref.removeEventListener('scroll', handleScroll)
-      }
-    }
   }, [])
 
   const loadEmailSettings = async () => {
@@ -262,40 +241,19 @@ export default function SettingsPage() {
 
       {/* content */}
       <div
-        ref={contentRef}
-        className="h-screen overflow-auto overscroll-behavior-none"
+        className="min-h-screen overflow-auto overscroll-behavior-none"
         style={{
+          WebkitOverflowScrolling: 'touch',
           paddingTop: 'calc(4rem + env(safe-area-inset-top))',
           paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
         }}
       >
-        {/* Sticky Header */}
-        <motion.div
-          animate={{
-            paddingBottom: scrolled ? '0.75rem' : '1rem',
-          }}
-          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className="sticky top-0 z-40 px-4 pt-4 -mt-4 mb-4"
-          style={{
-            backgroundColor: scrolled ? 'rgba(var(--background-rgb), 0.9)' : 'transparent',
-            backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
-            WebkitBackdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
-            borderBottom: scrolled ? '0.5px solid rgba(var(--ios-separator))' : 'none',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          <motion.div
-            animate={{
-              scale: scrolled ? 0.9 : 1,
-              originX: 0,
-            }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          >
-            <h1 className="ios-large-title">Settings</h1>
-          </motion.div>
-        </motion.div>
+        {/* Header */}
+        <div className="px-4 pt-4 pb-4">
+          <h1 className="ios-large-title">Settings</h1>
+        </div>
 
-        <div className="container max-w-4xl mx-auto px-4 space-y-6">
+        <div className="container max-w-4xl mx-auto px-4 space-y-6 pb-6">
 
         {/* email sync settings */}
         <motion.div

@@ -157,17 +157,7 @@ function TemplateCard({
           <Dumbbell className="h-3.5 w-3.5" />
           <span>{exercises.length} exercises</span>
         </motion.div>
-        <motion.div
-          className="ml-auto"
-          animate={{ x: [0, 4, 0] }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </motion.div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
       </button>
     </motion.div>
   )

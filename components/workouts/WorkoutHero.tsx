@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Dumbbell, PlayCircle, CheckCircle2 } from 'lucide-react'
+import { Dumbbell, PlayCircle, CheckCircle2, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { ScheduledWorkout } from '@/lib/hooks/use-workout-schedule'
 
@@ -10,13 +10,15 @@ interface WorkoutHeroProps {
   todayCompleted: boolean
   completedCount: number
   onQuickStart?: () => void
+  hasTemplates?: boolean
 }
 
 export function WorkoutHero({
   todayWorkout,
   todayCompleted,
   completedCount,
-  onQuickStart
+  onQuickStart,
+  hasTemplates = false
 }: WorkoutHeroProps) {
   // Determine hero content based on state
   const getHeroContent = () => {
@@ -45,14 +47,19 @@ export function WorkoutHero({
       }
     }
 
-    // Return null to hide the hero when there's no workout scheduled and none completed
-    return null
+    // Fallback: Show motivational message when no workout scheduled
+    return {
+      icon: <Zap className="h-5 w-5 text-primary" />,
+      badge: 'Ready to Train',
+      title: hasTemplates ? 'Time to Get Strong 💪' : 'Start Your Journey',
+      description: hasTemplates
+        ? 'Choose a workout template below to get started'
+        : 'Create your first workout template to begin training',
+      showButton: false
+    }
   }
 
   const content = getHeroContent()
-
-  // Don't render anything if there's no scheduled workout and nothing completed
-  if (!content) return null
 
   return (
     <motion.div
@@ -117,12 +124,7 @@ export function WorkoutHero({
               className="w-full touch-xl gap-2 bg-gradient-to-r from-primary to-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
               onClick={onQuickStart}
             >
-              <motion.div
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              >
-                {content.buttonIcon}
-              </motion.div>
+              {content.buttonIcon}
               {content.buttonText}
             </Button>
           </motion.div>

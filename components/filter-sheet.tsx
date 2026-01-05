@@ -6,6 +6,7 @@ import { QUICK_FILTERS, CATEGORY_FILTERS, type QuickFilterType } from '@/lib/con
 import type { Expense, Budget } from '@/lib/supabase';
 import { formatCurrency, hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 
 interface FilterSheetProps {
   isOpen: boolean;
@@ -20,6 +21,9 @@ interface FilterSheetProps {
   currentMonth: string;
 }
 
+// Most common categories to show by default
+const COMMON_CATEGORIES = ['All', 'Food', 'Transport', 'Shopping', 'Bills', 'Other'];
+
 export function FilterSheet({
   isOpen,
   onClose,
@@ -32,6 +36,17 @@ export function FilterSheet({
   budgets,
   currentMonth,
 }: FilterSheetProps) {
+  const [showAllCategories, setShowAllCategories] = useState(false);
+
+  // Extract all unique categories from expenses
+  const allCategories = ['All', ...Array.from(new Set(expenses.map(e => e.category || 'Other'))).sort()];
+
+  // Reset showAllCategories when sheet closes
+  const handleClose = () => {
+    setShowAllCategories(false);
+    onClose();
+  };
+
   const getCategorySpent = (category: string) => {
     const monthExpenses = expenses.filter((e) => {
       const expenseMonth = new Date(e.transaction_date)
@@ -62,7 +77,7 @@ export function FilterSheet({
             {...variants.fade}
             transition={{ duration: durations.fast, ease: easings.ios }}
             onClick={() => {
-              onClose();
+              handleClose();
               hapticFeedback('light');
             }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
@@ -128,48 +143,67 @@ export function FilterSheet({
                     CATEGORY
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {CATEGORY_FILTERS.map((cat) => {
-                      const budget = getBudgetForCategory(cat);
-                      const percentage = getBudgetPercentage(cat);
-                      const hasBudget = budget > 0 && cat !== 'All';
+                    {allCategories
+                      .filter((cat) =>
+                        showAllCategories ||
+                        COMMON_CATEGORIES.includes(cat) ||
+                        cat === categoryFilter
+                      )
+                      .map((cat) => {
+                        const budget = getBudgetForCategory(cat);
+                        const percentage = getBudgetPercentage(cat);
+                        const hasBudget = budget > 0 && cat !== 'All';
 
-                      return (
-                        <button
-                          key={cat}
-                          onClick={() => {
-                            onCategoryFilterChange(cat);
-                            hapticFeedback('medium');
-                          }}
-                          className={`relative px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 overflow-hidden ${
-                            categoryFilter === cat
-                              ? 'bg-primary text-primary-foreground shadow-md scale-105'
-                              : 'bg-muted/50 text-foreground/70 hover:bg-muted hover:text-foreground active:scale-95'
-                          }`}
-                        >
-                          {/* Budget progress indicator */}
-                          {hasBudget && (
-                            <div
-                              className={`absolute inset-0 transition-all duration-300 ${
-                                percentage >= 100
-                                  ? 'bg-destructive/20'
-                                  : percentage >= 80
-                                  ? 'bg-yellow-500/20'
-                                  : 'bg-green-500/20'
-                              }`}
-                              style={{ width: `${percentage}%` }}
-                            />
-                          )}
-                          <span className="relative z-10 flex items-center gap-1.5">
-                            {cat}
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => {
+                              onCategoryFilterChange(cat);
+                              hapticFeedback('medium');
+                            }}
+                            className={`relative px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 overflow-hidden ${
+                              categoryFilter === cat
+                                ? 'bg-primary text-primary-foreground shadow-md scale-105'
+                                : 'bg-muted/50 text-foreground/70 hover:bg-muted hover:text-foreground active:scale-95'
+                            }`}
+                          >
+                            {/* Budget progress indicator */}
                             {hasBudget && (
-                              <span className="text-[10px] opacity-70">
-                                {Math.round(percentage)}%
-                              </span>
+                              <div
+                                className={`absolute inset-0 transition-all duration-300 ${
+                                  percentage >= 100
+                                    ? 'bg-destructive/20'
+                                    : percentage >= 80
+                                    ? 'bg-yellow-500/20'
+                                    : 'bg-green-500/20'
+                                }`}
+                                style={{ width: `${percentage}%` }}
+                              />
                             )}
-                          </span>
-                        </button>
-                      );
-                    })}
+                            <span className="relative z-10 flex items-center gap-1.5">
+                              {cat}
+                              {hasBudget && (
+                                <span className="text-[10px] opacity-70">
+                                  {Math.round(percentage)}%
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    {/* Show More button */}
+                    {!showAllCategories && allCategories.length > COMMON_CATEGORIES.length && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAllCategories(true);
+                          hapticFeedback('light');
+                        }}
+                        className="px-5 py-2.5 rounded-full text-sm font-medium bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground transition-all active:scale-95"
+                      >
+                        Show More ({allCategories.length - COMMON_CATEGORIES.length})
+                      </button>
+                    )}
                   </div>
                   {categoryFilter !== 'All' &&
                     getBudgetForCategory(categoryFilter) > 0 && (
@@ -225,7 +259,7 @@ export function FilterSheet({
                     size="lg"
                     className="flex-1 min-h-touch-lg rounded-xl font-medium shadow-lg"
                     onClick={() => {
-                      onClose();
+                      handleClose();
                       hapticFeedback('medium');
                     }}
                   >

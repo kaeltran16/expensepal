@@ -118,6 +118,20 @@ export const queryKeys = {
     details: () => [...queryKeys.exerciseHistory.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.exerciseHistory.details(), id] as const,
   },
+
+  // Recurring Expenses
+  recurringExpenses: {
+    all: ['recurringExpenses'] as const,
+    lists: () => [...queryKeys.recurringExpenses.all, 'list'] as const,
+    list: (filters?: RecurringExpenseFilters) =>
+      [...queryKeys.recurringExpenses.lists(), filters] as const,
+    details: () => [...queryKeys.recurringExpenses.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.recurringExpenses.details(), id] as const,
+    detected: (expenseCount: number) =>
+      [...queryKeys.recurringExpenses.all, 'detected', expenseCount] as const,
+    due: () => [...queryKeys.recurringExpenses.all, 'due'] as const,
+    upcoming: (days?: number) => [...queryKeys.recurringExpenses.all, 'upcoming', days] as const,
+  },
 } as const
 
 // Filter types
@@ -160,4 +174,10 @@ export interface ExerciseFilters {
   muscleGroup?: string
   equipment?: string
   favoriteOnly?: boolean
+}
+
+export interface RecurringExpenseFilters {
+  isActive?: boolean
+  source?: 'manual' | 'detected'
+  category?: string
 }

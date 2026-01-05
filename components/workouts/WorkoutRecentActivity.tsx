@@ -126,19 +126,7 @@ export function WorkoutRecentActivity({
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.25, type: "spring", stiffness: 300 }}
       >
-        <motion.div
-          animate={{
-            rotate: [0, 5, -5, 0],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatDelay: 3
-          }}
-        >
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-        </motion.div>
+        <Calendar className="h-4 w-4 text-muted-foreground" />
         <h3 className="ios-headline">Recent Activity</h3>
       </motion.div>
 

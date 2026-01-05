@@ -116,16 +116,7 @@ export function WorkoutStats({ weekWorkouts }: WorkoutStatsProps) {
           whileTap={{ scale: 0.95 }}
         >
           <Badge variant="secondary" className="gap-1">
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-            >
-              <Activity className="h-3 w-3" />
-            </motion.div>
+            <Activity className="h-3 w-3" />
             {weekWorkouts.length} workouts
           </Badge>
         </motion.div>

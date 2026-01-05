@@ -49,13 +49,22 @@ export function detectWeekendWeekdayPatterns(
   })
 
   // Find significant weekend/weekday differences (>30%)
-  Object.keys(weekendByCategory).forEach((category) => {
+  // Get all categories that have either weekend or weekday expenses
+  const allCategories = new Set([
+    ...Object.keys(weekendByCategory),
+    ...Object.keys(weekdayByCategory),
+  ])
+
+  allCategories.forEach((category) => {
     const weekendTotal = weekendByCategory[category] || 0
     const weekdayTotal = weekdayByCategory[category] || 0
+    const hasWeekend = (weekendCount[category] || 0) > 0
+    const hasWeekday = (weekdayCount[category] || 0) > 0
 
-    if (weekdayTotal > 0) {
-      const weekendAvg = weekendTotal / (weekendCount[category] || 1)
-      const weekdayAvg = weekdayTotal / (weekdayCount[category] || 1)
+    // Only compare if we have data for both weekend and weekday
+    if (hasWeekend && hasWeekday) {
+      const weekendAvg = weekendTotal / weekendCount[category]
+      const weekdayAvg = weekdayTotal / weekdayCount[category]
       const diff = ((weekendAvg - weekdayAvg) / weekdayAvg) * 100
 
       if (diff > 30) {

@@ -485,24 +485,37 @@ export function TemplateDetailSheet({
               </div>
             </div>
 
-            {/* Get Started Button - Fixed at Bottom (hidden during active workout) */}
+            {/* Bottom Button - Start Workout or Return to Workout */}
             {(() => {
               console.log(`[${instanceId}] Rendering button area - isWorkoutActive:`, isWorkoutActive, '!isWorkoutActive:', !isWorkoutActive)
-              if (!isWorkoutActive) {
+              if (isWorkoutActive) {
+                console.log(`[${instanceId}] RENDERING RETURN TO WORKOUT BUTTON`)
+                return (
+                  <div className="safe-bottom p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                    <Button
+                      onClick={() => {
+                        console.log(`[${instanceId}] Return to Workout button clicked!`)
+                        onClose()
+                        hapticFeedback('medium')
+                      }}
+                      className="w-full min-h-touch ripple-effect gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg rounded-2xl"
+                      size="lg"
+                    >
+                      Return to Workout
+                    </Button>
+                  </div>
+                )
+              } else {
                 console.log(`[${instanceId}] RENDERING START WORKOUT BUTTON`)
                 return (
                   <div className="safe-bottom p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                     <Button
                       onClick={() => {
                         console.log(`[${instanceId}] Start Workout button clicked!`)
-                        if (!isWorkoutActive) {
-                          onStart()
-                          hapticFeedback('medium')
-                        } else {
-                          console.log(`[${instanceId}] Prevented starting workout - already active!`)
-                        }
+                        onStart()
+                        hapticFeedback('medium')
                       }}
-                      disabled={exercises.length === 0 || isWorkoutActive}
+                      disabled={exercises.length === 0}
                       className="w-full min-h-touch ripple-effect gap-2 bg-primary text-primary-foreground shadow-lg rounded-2xl"
                       size="lg"
                     >
@@ -510,9 +523,6 @@ export function TemplateDetailSheet({
                     </Button>
                   </div>
                 )
-              } else {
-                console.log(`[${instanceId}] HIDING START WORKOUT BUTTON (workout is active)`)
-                return null
               }
             })()}
           </motion.div>

@@ -85,20 +85,8 @@ export function RestTimer({
             }}
             onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
           >
-            {/* Animated Timer Icon */}
-            <motion.div
-              animate={{
-                scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              <Timer className="h-16 w-16 mx-auto mb-4 text-primary" />
-            </motion.div>
+            {/* Timer Icon */}
+            <Timer className="h-16 w-16 mx-auto mb-4 text-primary" />
 
             {/* Countdown Display */}
             <motion.div

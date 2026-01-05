@@ -19,40 +19,41 @@ import { QuickStatsOverview } from '@/components/quick-stats-overview';
 import { QuickStatsSkeleton } from '@/components/quick-stats-skeleton';
 import { SearchBar } from '@/components/search-bar';
 import { Button } from '@/components/ui/button';
-import { WorkoutLogger } from '@/components/workout-logger';
 import {
-  BudgetViewSkeleton,
-  GoalsViewSkeleton,
   AnalyticsViewSkeleton,
-  WorkoutsViewSkeleton,
+  BudgetViewSkeleton,
   CaloriesViewSkeleton,
+  GoalsViewSkeleton,
+  RecurringViewSkeleton,
   ViewSkeleton,
+  WorkoutsViewSkeleton,
 } from '@/components/views/skeletons';
+import { WorkoutLogger } from '@/components/workout-logger';
+import type { ExerciseLog } from '@/components/workouts/workout-summary';
 import type { ViewType } from '@/lib/constants/filters';
 import {
-    useBudgets,
-    useCalorieStats,
-    useCreateTemplate,
-    useCreateWorkout,
-    useDeleteTemplate,
-    useExercises,
-    useExpenseFilters,
-    useExpenseOperations,
-    useExpenses,
-    useMeals,
-    useProfile,
-    useStats,
-    useSyncOperations,
-    useUpdateProfile,
-    useUpdateTemplate,
-    useWorkoutTemplates,
-    useWorkouts,
-    queryKeys,
-    workoutKeys,
+  queryKeys,
+  useBudgets,
+  useCalorieStats,
+  useCreateTemplate,
+  useCreateWorkout,
+  useDeleteTemplate,
+  useExercises,
+  useExpenseFilters,
+  useExpenseOperations,
+  useExpenses,
+  useMeals,
+  useProfile,
+  useStats,
+  useSyncOperations,
+  useUpdateProfile,
+  useUpdateTemplate,
+  useWorkouts,
+  useWorkoutTemplates,
+  workoutKeys,
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
 import type { WorkoutTemplate } from '@/lib/types';
-import type { ExerciseLog } from '@/components/workouts/workout-summary';
 import { hapticFeedback } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -106,6 +107,7 @@ const BudgetView = lazy(() => import('@/components/views').then(mod => ({ defaul
 const GoalsView = lazy(() => import('@/components/views').then(mod => ({ default: mod.GoalsView })));
 const SummaryView = lazy(() => import('@/components/views').then(mod => ({ default: mod.SummaryView })));
 const CaloriesView = lazy(() => import('@/components/views').then(mod => ({ default: mod.CaloriesView })));
+const RecurringView = lazy(() => import('@/components/views').then(mod => ({ default: mod.RecurringView })));
 const WorkoutsView = lazy(() => import('@/components/views').then(mod => ({ default: mod.WorkoutsView })));
 const ProfileView = lazy(() => import('@/components/views').then(mod => ({ default: mod.ProfileView })));
 
@@ -161,6 +163,7 @@ function HomeContent() {
   const [showAllMeals, setShowAllMeals] = useState(false);
   const [activeWorkout, setActiveWorkout] = useState<WorkoutTemplate | null>(null);
   const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>([]);
+  const [editingWorkoutExercises, setEditingWorkoutExercises] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -546,6 +549,12 @@ function HomeContent() {
                 />
               </ErrorBoundary>
             </Suspense>
+          ) : activeView === 'recurring' ? (
+            <Suspense fallback={<RecurringViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load recurring expenses" errorDescription="Unable to load your subscriptions">
+                <RecurringView expenses={expenses} />
+              </ErrorBoundary>
+            </Suspense>
           ) : activeView === 'workouts' ? (
             <Suspense fallback={<WorkoutsViewSkeleton />}>
               <ErrorBoundary errorTitle="Failed to load workouts" errorDescription="Unable to load your workout data">
@@ -556,6 +565,7 @@ function HomeContent() {
               onStartWorkout={(template) => {
                 setActiveWorkout(template)
                 setExerciseLogs([]) // Reset logs for new workout
+                setEditingWorkoutExercises(false) // Not editing, starting fresh
                 setActiveView('summary') // Switch away from workouts view so WorkoutLogger can show
                 hapticFeedback('medium')
               }}
@@ -572,8 +582,10 @@ function HomeContent() {
               }}
               activeWorkout={activeWorkout}
               exerciseLogs={exerciseLogs}
+              editingWorkoutExercises={editingWorkoutExercises}
               onReturnToWorkout={() => {
                 // Switch back to previous view (or summary) to show workout logger
+                setEditingWorkoutExercises(false)
                 setActiveView('summary')
               }}
             />
@@ -699,6 +711,7 @@ function HomeContent() {
                 }}
                 onEditExercises={() => {
                   console.log('onEditExercises called - switching to workouts view, activeWorkout:', activeWorkout?.name)
+                  setEditingWorkoutExercises(true)
                   setActiveView('workouts')
                 }}
                 onExerciseLogsChange={setExerciseLogs}

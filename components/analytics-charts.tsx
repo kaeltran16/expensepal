@@ -127,12 +127,13 @@ export function AnalyticsCharts({ expenses, onCategoryFilter }: AnalyticsChartsP
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               outerRadius={100}
+              innerRadius={60}
               fill="#8884d8"
               dataKey="value"
               onClick={(data) => handleCategoryClick(data.name)}
               style={{ cursor: 'pointer' }}
+              paddingAngle={2}
             >
               {categoryData.map((entry, index) => (
                 <Cell
@@ -143,32 +144,62 @@ export function AnalyticsCharts({ expenses, onCategoryFilter }: AnalyticsChartsP
                 />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length > 0) {
+                  const data = payload[0]!
+                  const total = categoryData.reduce((sum, item) => sum + item.value, 0)
+                  const percent = ((data.value as number / total) * 100).toFixed(1)
+                  return (
+                    <div className="bg-background border rounded-lg p-3 shadow-lg">
+                      <p className="font-semibold">{data.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatCurrency(data.value as number, 'VND')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {percent}% of total
+                      </p>
+                    </div>
+                  )
+                }
+                return null
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
 
         {/* Category Legend */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-          {categoryData.map((item, index) => (
-            <button
-              key={item.name}
-              onClick={() => handleCategoryClick(item.name)}
-              className={`flex items-center gap-2 p-2 rounded-lg transition-all active:scale-95 ${
-                selectedCategory === item.name
-                  ? 'bg-primary/10 border border-primary/20'
-                  : 'hover:bg-muted/50'
-              }`}
-            >
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-              />
-              <span className="text-xs sm:text-sm font-medium truncate">{item.name}</span>
-              <span className="text-xs sm:text-sm text-muted-foreground ml-auto">
-                {formatCurrency(item.value, 'VND')}
-              </span>
-            </button>
-          ))}
+          {categoryData
+            .sort((a, b) => b.value - a.value)
+            .map((item, index) => {
+              const originalIndex = categoryData.findIndex((d) => d.name === item.name)
+              const total = categoryData.reduce((sum, cat) => sum + cat.value, 0)
+              const percent = ((item.value / total) * 100).toFixed(1)
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => handleCategoryClick(item.name)}
+                  className={`flex items-center gap-2 p-2 rounded-lg transition-all active:scale-95 ${
+                    selectedCategory === item.name
+                      ? 'bg-primary/10 border border-primary/20'
+                      : 'hover:bg-muted/50'
+                  }`}
+                >
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: COLORS[originalIndex % COLORS.length] }}
+                  />
+                  <div className="flex-1 min-w-0 flex items-baseline gap-1">
+                    <span className="text-xs sm:text-sm font-medium truncate">{item.name}</span>
+                    <span className="text-xs text-muted-foreground flex-shrink-0">({percent}%)</span>
+                  </div>
+                  <span className="text-xs sm:text-sm text-muted-foreground ml-auto flex-shrink-0">
+                    {formatCurrency(item.value, 'VND')}
+                  </span>
+                </button>
+              )
+            })}
         </div>
       </Card>
 

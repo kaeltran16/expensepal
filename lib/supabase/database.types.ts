@@ -597,6 +597,84 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_expenses: {
+        Row: {
+          amount: number
+          auto_create: boolean | null
+          category: string
+          confidence_score: number | null
+          created_at: string | null
+          currency: string
+          end_date: string | null
+          frequency: string
+          id: string
+          interval_days: number | null
+          is_active: boolean | null
+          is_detected: boolean | null
+          last_processed_date: string | null
+          merchant: string
+          name: string
+          next_due_date: string
+          notes: string | null
+          notify_before_days: number | null
+          skipped_dates: string[] | null
+          source: string
+          start_date: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          auto_create?: boolean | null
+          category?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          currency?: string
+          end_date?: string | null
+          frequency: string
+          id?: string
+          interval_days?: number | null
+          is_active?: boolean | null
+          is_detected?: boolean | null
+          last_processed_date?: string | null
+          merchant: string
+          name: string
+          next_due_date: string
+          notes?: string | null
+          notify_before_days?: number | null
+          skipped_dates?: string[] | null
+          source: string
+          start_date: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          auto_create?: boolean | null
+          category?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          currency?: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          interval_days?: number | null
+          is_active?: boolean | null
+          is_detected?: boolean | null
+          last_processed_date?: string | null
+          merchant?: string
+          name?: string
+          next_due_date?: string
+          notes?: string | null
+          notify_before_days?: number | null
+          skipped_dates?: string[] | null
+          source?: string
+          start_date?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       saved_foods: {
         Row: {
           calories: number
@@ -1100,6 +1178,14 @@ export type Database = {
       calculate_estimated_1rm: {
         Args: { reps: number; weight: number }
         Returns: number
+      }
+      calculate_next_due_date: {
+        Args: {
+          custom_interval?: number
+          frequency_type: string
+          input_date: string
+        }
+        Returns: string
       }
       calculate_workout_volume: {
         Args: { exercise_sets: Json }

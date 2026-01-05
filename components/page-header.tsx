@@ -13,6 +13,7 @@ const VIEW_TITLES: Record<ViewType, string> = {
   budget: 'Budget',
   goals: 'Goals',
   calories: 'Calories',
+  recurring: 'Recurring',
   summary: 'Summary',
   insights: 'Insights',
   workouts: 'Workouts',

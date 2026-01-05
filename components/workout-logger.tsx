@@ -81,6 +81,7 @@ export function WorkoutLogger({
   }, [template, exercises, onExerciseLogsChange])
 
   const currentExercise = exerciseLogs[currentExerciseIndex]
+  const nextExercise = exerciseLogs[currentExerciseIndex + 1]
 
   const handleAddSet = (reps: number, weight: number) => {
     if (!currentExercise) return
@@ -170,15 +171,22 @@ export function WorkoutLogger({
       const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000)
       setDurationMinutes(duration)
 
-      const workoutData = {
+      // Calculate total volume
+      const totalVolume = exerciseLogs.reduce((total, log) => {
+        const exerciseVolume = log.sets.reduce((sum, set) => {
+          return sum + (set.reps * (set.weight || 0))
+        }, 0)
+        return total + exerciseVolume
+      }, 0)
+
+      const workoutData: WorkoutData = {
         template_id: template.id,
-        started_at: startTime.toISOString(),
-        completed_at: endTime.toISOString(),
+        exercises_completed: exerciseLogs,
         duration_minutes: duration,
-        exerciseLogs
+        total_volume: totalVolume
       }
 
-      await onComplete(workoutData as any)
+      await onComplete(workoutData)
       setShowSummary(true)
       hapticFeedback('heavy')
     } catch (error) {
@@ -301,7 +309,7 @@ export function WorkoutLogger({
         restTimer={restTimer}
         setRestTimer={setRestTimer}
         onSkip={handleSkipRest}
-        currentExerciseName={currentExercise.exercise_name}
+        currentExerciseName={nextExercise?.exercise_name}
       />
 
       {/* Content */}
@@ -378,19 +386,9 @@ export function WorkoutLogger({
               className="mt-3"
             >
               <p className="text-green-600 font-bold text-base flex items-center justify-center gap-2">
-                <motion.span
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 1 }}
-                >
-                  🎉
-                </motion.span>
+                <span>🎉</span>
                 All sets completed!
-                <motion.span
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 1, delay: 0.2 }}
-                >
-                  💪
-                </motion.span>
+                <span>💪</span>
               </p>
             </motion.div>
           )}
@@ -462,18 +460,7 @@ export function WorkoutLogger({
                   </>
                 ) : (
                   <>
-                    <motion.div
-                      animate={{
-                        scale: [1, 1.2, 1]
-                      }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                    >
-                      <Check className="h-4 w-4" />
-                    </motion.div>
+                    <Check className="h-4 w-4" />
                     Finish Workout
                   </>
                 )}

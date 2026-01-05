@@ -6,6 +6,7 @@ import { Target, Repeat } from 'lucide-react'
 import { BudgetTracker } from '@/components/budget-tracker';
 import { BudgetPredictionsPanel } from '@/components/budget-predictions-panel';
 import { BudgetCardSkeleton } from '@/components/skeleton-loader';
+import { RecurringView } from '@/components/views/recurring-view';
 import { detectRecurringExpenses } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase';
 
@@ -108,90 +109,10 @@ export function BudgetView({ expenses, loading }: BudgetViewProps) {
             />
           </div>
         ) : (
-          <RecurringExpensesSection expenses={expenses} />
+          <RecurringView expenses={expenses} />
         )}
       </motion.div>
     </div>
   );
 }
 
-// Compact recurring expenses section
-function RecurringExpensesSection({ expenses }: { expenses: Expense[] }) {
-  const recurringExpenses = useMemo(() => {
-    return detectRecurringExpenses(expenses)
-  }, [expenses])
-
-  const stats = useMemo(() => {
-    const totalMonthly = recurringExpenses
-      .filter(r => r.frequency === 'monthly')
-      .reduce((sum, r) => sum + r.averageAmount, 0)
-    const totalYearly = recurringExpenses.reduce((sum, r) => sum + r.totalSpentThisYear, 0)
-    const missedPayments = recurringExpenses.filter(r => r.missedPayment).length
-    return { totalMonthly, totalYearly, missedPayments }
-  }, [recurringExpenses])
-
-  if (recurringExpenses.length === 0) {
-    return (
-      <div className="ios-card p-8 text-center">
-        <div className="text-5xl mb-3">🔄</div>
-        <h3 className="ios-headline mb-1">No Recurring Expenses</h3>
-        <p className="ios-caption text-muted-foreground">
-          Add more expenses to detect subscriptions
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="ios-card p-4">
-          <p className="ios-caption text-muted-foreground mb-1">Monthly</p>
-          <p className="text-xl font-semibold">₫{(stats.totalMonthly / 1000).toFixed(0)}k</p>
-        </div>
-        <div className="ios-card p-4">
-          <p className="ios-caption text-muted-foreground mb-1">This Year</p>
-          <p className="text-xl font-semibold">₫{(stats.totalYearly / 1000).toFixed(0)}k</p>
-        </div>
-      </div>
-
-      {/* Compact List */}
-      <div className="ios-list-group">
-        {recurringExpenses.map((recurring, index) => {
-          const nextDate = new Date(recurring.nextExpected)
-          const daysUntil = Math.ceil((nextDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-
-          return (
-            <motion.div
-              key={recurring.merchant}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className={`ios-list-item ${recurring.missedPayment ? 'border-l-2 border-l-destructive' : ''}`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h4 className="ios-headline truncate">{recurring.merchant}</h4>
-                  <p className="ios-caption text-muted-foreground">
-                    {recurring.frequency} • {recurring.missedPayment ? (
-                      <span className="text-destructive">Overdue</span>
-                    ) : daysUntil <= 7 ? (
-                      <span className="text-orange-500">Due in {daysUntil}d</span>
-                    ) : (
-                      nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    )}
-                  </p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="font-semibold">₫{(recurring.averageAmount / 1000).toFixed(0)}k</p>
-                  <p className="ios-caption text-muted-foreground">{recurring.confidence}%</p>
-                </div>
-              </div>
-            </motion.div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}

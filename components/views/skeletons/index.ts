@@ -5,4 +5,5 @@ export {
   AnalyticsViewSkeleton,
   WorkoutsViewSkeleton,
   CaloriesViewSkeleton,
+  RecurringViewSkeleton,
 } from './view-skeleton'
