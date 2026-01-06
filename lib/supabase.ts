@@ -1,26 +1,16 @@
-import { createClient } from '@supabase/supabase-js'
+/**
+ * Supabase Type Exports
+ *
+ * This file ONLY exports TypeScript types for database tables.
+ * DO NOT import Supabase clients from here.
+ *
+ * For Supabase clients, use:
+ * - Client components: import { createClient } from '@/lib/supabase/client'
+ * - Server components/API routes: import { createClient } from '@/lib/supabase/server'
+ * - Admin operations (bypasses RLS): import { supabaseAdmin } from '@/lib/supabase/admin'
+ */
+
 import type { Database } from './supabase/database.types'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-
-// Client for frontend (respects RLS policies)
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-})
-
-// Admin client for backend operations (bypasses RLS)
-// Use this ONLY in API routes, never expose to frontend
-export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-})
 
 // Export types from database.types.ts
 export type { Database }

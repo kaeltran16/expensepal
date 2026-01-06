@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { withOptionalAuth } from '@/lib/api/middleware'
 
 export const dynamic = 'force-dynamic'
 
 // GET suggested category for a merchant
 export const GET = withOptionalAuth(async (request, user) => {
+  const supabase = createClient()
   const { searchParams } = new URL(request.url)
   const merchant = searchParams.get('merchant')
 

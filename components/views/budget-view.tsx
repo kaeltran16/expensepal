@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Target, Repeat } from 'lucide-react'
 import { BudgetTracker } from '@/components/budget-tracker';
 import { BudgetPredictionsPanel } from '@/components/budget-predictions-panel';
+import { AIBudgetRecommendationsPanel } from '@/components/ai-budget-recommendations-panel';
 import { BudgetCardSkeleton } from '@/components/skeleton-loader';
 import { RecurringView } from '@/components/views/recurring-view';
 import { detectRecurringExpenses } from '@/lib/analytics/detect-recurring'
@@ -98,6 +99,9 @@ export function BudgetView({ expenses, loading }: BudgetViewProps) {
       >
         {activeTab === 'budgets' ? (
           <div className="space-y-4">
+            {/* AI Budget Recommendations */}
+            <AIBudgetRecommendationsPanel onSetBudget={handleSetBudget} />
+
             {/* Smart Predictions & Alerts */}
             <BudgetPredictionsPanel onSetBudget={handleSetBudget} />
 

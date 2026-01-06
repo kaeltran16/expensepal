@@ -2,7 +2,6 @@ import { withAuth } from '@/lib/api/middleware'
 import { calorieEstimator } from '@/lib/calorie-estimator'
 import { getUserEmailServices } from '@/lib/email-service'
 import { getMealTimeFromDate } from '@/lib/meal-utils'
-import { supabaseAdmin } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase/database.types'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -48,7 +47,7 @@ export const POST = withAuth(async (_request, user) => {
 
   // Get already-processed email UIDs from database to avoid duplicates
   console.log('Fetching already-processed email UIDs from database...')
-  const { data: processedRecords, error: fetchError } = await supabaseAdmin
+  const { data: processedRecords, error: fetchError } = await supabase
     .from('processed_emails')
     .select('email_uid, email_account')
     .eq('user_id', user.id)
@@ -101,7 +100,7 @@ export const POST = withAuth(async (_request, user) => {
   for (const expense of expenses) {
     console.log(`Attempting to insert: ${expense.amount} ${expense.currency} at ${expense.merchant}`)
 
-    const { data, error } = await supabaseAdmin.from('expenses').insert([
+    const { data, error } = await supabase.from('expenses').insert([
       {
         user_id: user.id,
         transaction_type: expense.transactionType,
@@ -126,7 +125,7 @@ export const POST = withAuth(async (_request, user) => {
 
         // still store the uid to prevent re-parsing this email
         if (expense.emailUid && expense.emailAccount) {
-          const { error: uidError } = await supabaseAdmin
+          const { error: uidError } = await supabase
             .from('processed_emails')
             .insert({
               user_id: user.id,
@@ -154,7 +153,7 @@ export const POST = withAuth(async (_request, user) => {
 
       // Store processed email UID in database to prevent future duplicates
       if (expense.emailUid && expense.emailAccount) {
-        const { error: uidError } = await supabaseAdmin
+        const { error: uidError } = await supabase
           .from('processed_emails')
           .insert({
             user_id: user.id,
@@ -192,6 +191,7 @@ export const POST = withAuth(async (_request, user) => {
 
       // Make a SINGLE batch LLM call for all foods
       const estimates = await calorieEstimator.estimateBatch(
+        supabase,
         foodDescriptions,
         {
           additionalInfo: 'Food orders from email sync (GrabFood/delivery)',
@@ -227,7 +227,7 @@ export const POST = withAuth(async (_request, user) => {
       })
 
       // Batch insert all meals
-      const { data: mealDataArray, error: mealError } = await supabaseAdmin
+      const { data: mealDataArray, error: mealError } = await supabase
         .from('meals')
         .insert(mealInserts)
 
@@ -253,7 +253,7 @@ export const POST = withAuth(async (_request, user) => {
   // update last_sync_at timestamp for user's email settings
   try {
     // Note: user_email_settings table may not have generated types yet
-    await (supabaseAdmin as SupabaseClient<Database>)
+    await (supabase as SupabaseClient<Database>)
       .from('user_email_settings' as never)
       .update({ last_sync_at: new Date().toISOString() } as never)
       .eq('user_id' as never, user.id as never)
@@ -275,9 +275,11 @@ export const POST = withAuth(async (_request, user) => {
 })
 
 export const GET = withAuth(async (_request, user) => {
+  const supabase = createClient()
+
   // check if user has email settings configured
   // Note: user_email_settings table may not have generated types yet
-  const { data: settings } = await (supabaseAdmin as SupabaseClient<Database>)
+  const { data: settings } = await (supabase as SupabaseClient<Database>)
     .from('user_email_settings' as never)
     .select('last_sync_at, is_enabled' as never)
     .eq('user_id' as never, user.id as never)

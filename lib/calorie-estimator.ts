@@ -1,5 +1,6 @@
 import type { SavedFood } from './supabase'
-import { supabaseAdmin } from './supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from './supabase/database.types'
 
 export interface CalorieEstimate {
   calories: number
@@ -23,18 +24,26 @@ export interface EstimationContext {
  * 1. Check personal saved_foods database first (instant, accurate)
  * 2. Fall back to LLM estimation (Claude API)
  * 3. Auto-save LLM estimates to database for future use
+ *
+ * ⚠️ IMPORTANT: This service now requires an authenticated Supabase client
+ * to respect RLS policies. Pass createClient() from API routes.
  */
 export class CalorieEstimator {
   /**
    * Main estimation function
    * Returns calorie estimate with confidence level
+   *
+   * @param supabase - Authenticated Supabase client (respects RLS)
+   * @param foodDescription - Description of the food
+   * @param context - Optional context for better estimation
    */
   async estimate(
+    supabase: SupabaseClient<Database>,
     foodDescription: string,
     context?: EstimationContext
   ): Promise<CalorieEstimate> {
     // Step 1: Check personal database first
-    const saved = await this.checkSavedFoods(foodDescription)
+    const saved = await this.checkSavedFoods(supabase, foodDescription)
     if (saved) {
       return {
         calories: saved.calories,
@@ -52,7 +61,7 @@ export class CalorieEstimator {
     const llmEstimate = await this.estimateWithLLM(foodDescription, context)
 
     // Step 3: Auto-save to database for future use
-    await this.saveToDatabase(foodDescription, llmEstimate, context)
+    await this.saveToDatabase(supabase, foodDescription, llmEstimate, context)
 
     return llmEstimate
   }
@@ -60,13 +69,15 @@ export class CalorieEstimator {
   /**
    * Check if food exists in personal saved_foods database
    * Uses fuzzy matching for flexibility
+   * RLS automatically filters by user_id
    */
   private async checkSavedFoods(
+    supabase: SupabaseClient<Database>,
     foodDescription: string
   ): Promise<SavedFood | null> {
     try {
-      // Exact match first
-      const { data: exactMatch } = await supabaseAdmin
+      // Exact match first - RLS filters by user
+      const { data: exactMatch } = await supabase
         .from('saved_foods')
         .select('*')
         .ilike('name', foodDescription)
@@ -75,12 +86,12 @@ export class CalorieEstimator {
       if (exactMatch) {
         console.log(`✓ Found exact match in saved_foods: "${exactMatch.name}"`)
         // Update usage stats
-        await this.updateUsageStats(exactMatch.id)
+        await this.updateUsageStats(supabase, exactMatch.id)
         return exactMatch
       }
 
-      // Fuzzy match: search for partial matches
-      const { data: partialMatches } = await supabaseAdmin
+      // Fuzzy match: search for partial matches - RLS filters by user
+      const { data: partialMatches } = await supabase
         .from('saved_foods')
         .select('*')
         .ilike('name', `%${foodDescription}%`)
@@ -88,7 +99,7 @@ export class CalorieEstimator {
 
       if (partialMatches && partialMatches.length > 0) {
         console.log(`✓ Found partial match in saved_foods: "${partialMatches[0]!.name}"`)
-        await this.updateUsageStats(partialMatches[0]!.id)
+        await this.updateUsageStats(supabase, partialMatches[0]!.id)
         return partialMatches[0]!
       }
 
@@ -101,11 +112,15 @@ export class CalorieEstimator {
 
   /**
    * Update usage statistics for a saved food
+   * RLS automatically filters by user_id
    */
-  private async updateUsageStats(foodId: string): Promise<void> {
+  private async updateUsageStats(
+    supabase: SupabaseClient<Database>,
+    foodId: string
+  ): Promise<void> {
     try {
-      // Fetch current count
-      const { data: food } = await supabaseAdmin
+      // Fetch current count - RLS filters by user
+      const { data: food } = await supabase
         .from('saved_foods')
         .select('use_count')
         .eq('id', foodId)
@@ -113,7 +128,7 @@ export class CalorieEstimator {
 
       if (food) {
         // Increment and update
-        await supabaseAdmin
+        await supabase
           .from('saved_foods')
           .update({
             use_count: (food.use_count || 0) + 1,
@@ -317,8 +332,10 @@ Your estimate:`
 
   /**
    * Save LLM estimate to database for future use
+   * RLS automatically sets user_id
    */
   private async saveToDatabase(
+    supabase: SupabaseClient<Database>,
     foodDescription: string,
     estimate: CalorieEstimate,
     context?: EstimationContext
@@ -330,7 +347,8 @@ Your estimate:`
         return
       }
 
-      const { error } = await supabaseAdmin.from('saved_foods').insert({
+      // RLS automatically sets user_id
+      const { error } = await supabase.from('saved_foods').insert({
         name: foodDescription,
         calories: estimate.calories,
         protein: estimate.protein,
@@ -364,6 +382,7 @@ Your estimate:`
    * Uses a SINGLE LLM API call for efficiency
    */
   async estimateBatch(
+    supabase: SupabaseClient<Database>,
     foodDescriptions: string[],
     context?: EstimationContext
   ): Promise<CalorieEstimate[]> {
@@ -373,7 +392,7 @@ Your estimate:`
 
     // If only one item, use the standard estimate method
     if (foodDescriptions.length === 1) {
-      const estimate = await this.estimate(foodDescriptions[0]!, context)
+      const estimate = await this.estimate(supabase, foodDescriptions[0]!, context)
       return [estimate]
     }
 
@@ -382,7 +401,7 @@ Your estimate:`
     // Check saved foods first for all items
     const results: (CalorieEstimate | null)[] = await Promise.all(
       foodDescriptions.map(async (food) => {
-        const saved = await this.checkSavedFoods(food)
+        const saved = await this.checkSavedFoods(supabase, food)
         if (saved) {
           return {
             calories: saved.calories,
@@ -428,7 +447,7 @@ Your estimate:`
     // Save all LLM estimates to database for future use
     await Promise.all(
       needsEstimation.map((item, i) =>
-        this.saveToDatabase(item.food, llmEstimates[i]!, context)
+        this.saveToDatabase(supabase, item.food, llmEstimates[i]!, context)
       )
     )
 
@@ -604,10 +623,11 @@ Return ONLY the JSON array, no markdown code blocks, no additional text:`
    * Get total calories from multiple items
    */
   async estimateTotal(
+    supabase: SupabaseClient<Database>,
     foodDescriptions: string[],
     context?: EstimationContext
   ): Promise<CalorieEstimate> {
-    const estimates = await this.estimateBatch(foodDescriptions, context)
+    const estimates = await this.estimateBatch(supabase, foodDescriptions, context)
 
     const total = estimates.reduce(
       (acc, est) => ({

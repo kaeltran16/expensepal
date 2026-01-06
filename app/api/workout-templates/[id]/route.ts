@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase'
 import { withAuth } from '@/lib/api/middleware'
 import type { User } from '@supabase/supabase-js'
 
@@ -44,7 +43,7 @@ export const PUT = withAuthParams<{ id: string }>(async (request, user, params) 
   // Check if this is a default template
   if (existingTemplate.is_default && existingTemplate.user_id === null) {
     // Can't edit system templates - create a copy instead
-    const { data: newTemplate, error: createError } = await supabaseAdmin
+    const { data: newTemplate, error: createError } = await supabase
       .from('workout_templates')
       .insert({
         ...updatedData,
@@ -76,7 +75,7 @@ export const PUT = withAuthParams<{ id: string }>(async (request, user, params) 
   }
 
   // Update user's own template
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('workout_templates')
     .update({
       ...updatedData,

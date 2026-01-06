@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { calorieEstimator } from '@/lib/calorie-estimator'
 import { withAuth } from '@/lib/api/middleware'
 import type { Database } from '@/lib/supabase/database.types'
@@ -8,6 +8,7 @@ type MealInsert = Database['public']['Tables']['meals']['Insert']
 
 // GET /api/meals - List meals with filters
 export const GET = withAuth(async (request, user) => {
+  const supabase = createClient()
   const { searchParams } = new URL(request.url)
   const limit = parseInt(searchParams.get('limit') || '50')
   const offset = parseInt(searchParams.get('offset') || '0')
@@ -15,10 +16,10 @@ export const GET = withAuth(async (request, user) => {
   const endDate = searchParams.get('endDate')
   const mealTime = searchParams.get('mealTime')
 
-  let query = supabaseAdmin
+  // RLS automatically filters by user_id
+  let query = supabase
     .from('meals')
     .select('*, expenses(*)', { count: 'exact' })
-    .eq('user_id', user.id)
     .order('meal_date', { ascending: false })
     .range(offset, offset + limit - 1)
 
@@ -48,6 +49,7 @@ export const GET = withAuth(async (request, user) => {
 
 // POST /api/meals - Create new meal (with optional LLM estimation)
 export const POST = withAuth(async (request, user) => {
+  const supabase = createClient()
   const body = await request.json()
     const {
       name,
@@ -83,7 +85,7 @@ export const POST = withAuth(async (request, user) => {
     // If estimate=true, use LLM to get calories
     if (estimate && !calories) {
       console.log(`Estimating calories for "${name}"...`)
-      const estimation = await calorieEstimator.estimate(name, {
+      const estimation = await calorieEstimator.estimate(supabase, name, {
         portionSize,
         mealTime: meal_time,
         additionalInfo: notes,
@@ -111,7 +113,8 @@ export const POST = withAuth(async (request, user) => {
       }
     }
 
-    const { data, error } = await supabaseAdmin
+    // RLS automatically sets user_id
+    const { data, error } = await supabase
       .from('meals')
       .insert(mealData as MealInsert)
       .select()

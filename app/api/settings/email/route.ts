@@ -1,5 +1,5 @@
 import { withAuth } from '@/lib/api/middleware'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
 import { NextResponse } from 'next/server'
 
@@ -35,42 +35,45 @@ function decryptPassword(encrypted: string): string {
   return decrypted
 }
 
-// GET /api/settings/email - get user's email settings
+// GET /api/settings/email - get all user's email accounts
 export const GET = withAuth(async (request, user) => {
-  // get user's email settings
-  const { data, error } = await supabaseAdmin
+  const supabase = createClient()
+
+  // get all user's email settings - RLS automatically filters by user_id
+  const { data, error } = await supabase
     .from('user_email_settings')
     .select('*')
     .eq('user_id', user.id)
-    .single()
+    .order('created_at', { ascending: true })
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      // no settings found
-      return NextResponse.json(null)
-    }
     console.error('Error fetching email settings:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // decrypt password before sending to client
-  if (data && data.app_password) {
-    try {
-      data.app_password = decryptPassword(data.app_password)
-    } catch (e) {
-      console.error('Error decrypting password:', e)
-      // if decryption fails, return empty password so user can reset it
-      data.app_password = ''
+  // decrypt passwords before sending to client
+  const decryptedData = (data || []).map((account) => {
+    if (account.app_password) {
+      try {
+        account.app_password = decryptPassword(account.app_password)
+      } catch (e) {
+        console.error('Error decrypting password:', e)
+        // if decryption fails, return empty password so user can reset it
+        account.app_password = ''
+      }
     }
-  }
+    return account
+  })
 
-  return NextResponse.json(data)
+  return NextResponse.json(decryptedData)
 })
 
-// POST /api/settings/email - save or update email settings
+// POST /api/settings/email - add or update email account
 export const POST = withAuth(async (request, user) => {
+  const supabase = createClient()
   const body = await request.json()
   const {
+    id, // if provided, update existing account
     email_address,
     app_password,
     imap_host,
@@ -88,12 +91,34 @@ export const POST = withAuth(async (request, user) => {
     )
   }
 
+  // check if adding new account (no id provided)
+  if (!id) {
+    // get current account count - RLS automatically filters by user_id
+    const { count, error: countError } = await supabase
+      .from('user_email_settings')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    if (countError) {
+      console.error('Error counting email accounts:', countError)
+      return NextResponse.json({ error: countError.message }, { status: 500 })
+    }
+
+    // enforce max 3 accounts limit
+    if ((count || 0) >= 3) {
+      return NextResponse.json(
+        { error: 'Maximum 3 email accounts allowed' },
+        { status: 400 }
+      )
+    }
+  }
+
   // encrypt password before storing
   const encryptedPassword = encryptPassword(app_password)
 
   const settingsData = {
     user_id: user.id,
-    email_address: email_address.trim(),
+    email_address: email_address.trim().toLowerCase(),
     app_password: encryptedPassword,
     imap_host: imap_host || 'imap.gmail.com',
     imap_port: imap_port || 993,
@@ -102,8 +127,8 @@ export const POST = withAuth(async (request, user) => {
     trusted_senders: trusted_senders || ['info@card.vib.com.vn', 'no-reply@grab.com'],
   }
 
-  // upsert (insert or update)
-  const { data, error } = await supabaseAdmin
+  // upsert (insert or update) - RLS automatically sets user_id
+  const { data, error } = await supabase
     .from('user_email_settings')
     .upsert(settingsData, {
       onConflict: 'user_id,email_address',
@@ -124,11 +149,24 @@ export const POST = withAuth(async (request, user) => {
   return NextResponse.json(data)
 })
 
-// DELETE /api/settings/email - delete email settings
+// DELETE /api/settings/email?id=xxx - delete specific email account
 export const DELETE = withAuth(async (request, user) => {
-  const { error } = await supabaseAdmin
+  const supabase = createClient()
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+
+  if (!id) {
+    return NextResponse.json(
+      { error: 'Email account ID is required' },
+      { status: 400 }
+    )
+  }
+
+  // delete specific account - RLS automatically filters by user_id
+  const { error } = await supabase
     .from('user_email_settings')
     .delete()
+    .eq('id', id)
     .eq('user_id', user.id)
 
   if (error) {

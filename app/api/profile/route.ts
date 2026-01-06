@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { UpdateProfileSchema } from '@/lib/api/schemas'
@@ -7,8 +7,10 @@ export const dynamic = 'force-dynamic'
 
 // GET /api/profile - Get current user's profile
 export const GET = withAuth(async (request, user) => {
-  // Fetch user profile
-  const { data: profile, error: profileError } = await supabaseAdmin
+  const supabase = createClient()
+
+  // Fetch user profile - RLS automatically filters by user_id
+  const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
     .select('*')
     .eq('user_id', user.id)
@@ -17,7 +19,7 @@ export const GET = withAuth(async (request, user) => {
   if (profileError) {
     // If profile doesn't exist, create one
     if (profileError.code === 'PGRST116') {
-      const { data: newProfile, error: createError } = await supabaseAdmin
+      const { data: newProfile, error: createError} = await supabase
         .from('user_profiles')
         .insert({
           user_id: user.id,
@@ -46,8 +48,10 @@ export const GET = withAuth(async (request, user) => {
 export const PUT = withAuthAndValidation(
   UpdateProfileSchema,
   async (request, user, validatedData) => {
-    // Update user profile
-    const { data: profile, error: updateError } = await supabaseAdmin
+    const supabase = createClient()
+
+    // Update user profile - RLS automatically filters by user_id
+    const { data: profile, error: updateError } = await supabase
       .from('user_profiles')
       .update(validatedData)
       .eq('user_id', user.id)

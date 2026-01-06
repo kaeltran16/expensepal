@@ -1,10 +1,12 @@
 /**
  * Smart Budget Recommendations
  * Analyzes spending patterns and suggests optimal budgets
+ * Enhanced with AI-powered insights for deeper analysis
  */
 
 import type { Expense } from '../supabase'
 import type { Tables } from '../supabase/database.types'
+import { llmService } from '../llm-service'
 
 type Budget = Tables<'budgets'>
 
@@ -270,5 +272,281 @@ export function needsBudgetAdjustment(
     needsAdjustment: false,
     categories: [],
     reason: 'Your spending is within budget limits.',
+  }
+}
+
+// ============================================
+// AI-POWERED BUDGET RECOMMENDATIONS
+// ============================================
+
+export interface AIBudgetRecommendation extends BudgetRecommendation {
+  isAI: boolean
+  seasonalFactors?: string
+  lifestyleInsights?: string
+  savingsOpportunity?: number
+}
+
+interface HistoricalSpendingData {
+  category: string
+  monthlyData: Array<{
+    month: string
+    spent: number
+    transactionCount: number
+  }>
+  last6MonthsAverage: number
+  last12MonthsAverage: number
+  variance: number
+  seasonality: string
+  topMerchants: Array<{ name: string; total: number }>
+}
+
+/**
+ * Prepare comprehensive historical data for AI analysis
+ */
+function prepareHistoricalData(expenses: Expense[], months: number = 12): HistoricalSpendingData[] {
+  const now = new Date()
+  const startDate = new Date(now)
+  startDate.setMonth(now.getMonth() - months)
+
+  const relevantExpenses = expenses.filter(
+    (e) => new Date(e.transaction_date) >= startDate
+  )
+
+  // Group by category
+  const categoryMap = new Map<string, Expense[]>()
+  relevantExpenses.forEach((expense) => {
+    const category = expense.category || 'Other'
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, [])
+    }
+    categoryMap.get(category)!.push(expense)
+  })
+
+  const historicalData: HistoricalSpendingData[] = []
+
+  categoryMap.forEach((categoryExpenses, category) => {
+    // Calculate monthly breakdown
+    const monthlyMap = new Map<string, { spent: number; count: number }>()
+
+    categoryExpenses.forEach((expense) => {
+      const month = expense.transaction_date.substring(0, 7) // YYYY-MM
+      if (!monthlyMap.has(month)) {
+        monthlyMap.set(month, { spent: 0, count: 0 })
+      }
+      const data = monthlyMap.get(month)!
+      data.spent += expense.amount
+      data.count += 1
+    })
+
+    const monthlyData = Array.from(monthlyMap.entries())
+      .map(([month, data]) => ({
+        month,
+        spent: data.spent,
+        transactionCount: data.count,
+      }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+
+    // Calculate averages
+    const last6Months = monthlyData.slice(-6)
+    const last12Months = monthlyData.slice(-12)
+
+    const last6MonthsAverage = last6Months.length > 0
+      ? last6Months.reduce((sum, m) => sum + m.spent, 0) / last6Months.length
+      : 0
+
+    const last12MonthsAverage = last12Months.length > 0
+      ? last12Months.reduce((sum, m) => sum + m.spent, 0) / last12Months.length
+      : 0
+
+    // Calculate variance (measure of consistency)
+    const mean = last6MonthsAverage
+    const variance = last6Months.length > 0
+      ? Math.sqrt(
+          last6Months.reduce((sum, m) => sum + Math.pow(m.spent - mean, 2), 0) /
+            last6Months.length
+        )
+      : 0
+
+    // Detect seasonality
+    let seasonality = 'stable'
+    if (monthlyData.length >= 6) {
+      const recentTrend = last6Months.slice(-3).reduce((sum, m) => sum + m.spent, 0) / 3
+      const olderTrend = last6Months.slice(0, 3).reduce((sum, m) => sum + m.spent, 0) / 3
+
+      if (recentTrend > olderTrend * 1.2) seasonality = 'increasing'
+      else if (recentTrend < olderTrend * 0.8) seasonality = 'decreasing'
+    }
+
+    // Top merchants
+    const merchantTotals = new Map<string, number>()
+    categoryExpenses.forEach((expense) => {
+      const merchant = expense.merchant || 'Unknown'
+      merchantTotals.set(merchant, (merchantTotals.get(merchant) || 0) + expense.amount)
+    })
+
+    const topMerchants = Array.from(merchantTotals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, total]) => ({ name, total }))
+
+    historicalData.push({
+      category,
+      monthlyData,
+      last6MonthsAverage,
+      last12MonthsAverage,
+      variance,
+      seasonality,
+      topMerchants,
+    })
+  })
+
+  return historicalData.sort((a, b) => b.last6MonthsAverage - a.last6MonthsAverage)
+}
+
+/**
+ * Generate AI-powered budget recommendations
+ * Uses LLM to analyze deep patterns and provide personalized advice
+ */
+export async function generateAIBudgetRecommendations(
+  expenses: Expense[],
+  existingBudgets: Budget[] = [],
+  options?: {
+    monthsOfHistory?: number
+    includeBasicRecommendations?: boolean
+  }
+): Promise<AIBudgetRecommendation[]> {
+  const monthsOfHistory = options?.monthsOfHistory || 12
+  const includeBasic = options?.includeBasicRecommendations ?? true
+
+  // Get basic algorithmic recommendations first
+  const basicRecommendations = includeBasic
+    ? generateBudgetRecommendations(expenses, existingBudgets)
+    : []
+
+  // Check if LLM is configured
+  if (!llmService.isConfigured() || expenses.length < 10) {
+    // Return basic recommendations without AI enhancement
+    return basicRecommendations.map((rec) => ({
+      ...rec,
+      isAI: false,
+    }))
+  }
+
+  // Prepare historical data
+  const historicalData = prepareHistoricalData(expenses, monthsOfHistory)
+
+  if (historicalData.length === 0) {
+    return basicRecommendations.map((rec) => ({ ...rec, isAI: false }))
+  }
+
+  // Prepare data summary for LLM
+  const dataSummary = historicalData.map((data) => ({
+    category: data.category,
+    last6MonthsAverage: Math.round(data.last6MonthsAverage),
+    last12MonthsAverage: Math.round(data.last12MonthsAverage),
+    trend: data.seasonality,
+    consistency: data.variance < data.last6MonthsAverage * 0.3 ? 'consistent' : 'variable',
+    topMerchants: data.topMerchants.slice(0, 3).map((m) => m.name),
+    currentBudget: existingBudgets.find((b) => b.category === data.category)?.amount,
+  }))
+
+  const systemPrompt = `You are a financial advisor specializing in budget planning. Analyze spending patterns and provide personalized budget recommendations.`
+
+  const userPrompt = `Based on the following historical spending data, provide smart budget recommendations for each category.
+
+Historical Data (${monthsOfHistory} months):
+${JSON.stringify(dataSummary, null, 2)}
+
+For each category, recommend:
+1. An optimal monthly budget amount (in VND)
+2. Detailed reasoning including seasonal factors, lifestyle insights
+3. Confidence level (high/medium/low)
+4. Potential savings opportunities
+
+Consider:
+- Spending trends and seasonality
+- Consistency vs. variability
+- Common merchants (patterns)
+- Budget best practices (50/30/20 rule for essential/lifestyle/savings)
+- Realistic buffers for unexpected expenses
+
+Respond in JSON format:
+{
+  "recommendations": [
+    {
+      "category": "Category name",
+      "suggestedAmount": 1000000,
+      "reasoning": "Detailed explanation",
+      "confidence": "high" | "medium" | "low",
+      "trend": "increasing" | "stable" | "decreasing",
+      "seasonalFactors": "Any seasonal considerations",
+      "lifestyleInsights": "Lifestyle patterns observed",
+      "savingsOpportunity": 50000
+    }
+  ]
+}
+
+Be specific with VND amounts and provide actionable advice.`
+
+  try {
+    const response = await llmService.completion({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.7,
+      maxTokens: 1500,
+    })
+
+    if (!response) {
+      return basicRecommendations.map((rec) => ({ ...rec, isAI: false }))
+    }
+
+    const parsed = llmService.parseJSON<{
+      recommendations: Array<{
+        category: string
+        suggestedAmount: number
+        reasoning: string
+        confidence: 'high' | 'medium' | 'low'
+        trend: 'increasing' | 'stable' | 'decreasing'
+        seasonalFactors?: string
+        lifestyleInsights?: string
+        savingsOpportunity?: number
+      }>
+    }>(response.content)
+
+    if (!parsed || !parsed.recommendations) {
+      return basicRecommendations.map((rec) => ({ ...rec, isAI: false }))
+    }
+
+    // Merge AI recommendations with historical data
+    const aiRecommendations: AIBudgetRecommendation[] = parsed.recommendations.map((rec) => {
+      const existingBudget = existingBudgets.find((b) => b.category === rec.category)
+      const histData = historicalData.find((h) => h.category === rec.category)
+
+      const percentChange = histData && histData.last6MonthsAverage > 0
+        ? ((rec.suggestedAmount - histData.last6MonthsAverage) / histData.last6MonthsAverage) * 100
+        : 0
+
+      return {
+        category: rec.category,
+        suggestedAmount: rec.suggestedAmount,
+        currentAmount: existingBudget?.amount,
+        reasoning: rec.reasoning,
+        confidence: rec.confidence,
+        trend: rec.trend,
+        percentChange,
+        isAI: true,
+        seasonalFactors: rec.seasonalFactors,
+        lifestyleInsights: rec.lifestyleInsights,
+        savingsOpportunity: rec.savingsOpportunity,
+      }
+    })
+
+    return aiRecommendations.sort((a, b) => b.suggestedAmount - a.suggestedAmount)
+  } catch (error) {
+    console.error('Error generating AI budget recommendations:', error)
+    // Fallback to basic recommendations
+    return basicRecommendations.map((rec) => ({ ...rec, isAI: false }))
   }
 }

@@ -1,9 +1,11 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api/middleware'
 
 // GET /api/exercise-favorites
 export const GET = withAuth(async (_request, user) => {
+  const supabase = createClient()
+
   const { data: favorites, error } = await supabase
     .from('exercise_favorites')
     .select(`
@@ -26,6 +28,7 @@ export const GET = withAuth(async (_request, user) => {
 
 // POST /api/exercise-favorites
 export const POST = withAuth(async (request, user) => {
+  const supabase = createClient()
   const body = await request.json()
   const { exercise_id } = body
 
@@ -76,6 +79,7 @@ export const POST = withAuth(async (request, user) => {
 
 // DELETE /api/exercise-favorites?exercise_id=...
 export const DELETE = withAuth(async (request, user) => {
+  const supabase = createClient()
   const searchParams = request.nextUrl.searchParams
   const exercise_id = searchParams.get('exercise_id')
 

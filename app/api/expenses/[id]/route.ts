@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase'
 import { getMealTimeFromDate } from '@/lib/meal-utils'
 import { calorieEstimator } from '@/lib/calorie-estimator'
 import { withAuth } from '@/lib/api/middleware'
@@ -88,7 +87,7 @@ export async function PUT(
       // Category changed FROM Food to something else - delete associated meal
       try {
         console.log(`🗑️ Category changed from Food, deleting associated meal for expense ${id}`)
-        await supabaseAdmin
+        await supabase
           .from('meals')
           .delete()
           .eq('expense_id', id)
@@ -102,12 +101,12 @@ export async function PUT(
         console.log(`🍔 Category changed to Food, creating meal entry for "${body.merchant}"`)
 
         const mealTime = getMealTimeFromDate(body.transaction_date)
-        const estimation = await calorieEstimator.estimate(body.merchant, {
+        const estimation = await calorieEstimator.estimate(supabase, body.merchant, {
           mealTime,
           additionalInfo: body.notes,
         })
 
-        await supabaseAdmin
+        await supabase
           .from('meals')
           .insert({
             user_id: user.id,
@@ -133,13 +132,13 @@ export async function PUT(
         console.log(`🔄 Updating associated meal for expense ${id}`)
 
         const mealTime = getMealTimeFromDate(body.transaction_date)
-        const estimation = await calorieEstimator.estimate(body.merchant, {
+        const estimation = await calorieEstimator.estimate(supabase, body.merchant, {
           mealTime,
           additionalInfo: body.notes,
         })
 
         // Try to update existing meal
-        const { data: existingMeal } = await supabaseAdmin
+        const { data: existingMeal } = await supabase
           .from('meals')
           .select('id')
           .eq('expense_id', id)
@@ -147,7 +146,7 @@ export async function PUT(
           .single()
 
         if (existingMeal) {
-          await supabaseAdmin
+          await supabase
             .from('meals')
             .update({
               name: body.merchant,
@@ -183,7 +182,7 @@ export async function DELETE(
     // Delete associated meals first (if any)
     try {
       console.log(`🗑️ Deleting associated meals for expense ${id}`)
-      await supabaseAdmin
+      await supabase
         .from('meals')
         .delete()
         .eq('expense_id', id)

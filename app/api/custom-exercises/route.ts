@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateCustomExerciseSchema } from '@/lib/api/schemas'
@@ -8,6 +8,7 @@ type CustomExerciseUpdate = Partial<Database['public']['Tables']['custom_exercis
 
 // GET /api/custom-exercises
 export const GET = withAuth(async (_request, user) => {
+  const supabase = createClient()
   const { data: customExercises, error } = await supabase
     .from('custom_exercises')
     .select('*')
@@ -29,6 +30,7 @@ export const GET = withAuth(async (_request, user) => {
 export const POST = withAuthAndValidation(
   CreateCustomExerciseSchema,
   async (_request, user, validatedData) => {
+    const supabase = createClient()
     const { data: customExercise, error } = await supabase
       .from('custom_exercises')
       .insert({
@@ -53,6 +55,7 @@ export const POST = withAuthAndValidation(
 
 // PUT /api/custom-exercises?id=...
 export const PUT = withAuth(async (request, user) => {
+  const supabase = createClient()
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
 
@@ -128,6 +131,7 @@ export const PUT = withAuth(async (request, user) => {
 
 // DELETE /api/custom-exercises?id=...
 export const DELETE = withAuth(async (request, user) => {
+  const supabase = createClient()
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
 

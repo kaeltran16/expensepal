@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { withAuth } from '@/lib/api/middleware'
 
 interface ExerciseLog {
@@ -14,14 +14,15 @@ interface ExerciseLog {
 
 // GET /api/workouts - list user's workout sessions
 export const GET = withAuth(async (request, user) => {
+  const supabase = createClient()
   const { searchParams } = new URL(request.url)
   const limit = parseInt(searchParams.get('limit') || '50')
   const startDate = searchParams.get('startDate')
 
-  let query = supabaseAdmin
+  // RLS automatically filters by user_id
+  let query = supabase
     .from('workouts')
     .select('*, workout_templates(*)')
-    .eq('user_id', user.id)
     .order('workout_date', { ascending: false })
     .limit(limit)
 
@@ -43,10 +44,11 @@ export const GET = withAuth(async (request, user) => {
 
 // POST /api/workouts - create workout session
 export const POST = withAuth(async (request, user) => {
+  const supabase = createClient()
   const body = await request.json()
 
-    // create workout record
-    const { data: workout, error: workoutError } = await supabaseAdmin
+    // create workout record - RLS automatically sets user_id
+    const { data: workout, error: workoutError } = await supabase
       .from('workouts')
       .insert({
         user_id: user.id,
@@ -75,7 +77,7 @@ export const POST = withAuth(async (request, user) => {
         notes: log.notes,
       }))
 
-      const { error: exercisesError } = await supabaseAdmin
+      const { error: exercisesError } = await supabase
         .from('workout_exercises')
         .insert(exercisesToInsert)
 

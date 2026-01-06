@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase'
 import { getMealTimeFromDate } from '@/lib/meal-utils'
 import { calorieEstimator } from '@/lib/calorie-estimator'
 import { withAuth } from '@/lib/api/middleware'
@@ -87,13 +86,13 @@ export const POST = withAuth(async (request, user) => {
 
       // Estimate calories using the calorie estimator
       console.log(`🤖 Estimating calories for "${mealName}"...`)
-      const estimation = await calorieEstimator.estimate(mealName, {
+      const estimation = await calorieEstimator.estimate(supabase, mealName, {
         mealTime,
         additionalInfo: body.notes,
       })
 
       // Create meal entry
-      const { data: mealData, error: mealError } = await supabaseAdmin
+      const { data: mealData, error: mealError } = await supabase
         .from('meals')
         .insert({
           user_id: user.id,

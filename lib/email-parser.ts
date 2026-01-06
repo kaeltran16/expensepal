@@ -243,7 +243,13 @@ Extract the following information:
 
 IMPORTANT RULES:
 1. For the amount, extract ONLY the final total amount paid by the customer, not subtotals or individual items
-2. For Vietnamese dates like "08/11/2025 18:38" or "08 Nov 25 18:38", convert to ISO 8601 format with +07:00 timezone
+2. For date parsing, be VERY careful with the format:
+   - "06 Jan 26" means DAY 06, MONTH Jan, YEAR 2026 (NOT January 26!)
+   - "08/11/2025 18:38" means 08 Nov 2025 at 18:38
+   - "08 Nov 25 18:38" means 08 Nov 2025 at 18:38
+   - Always interpret 2-digit years as 20XX (e.g., 25 = 2025, 26 = 2026)
+   - Format: "DD MMM YY HH:MM" where DD is day, MMM is month abbreviation, YY is 2-digit year
+   - Convert to ISO 8601 format with +07:00 timezone (Vietnam time)
 3. If you cannot find a specific field, use reasonable defaults:
    - merchant: "Unknown" if not found
    - transactionType: "Purchase" if not specific
@@ -272,6 +278,12 @@ Return ONLY valid JSON in this exact format (no markdown, no explanations):
   "transactionType": "GrabFood",
   "category": "Food"
 }
+
+EXAMPLE DATE PARSING:
+Input: "Ngày | Giờ\n06 Jan 26 11:27 +0700"
+This means: Day 06, Month January, Year 2026, Time 11:27
+Output: "transactionDate": "2026-01-06T11:27:00+07:00"
+(NOT January 26, 2026!)
 
 If this email is NOT a completed transaction (e.g., pending order, confirmation email, promotional email), return:
 {"skip": true}`;

@@ -1,22 +1,24 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { TrendingUp, TrendingDown, Minus, Lightbulb, Check, X } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, Lightbulb, Check, X, Sparkles, Calendar, User, PiggyBank } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
-import type { BudgetRecommendation } from '@/lib/analytics/budget-recommendations'
+import type { AIBudgetRecommendation } from '@/lib/analytics/budget-recommendations'
 import { useState } from 'react'
 
 interface BudgetRecommendationsProps {
-  recommendations: BudgetRecommendation[]
+  recommendations: AIBudgetRecommendation[]
   onAcceptRecommendation?: (category: string, amount: number) => void
   onDismiss?: (category: string) => void
+  showAIBadge?: boolean
 }
 
 export function BudgetRecommendations({
   recommendations,
   onAcceptRecommendation,
   onDismiss,
+  showAIBadge = true,
 }: BudgetRecommendationsProps) {
   const [dismissedCategories, setDismissedCategories] = useState<Set<string>>(
     new Set()
@@ -35,7 +37,7 @@ export function BudgetRecommendations({
     onDismiss?.(category)
   }
 
-  const getTrendIcon = (trend: BudgetRecommendation['trend']) => {
+  const getTrendIcon = (trend: AIBudgetRecommendation['trend']) => {
     switch (trend) {
       case 'increasing':
         return <TrendingUp className="h-4 w-4 text-red-500" />
@@ -46,7 +48,7 @@ export function BudgetRecommendations({
     }
   }
 
-  const getConfidenceBadge = (confidence: BudgetRecommendation['confidence']) => {
+  const getConfidenceBadge = (confidence: AIBudgetRecommendation['confidence']) => {
     const colors = {
       high: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400',
       medium:
@@ -86,11 +88,17 @@ export function BudgetRecommendations({
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-semibold text-base">{rec.category}</h4>
                     {getTrendIcon(rec.trend)}
+                    {showAIBadge && rec.isAI && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400">
+                        <Sparkles className="h-3 w-3" />
+                        AI
+                      </span>
+                    )}
                   </div>
                   {rec.percentChange !== undefined && (
                     <p className="text-xs text-muted-foreground">
                       {rec.trend === 'increasing' ? '+' : ''}
-                      {rec.percentChange.toFixed(0)}% vs. last 3 months
+                      {rec.percentChange.toFixed(0)}% vs. previous average
                     </p>
                   )}
                 </div>
@@ -122,6 +130,41 @@ export function BudgetRecommendations({
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {rec.reasoning}
               </p>
+
+              {/* AI-Enhanced Insights */}
+              {rec.isAI && (
+                <div className="space-y-2 pt-2 border-t border-border/50">
+                  {rec.seasonalFactors && (
+                    <div className="flex items-start gap-2">
+                      <Calendar className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-foreground">Seasonal Factors</p>
+                        <p className="text-xs text-muted-foreground">{rec.seasonalFactors}</p>
+                      </div>
+                    </div>
+                  )}
+                  {rec.lifestyleInsights && (
+                    <div className="flex items-start gap-2">
+                      <User className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-foreground">Lifestyle Insights</p>
+                        <p className="text-xs text-muted-foreground">{rec.lifestyleInsights}</p>
+                      </div>
+                    </div>
+                  )}
+                  {rec.savingsOpportunity && rec.savingsOpportunity > 0 && (
+                    <div className="flex items-start gap-2">
+                      <PiggyBank className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-foreground">Savings Opportunity</p>
+                        <p className="text-xs text-muted-foreground">
+                          Potential to save {rec.savingsOpportunity.toLocaleString('vi-VN')} VND/month
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Footer */}
               <div className="flex items-center justify-between pt-2">

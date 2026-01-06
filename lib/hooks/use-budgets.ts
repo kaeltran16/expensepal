@@ -237,3 +237,86 @@ export function useUpdateBudgetOptimistic() {
     },
   })
 }
+
+/**
+ * Fetch AI-powered budget recommendations
+ */
+async function fetchAIBudgetRecommendations(options?: {
+  months?: number
+  includeBasic?: boolean
+  refresh?: boolean
+}): Promise<{
+  recommendations: Array<{
+    category: string
+    suggestedAmount: number
+    currentAmount?: number
+    reasoning: string
+    confidence: 'high' | 'medium' | 'low'
+    trend: 'increasing' | 'stable' | 'decreasing'
+    percentChange?: number
+    isAI: boolean
+    seasonalFactors?: string
+    lifestyleInsights?: string
+    savingsOpportunity?: number
+  }>
+  summary: {
+    totalCategories: number
+    aiPowered: number
+    algorithmic: number
+    totalSavingsOpportunity: number
+    monthsAnalyzed: number
+    dataPoints: number
+  }
+  generatedAt: string
+  cached?: boolean
+  expiresAt?: string
+}> {
+  const params = new URLSearchParams()
+
+  if (options?.months) params.append('months', options.months.toString())
+  if (options?.includeBasic !== undefined) {
+    params.append('includeBasic', options.includeBasic.toString())
+  }
+  if (options?.refresh) params.append('refresh', 'true')
+
+  const response = await fetch(`/api/budgets/ai-recommendations?${params.toString()}`)
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch AI budget recommendations')
+  }
+
+  return response.json()
+}
+
+/**
+ * Hook to fetch AI-powered budget recommendations
+ *
+ * @param options - Configuration options
+ * @param queryOptions - React Query options
+ *
+ * @example
+ * const { data, isLoading } = useAIBudgetRecommendations()
+ *
+ * @example
+ * const { data } = useAIBudgetRecommendations({
+ *   months: 12,
+ *   includeBasic: true
+ * })
+ */
+export function useAIBudgetRecommendations(
+  options?: {
+    months?: number
+    includeBasic?: boolean
+  },
+  queryOptions?: {
+    enabled?: boolean
+    staleTime?: number
+  }
+) {
+  return useQuery({
+    queryKey: ['ai-budget-recommendations', options],
+    queryFn: () => fetchAIBudgetRecommendations(options),
+    staleTime: queryOptions?.staleTime || 1000 * 60 * 60 * 24, // 24 hours default
+    ...queryOptions,
+  })
+}

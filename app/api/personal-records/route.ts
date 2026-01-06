@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { withAuth } from '@/lib/api/middleware'
 
 // GET /api/personal-records - list user's personal records
 export const GET = withAuth(async (request, user) => {
+  const supabase = createClient()
   const { searchParams } = new URL(request.url)
   const exerciseId = searchParams.get('exerciseId')
 
-  let query = supabaseAdmin
+  // RLS automatically filters by user_id
+  let query = supabase
     .from('personal_records')
     .select('*, exercises(*)')
-    .eq('user_id', user.id)
     .order('achieved_at', { ascending: false })
 
   if (exerciseId) {
@@ -29,10 +30,12 @@ export const GET = withAuth(async (request, user) => {
 
 // POST /api/personal-records - create or update personal record
 export const POST = withAuth(async (request, user) => {
+  const supabase = createClient()
   const body = await request.json()
 
   // upsert (insert or update if exists)
-  const { data, error } = await supabaseAdmin
+  // RLS automatically sets user_id
+  const { data, error } = await supabase
     .from('personal_records')
     .upsert({
       user_id: user.id,

@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateCalorieGoalSchema, UpdateCalorieGoalSchema } from '@/lib/api/schemas'
 
 // GET /api/calorie-goals - Get active calorie goal
 export const GET = withAuth(async (_request, user) => {
+  const supabase = createClient()
   const today = new Date().toISOString().split('T')[0]
 
-  const { data, error } = await supabaseAdmin
+  // RLS automatically filters by user_id
+  const { data, error } = await supabase
     .from('calorie_goals')
     .select('*')
-    .eq('user_id', user.id)
     .lte('start_date', today)
     .or(`end_date.gte.${today},end_date.is.null`)
     .order('start_date', { ascending: false })
@@ -41,17 +42,17 @@ export const GET = withAuth(async (_request, user) => {
 export const POST = withAuthAndValidation(
   CreateCalorieGoalSchema,
   async (_request, user, validatedData) => {
+    const supabase = createClient()
     const today = new Date().toISOString().split('T')[0]
 
-    // End previous goals for this user
-    await supabaseAdmin
+    // End previous goals for this user - RLS automatically filters by user_id
+    await supabase
       .from('calorie_goals')
       .update({ end_date: today })
-      .eq('user_id', user.id)
       .is('end_date', null)
 
-    // Create new goal
-    const { data, error } = await supabaseAdmin
+    // Create new goal - RLS automatically sets user_id
+    const { data, error } = await supabase
       .from('calorie_goals')
       .insert({
         user_id: user.id,
@@ -74,13 +75,13 @@ export const POST = withAuthAndValidation(
 export const PUT = withAuthAndValidation(
   UpdateCalorieGoalSchema,
   async (_request, user, validatedData) => {
+    const supabase = createClient()
     const today = new Date().toISOString().split('T')[0]
 
-    // Get the current active goal
-    const { data: currentGoal } = await supabaseAdmin
+    // Get the current active goal - RLS automatically filters by user_id
+    const { data: currentGoal } = await supabase
       .from('calorie_goals')
       .select('*')
-      .eq('user_id', user.id)
       .lte('start_date', today)
       .or(`end_date.gte.${today},end_date.is.null`)
       .order('start_date', { ascending: false })
@@ -89,7 +90,7 @@ export const PUT = withAuthAndValidation(
 
     // If goal exists, update it
     if (currentGoal) {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('calorie_goals')
         .update({
           ...validatedData,
@@ -106,8 +107,8 @@ export const PUT = withAuthAndValidation(
 
       return NextResponse.json(data)
     } else {
-      // If no goal exists, create a new one
-      const { data, error } = await supabaseAdmin
+      // If no goal exists, create a new one - RLS automatically sets user_id
+      const { data, error } = await supabase
         .from('calorie_goals')
         .insert({
           user_id: user.id,

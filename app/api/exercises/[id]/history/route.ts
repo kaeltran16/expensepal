@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 import { withAuth } from '@/lib/api/middleware'
 import type { User } from '@supabase/supabase-js'
 
@@ -20,11 +20,13 @@ interface ExerciseSet {
 
 // GET /api/exercises/[id]/history - get exercise history for progress tracking
 export const GET = withAuthParams<{ id: string }>(async (request, user, params) => {
+  const supabase = createClient()
   const { searchParams } = new URL(request.url)
   const limit = parseInt(searchParams.get('limit') || '10')
 
   // get workout exercises for this exercise, ordered by workout date
-  const { data: history, error } = await supabaseAdmin
+  // RLS on workouts table automatically filters by user_id
+  const { data: history, error } = await supabase
     .from('workout_exercises')
     .select(`
       *,
@@ -36,7 +38,6 @@ export const GET = withAuthParams<{ id: string }>(async (request, user, params) 
       )
     `)
     .eq('exercise_id', params.id)
-    .eq('workouts.user_id', user.id)
     .eq('workouts.status', 'completed')
     .order('workouts(workout_date)', { ascending: false })
     .limit(limit)
