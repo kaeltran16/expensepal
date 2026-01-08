@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { motion } from 'framer-motion'
 import { PieChart, TrendingDown, Wallet } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -85,9 +85,10 @@ function DevLoginForm() {
   )
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const { user, loading, signInWithGoogle } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     // Redirect to home if already logged in
@@ -95,6 +96,13 @@ export default function LoginPage() {
       router.push('/')
     }
   }, [user, loading, router])
+
+  // Auto-trigger OAuth if opened from iOS PWA
+  useEffect(() => {
+    if (searchParams.get('open_in_browser') === '1' && !loading && !user) {
+      signInWithGoogle()
+    }
+  }, [searchParams, loading, user, signInWithGoogle])
 
   const handleGoogleSignIn = async () => {
     try {
@@ -250,5 +258,22 @@ export default function LoginPage() {
         </motion.div>
       </motion.div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+          <div className="animate-pulse text-center">
+            <Wallet className="h-12 w-12 mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   )
 }

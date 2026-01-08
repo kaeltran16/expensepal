@@ -73,6 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase, router])
 
   const signInWithGoogle = async () => {
+    // Detect iOS PWA - OAuth won't work properly, open in Safari instead
+    const isIOSPWA =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+
+    if (isIOSPWA) {
+      // Open login page in Safari - user logs in there, then returns to PWA
+      window.location.href = `${window.location.origin}/login?open_in_browser=1`
+      return
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
