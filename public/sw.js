@@ -145,6 +145,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip auth-related routes - let these go directly to network
+  // This is critical for OAuth flow and session management in PWA mode
+  if (url.includes('/auth/') || url.includes('/login') || url.includes('supabase')) {
+    return;
+  }
+
   // Strategy 1: Cache First (Static Assets - HTML, CSS, JS)
   if (request.destination === 'document' ||
       request.destination === 'style' ||
