@@ -98,6 +98,14 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// Handle skip waiting message from client
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    console.log('[SW] Skip waiting requested, activating new version');
+    self.skipWaiting();
+  }
+});
+
 // Clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker version:', VERSION);
