@@ -115,3 +115,14 @@ export {
   workoutKeys,
 } from './use-workouts'
 export type { WorkoutFilters } from './use-workouts'
+
+// Achievements & Streaks
+export {
+  useWorkoutStreak,
+  useAchievements,
+  useUpdateStreak,
+  useUnlockAchievement,
+  useCheckAchievements,
+  achievementKeys,
+} from './use-achievements'
+export type { UserStreak, UserAchievement } from './use-achievements'

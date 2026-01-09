@@ -127,15 +127,15 @@ export function useCreateTemplate() {
     mutationFn: async (templateData: {
       name: string
       description?: string
-      difficulty: 'beginner' | 'intermediate' | 'advanced'
-      duration_minutes: number
+      difficulty?: 'beginner' | 'intermediate' | 'advanced'
+      duration_minutes?: number
+      tags?: string[]
+      target_goal?: 'strength' | 'hypertrophy' | 'endurance' | 'general_fitness'
       exercises: Array<{
         exercise_id: string
-        name: string
-        category: string
         sets: number
-        reps: string
-        rest_seconds: number
+        reps: string | number
+        rest: number
         notes?: string
         order?: number
       }>
@@ -170,17 +170,17 @@ export function useUpdateTemplate() {
   return useMutation({
     mutationFn: async (params: {
       id: string
-      name: string
+      name?: string
       description?: string
-      difficulty: 'beginner' | 'intermediate' | 'advanced'
-      duration_minutes: number
-      exercises: Array<{
+      difficulty?: 'beginner' | 'intermediate' | 'advanced'
+      duration_minutes?: number
+      tags?: string[]
+      target_goal?: 'strength' | 'hypertrophy' | 'endurance' | 'general_fitness'
+      exercises?: Array<{
         exercise_id: string
-        name: string
-        category: string
         sets: number
-        reps: string
-        rest_seconds: number
+        reps: string | number
+        rest: number
         notes?: string
         order?: number
       }>

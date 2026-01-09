@@ -29,7 +29,6 @@ import {
   WorkoutsViewSkeleton,
 } from '@/components/views/skeletons';
 import { WorkoutLogger } from '@/components/workout-logger';
-import type { ExerciseLog } from '@/components/workouts/workout-summary';
 import type { ViewType } from '@/lib/constants/filters';
 import {
   queryKeys,
@@ -54,6 +53,7 @@ import {
 } from '@/lib/hooks';
 import type { Expense } from '@/lib/supabase';
 import type { WorkoutTemplate } from '@/lib/types';
+import type { ExerciseLog } from '@/lib/types/common';
 import { hapticFeedback } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -61,28 +61,7 @@ import { Filter } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
-// Type definitions for template operations
-type TemplateExercise = {
-  exercise_id: string
-  name: string
-  category: string
-  sets: number
-  reps: string
-  rest_seconds: number
-  notes?: string
-  order?: number
-}
-
-type TemplateData = {
-  name: string
-  description?: string
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  duration_minutes: number
-  exercises: TemplateExercise[]
-}
-
-type UpdateTemplateData = TemplateData & { id: string }
-
+// Workout completion data type
 type WorkoutCompletionData = {
   template_id?: string
   started_at: string
@@ -570,12 +549,12 @@ function HomeContent() {
                 hapticFeedback('medium')
               }}
               onCreateTemplate={async (templateData) => {
-                // Convert from Partial to required type
-                await createTemplate(templateData as TemplateData)
+                // The templateData comes as Partial<WorkoutTemplateInsert> with exercises as Json
+                // Cast it appropriately for the API
+                await createTemplate(templateData as any)
               }}
               onUpdateTemplate={async (id, templateData) => {
-                // Convert from Partial to required type with id
-                await updateTemplate({ id, ...templateData } as UpdateTemplateData)
+                await updateTemplate({ id, ...templateData } as any)
               }}
               onDeleteTemplate={async (id) => {
                 await deleteTemplate(id)
@@ -682,11 +661,11 @@ function HomeContent() {
                   // Transform workout data to API format
                   const now = new Date().toISOString()
                   const apiData: WorkoutCompletionData = {
-                    template_id: workoutData.template_id,
+                    template_id: workoutData.template_id ?? undefined,
                     started_at: now,  // These would ideally come from the component
                     completed_at: now,
-                    duration_minutes: workoutData.duration_minutes,
-                    exerciseLogs: workoutData.exercises_completed.map((log) => ({
+                    duration_minutes: workoutData.duration_minutes ?? 0,
+                    exerciseLogs: (workoutData.exercises_completed ?? []).map((log) => ({
                       exercise_id: log.exercise_id,
                       sets: log.sets,
                       notes: log.exercise_name,  // Preserve exercise name in notes

@@ -103,12 +103,19 @@ export const CreateWorkoutTemplateSchema = z.object({
   description: z.string().max(500).optional(),
   exercises: z.array(z.object({
     exercise_id: z.string().uuid(),
-    exercise_name: z.string(),
-    target_sets: z.number().positive().int(),
-    target_reps: z.number().positive().int(),
-    target_weight: z.number().nonnegative().optional(),
-    rest_seconds: z.number().nonnegative().default(60),
+    name: z.string().optional(), // Exercise name for display
+    sets: z.number().positive().int(),
+    reps: z.union([z.number().positive().int(), z.string()]), // Can be number or string like "8-12"
+    rest: z.number().nonnegative().default(60), // rest in seconds
+    notes: z.string().optional(),
+    image_url: z.string().nullable().optional(), // Exercise image
+    gif_url: z.string().nullable().optional(), // Exercise GIF
+    order: z.number().nonnegative().int().optional(),
   })),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  duration_minutes: z.number().positive().int().optional(),
+  tags: z.array(z.string()).optional(),
+  target_goal: z.enum(['strength', 'hypertrophy', 'endurance', 'general_fitness']).optional(),
 })
 
 // ============================================================================

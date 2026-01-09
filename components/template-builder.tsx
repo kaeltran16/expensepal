@@ -1,22 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  X,
-  Plus,
-  Search,
-  Trash2,
-  ChevronUp,
-  ChevronDown,
-  Dumbbell,
-  Save,
-} from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
@@ -25,18 +12,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { WorkoutTemplate, Exercise } from '@/lib/supabase'
-import { useExercises, useCreateTemplate, useUpdateTemplate } from '@/lib/hooks'
+import { Textarea } from '@/components/ui/textarea'
+import { useCreateTemplate, useExercises, useUpdateTemplate } from '@/lib/hooks'
+import type { Exercise, WorkoutTemplate } from '@/lib/supabase'
+import type { TemplateExercise } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  ChevronDown,
+  ChevronUp,
+  Dumbbell,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-interface TemplateExercise {
-  exercise_id: string
-  exercise?: Exercise // for display purposes
-  sets: number
-  reps: string // can be "8-12" or "10"
-  rest_seconds: number
-  notes?: string
+// Extended version with exercise object for display
+interface TemplateExerciseWithData extends TemplateExercise {
+  exercise?: Exercise
 }
 
 interface TemplateBuilderProps {
@@ -52,14 +49,13 @@ export function TemplateBuilder({
   template,
   onSave,
 }: TemplateBuilderProps) {
-  // form state
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>(
     'beginner'
   )
   const [durationMinutes, setDurationMinutes] = useState(45)
-  const [templateExercises, setTemplateExercises] = useState<TemplateExercise[]>([])
+  const [templateExercises, setTemplateExercises] = useState<TemplateExerciseWithData[]>([])
 
   // ui state
   const [showExercisePicker, setShowExercisePicker] = useState(false)
@@ -81,7 +77,7 @@ export function TemplateBuilder({
 
       // parse exercises from jsonb and hydrate with full exercise data
       const exercises = (template.exercises as unknown as TemplateExercise[]) || []
-      const hydratedExercises = exercises.map((ex) => ({
+      const hydratedExercises: TemplateExerciseWithData[] = exercises.map((ex) => ({
         ...ex,
         exercise: allExercises.find((e) => e.id === ex.exercise_id),
       }))
@@ -97,12 +93,12 @@ export function TemplateBuilder({
   }, [template, open, allExercises])
 
   const handleAddExercise = (exercise: Exercise) => {
-    const newExercise: TemplateExercise = {
+    const newExercise: TemplateExerciseWithData = {
       exercise_id: exercise.id,
       exercise, // store full exercise for display
       sets: 3,
       reps: '8-12',
-      rest_seconds: 90,
+      rest: 90,
     }
 
     setTemplateExercises([...templateExercises, newExercise])
@@ -156,10 +152,9 @@ export function TemplateBuilder({
     const exercisesForDb = templateExercises.map((ex) => ({
       exercise_id: ex.exercise_id,
       name: ex.exercise?.name || '',
-      category: ex.exercise?.category || '',
       sets: ex.sets,
       reps: ex.reps,
-      rest_seconds: ex.rest_seconds,
+      rest: ex.rest,
       notes: ex.notes,
     }))
 
@@ -366,7 +361,6 @@ export function TemplateBuilder({
   )
 }
 
-// exercise config card component
 function ExerciseConfigCard({
   exercise,
   index,
@@ -377,7 +371,7 @@ function ExerciseConfigCard({
   onMoveUp,
   onMoveDown,
 }: {
-  exercise: TemplateExercise
+  exercise: TemplateExerciseWithData
   index: number
   canMoveUp: boolean
   canMoveDown: boolean
@@ -469,8 +463,8 @@ function ExerciseConfigCard({
           <Label className="text-xs">rest (sec)</Label>
           <Input
             type="number"
-            value={exercise.rest_seconds}
-            onChange={(e) => onUpdate('rest_seconds', Number(e.target.value))}
+            value={exercise.rest}
+            onChange={(e) => onUpdate('rest', Number(e.target.value))}
             min={30}
             max={300}
             step={15}

@@ -24,11 +24,11 @@ export type WorkoutTemplate = Database['public']['Tables']['workout_templates'][
 export interface TemplateExercise {
   id?: string
   exercise_id: string
-  name: string
-  category: string
+  name?: string
+  category?: string
   sets: number
-  reps: string
-  rest_seconds: number
+  reps: string | number
+  rest: number
   notes?: string
   order?: number
 }
@@ -36,27 +36,39 @@ export interface TemplateExercise {
 // Exercise log type (used when logging workouts)
 export interface ExerciseLog {
   exercise_id: string
-  name: string
+  exercise_name: string // renamed from 'name' for clarity
   sets: ExerciseSet[]
+  target_sets?: number // optional: for workout logger UI
+  target_reps?: string // optional: for workout logger UI (e.g., "8-12")
+  target_rest?: number // optional: for workout logger UI (in seconds)
   notes?: string
 }
 
 // Exercise set type
 export interface ExerciseSet {
+  set_number?: number // optional: for set tracking
   reps: number
   weight?: number
   completed?: boolean
-  rest_seconds?: number
+  rest?: number // in seconds (preferred)
+  rest_seconds?: number // @deprecated Use 'rest' instead
 }
+
+// @deprecated Use ExerciseSet instead to avoid confusion with built-in Set type
+export type Set = ExerciseSet
 
 // Workout data for completion
 export interface WorkoutData {
-  template_id?: string
+  template_id?: string | null
   template_name?: string
-  date: string
+  date?: string
   duration_minutes?: number
+  total_volume?: number
   notes?: string
-  exerciseLogs: ExerciseLog[]
+  // Support both naming conventions for compatibility
+  exercises_completed?: ExerciseLog[]
+  exerciseLogs?: ExerciseLog[]
+  personal_records?: Array<{ type: string; value: number; unit: string }>
 }
 
 // Chart tooltip props (for Recharts)

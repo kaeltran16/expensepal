@@ -1,43 +1,45 @@
-'use client'
-
 import { ExerciseDetailSheet } from '@/components/exercise-detail-sheet'
 import { ExercisePickerSheet } from '@/components/exercise-picker-sheet'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import type { WorkoutTemplate } from '@/lib/supabase'
+import type { TemplateExercise as BaseTemplateExercise, ExerciseLog } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion, Reorder } from 'framer-motion'
 import {
-  ArrowLeft,
-  Calendar,
-  Check,
-  ChevronDown,
-  Clock,
-  Copy,
-  Dumbbell,
-  Edit3,
-  FileText,
-  GripVertical,
-  History,
-  MoreHorizontal,
-  Plus,
-  Share2,
-  Star,
-  Target,
-  Trash2
+    ArrowLeft,
+    Calendar,
+    Check,
+    ChevronDown,
+    Clock,
+    Copy,
+    Dumbbell,
+    Edit3,
+    FileText,
+    GripVertical,
+    History,
+    MoreHorizontal,
+    Plus,
+    Share2,
+    Star,
+    Target,
+    Trash2
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-interface ExerciseLog {
-  exercise_id: string
-  sets: { completed: boolean }[]
-  target_sets: number
+// Extended TemplateExercise with local UI fields
+interface TemplateExercise extends BaseTemplateExercise {
+  _id?: string
+  name: string
+  weight: number
+  image_url?: string | null
+  gif_url?: string | null
 }
 
 interface TemplateDetailSheetProps {
@@ -66,18 +68,6 @@ export function TemplateDetailSheet({
   const instanceId = useState(() => Math.random().toString(36).substring(2, 11))[0]
   console.log(`[${instanceId}] TemplateDetailSheet - isWorkoutActive:`, isWorkoutActive, 'template:', template?.name)
   console.log(`[${instanceId}] TemplateDetailSheet - !isWorkoutActive:`, !isWorkoutActive, 'should render button:', !isWorkoutActive)
-
-  interface TemplateExercise {
-    _id?: string
-    exercise_id: string
-    name: string
-    sets: number
-    reps: string
-    weight: number
-    rest: number
-    image_url?: string | null
-    gif_url?: string | null
-  }
 
   const [exercises, setExercises] = useState<TemplateExercise[]>([])
   const [editingExercise, setEditingExercise] = useState<number | null>(null)
@@ -602,7 +592,7 @@ function ExerciseCardSimple({
     exercise_id: string
     name?: string
     sets: number
-    reps: string
+    reps: string | number
     weight?: number
     rest?: number
     image_url?: string | null

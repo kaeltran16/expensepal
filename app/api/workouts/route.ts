@@ -1,16 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { withAuth } from '@/lib/api/middleware'
-
-interface ExerciseLog {
-  exercise_id: string
-  sets: Array<{
-    reps?: number
-    weight?: number
-    rpe?: number
-  }>
-  notes?: string
-}
+import { createClient } from '@/lib/supabase/server'
+import type { ExerciseLog } from '@/lib/types/common'
+import { NextResponse } from 'next/server'
 
 // GET /api/workouts - list user's workout sessions
 export const GET = withAuth(async (request, user) => {

@@ -1,27 +1,18 @@
-'use client'
-
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useExerciseHistory } from '@/lib/hooks'
+import type { ExerciseSet } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
 import { detectPersonalRecords, getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
 import { motion } from 'framer-motion'
 import { Check, Minus, Plus, TrendingUp, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-export interface Set {
-  set_number: number
-  reps: number
-  weight: number
-  completed: boolean
-  rest: number
-}
-
 interface ExerciseSetTrackerProps {
   exerciseId: string
   exerciseName: string
-  completedSets: Set[]
+  completedSets: ExerciseSet[]
   targetSets: number
   targetReps: string
   targetRest: number
@@ -116,7 +107,7 @@ export function ExerciseSetTracker({
                 }}
                 className="ios-card p-4 cursor-pointer"
                 onClick={() => {
-                  onEditSet(set.set_number)
+                  onEditSet(set.set_number ?? 0)
                   hapticFeedback('light')
                 }}
               >
@@ -183,7 +174,7 @@ export function ExerciseSetTracker({
 interface SetInputFormProps {
   setNumber: number
   exerciseId: string
-  lastSet?: Set
+  lastSet?: ExerciseSet
   targetReps: string
   onAddSet: (reps: number, weight: number) => void
   onPRDetected: (prs: Array<{ type: string; value: number; unit: string }>) => void
@@ -224,7 +215,7 @@ function SetInputForm({
   // Initialize with suggested or last weight
   const [reps, setReps] = useState(targetMin || 10)
   const [weight, setWeight] = useState(() => {
-    if (lastSet) return lastSet.weight
+    if (lastSet) return lastSet.weight ?? 20
     if (suggestion.recommendedWeight) return suggestion.recommendedWeight
     if (history.length > 0 && history[0]?.sets && history[0].sets.length > 0) {
       return Math.max(...history[0].sets.map((s: { weight?: number }) => s.weight || 0))
@@ -354,7 +345,7 @@ function SetInputForm({
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setWeight(Math.max(0, weight - 2.5))}
+              onClick={() => setWeight(Math.max(0, (weight ?? 0) - 2.5))}
               className="h-12 w-12"
               aria-label="Decrease weight"
             >

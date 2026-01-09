@@ -1,25 +1,24 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
 import {
   TemplateDetailSheet,
   TemplateFormDialog,
   WorkoutAnalyticsSheet,
+  WorkoutGeneratorSheet,
   WorkoutHero,
   WorkoutRecentActivity,
   WorkoutStats,
+  WorkoutStreakBadge,
   WorkoutTemplatesList
 } from '@/components/workouts'
 import { useTodayScheduledWorkout } from '@/lib/hooks/use-workout-schedule'
 import type { Workout, WorkoutTemplate, WorkoutTemplateInsert, WorkoutTemplateUpdate } from '@/lib/supabase'
+import type { ExerciseLog } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
 import { isThisWeek, isToday } from 'date-fns'
+import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
-
-interface ExerciseLog {
-  exercise_id: string
-  sets: { completed: boolean }[]
-  target_sets: number
-}
 
 interface WorkoutsViewProps {
   templates: WorkoutTemplate[]
@@ -53,6 +52,7 @@ export function WorkoutsView({
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showGenerator, setShowGenerator] = useState(false)
 
   // Show template sheet when explicitly selected OR when editing active workout exercises
   // If editing workout exercises, show the active workout template
@@ -118,6 +118,22 @@ export function WorkoutsView({
         onQuickStart={todayWorkout?.template ? handleQuickStart : undefined}
         hasTemplates={templates.length > 0}
       />
+
+      {/* AI Generator Button */}
+      <Button
+        onClick={() => {
+          setShowGenerator(true)
+          hapticFeedback('medium')
+        }}
+        variant="outline"
+        className="w-full min-h-touch gap-2 bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20 hover:border-primary/40"
+      >
+        <Sparkles className="h-4 w-4 text-primary" />
+        Generate AI Workout
+      </Button>
+
+      {/* Streak Badge */}
+      <WorkoutStreakBadge />
 
       {/* Weekly Stats */}
       <WorkoutStats weekWorkouts={weekWorkouts} />
@@ -196,6 +212,60 @@ export function WorkoutsView({
         isOpen={showAnalytics}
         workouts={recentWorkouts}
         onClose={() => setShowAnalytics(false)}
+      />
+
+      {/* AI Workout Generator */}
+      <WorkoutGeneratorSheet
+        isOpen={showGenerator}
+        onClose={() => setShowGenerator(false)}
+        onStartWorkout={(workout) => {
+          // Convert generated workout to template format and start
+          const template: WorkoutTemplate = {
+            id: `generated-${Date.now()}`,
+            user_id: null,
+            name: workout.name,
+            description: workout.description,
+            difficulty: workout.difficulty as 'beginner' | 'intermediate' | 'advanced',
+            duration_minutes: workout.estimated_duration,
+            exercises: workout.exercises.map((ex, idx) => ({
+              exercise_id: ex.exercise_id,
+              name: ex.name,
+              sets: ex.sets,
+              reps: ex.reps,
+              rest: ex.rest,
+              order: idx,
+              image_url: ex.image_url,
+              gif_url: ex.gif_url,
+            })),
+            is_default: false,
+            tags: null,
+            target_goal: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+          onStartWorkout(template)
+          setShowGenerator(false)
+        }}
+        onSaveAsTemplate={async (workout) => {
+          if (onCreateTemplate) {
+            await onCreateTemplate({
+              name: workout.name,
+              description: workout.description,
+              difficulty: workout.difficulty as 'beginner' | 'intermediate' | 'advanced',
+              duration_minutes: workout.estimated_duration,
+              exercises: workout.exercises.map((ex, idx) => ({
+                exercise_id: ex.exercise_id,
+                name: ex.name,
+                sets: ex.sets || 3,
+                reps: ex.reps || 10, // Can be string like "8-12" or number
+                rest: ex.rest || 60,
+                image_url: ex.image_url,
+                gif_url: ex.gif_url,
+                order: idx,
+              })),
+            })
+          }
+        }}
       />
     </div>
   )

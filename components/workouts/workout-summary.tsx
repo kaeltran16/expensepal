@@ -1,18 +1,9 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import type { Set } from './exercise-set-tracker'
+import type { ExerciseLog } from '@/lib/types/common'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, Dumbbell, Share2, Timer, TrendingUp, Zap } from 'lucide-react'
-
-export interface ExerciseLog {
-  exercise_id: string
-  exercise_name: string
-  sets: Set[]
-  target_sets: number
-  target_reps: string
-  target_rest: number
-}
 
 interface PersonalRecord {
   type: string
@@ -51,7 +42,7 @@ export function WorkoutSummary({
   // Calculate statistics
   const totalSets = exerciseLogs.reduce((sum, log) => sum + log.sets.length, 0)
   const totalVolume = exerciseLogs.reduce((sum, log) =>
-    sum + log.sets.reduce((setSum, set) => setSum + (set.weight * set.reps), 0)
+    sum + log.sets.reduce((setSum, set) => setSum + ((set.weight ?? 0) * set.reps), 0)
   , 0)
   const completedExercises = exerciseLogs.filter(log => log.sets.length > 0).length
 

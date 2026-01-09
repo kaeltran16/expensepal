@@ -2,30 +2,16 @@
 
 import { Button } from '@/components/ui/button'
 import type { WorkoutTemplate } from '@/lib/supabase'
+import type { ExerciseLog, ExerciseSet, TemplateExercise, WorkoutData } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, Timer, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { ExerciseSetTracker, type Set } from './workouts/exercise-set-tracker'
+import { ExerciseSetTracker } from './workouts/exercise-set-tracker'
 import { PersonalRecordBadge } from './workouts/personal-record-badge'
 import { RestTimer } from './workouts/rest-timer'
 import { WorkoutProgress } from './workouts/workout-progress'
-import { WorkoutSummary, type ExerciseLog } from './workouts/workout-summary'
-
-interface TemplateExercise {
-  exercise_id: string
-  sets: number
-  reps: string
-  rest?: number
-}
-
-interface WorkoutData {
-  template_id: string
-  exercises_completed: ExerciseLog[]
-  duration_minutes: number
-  total_volume: number
-  personal_records?: Array<{ type: string; value: number; unit: string }>
-}
+import { WorkoutSummary } from './workouts/workout-summary'
 
 interface PersonalRecord {
   type: string
@@ -72,7 +58,7 @@ export function WorkoutLogger({
         exercise_name: exercise?.name || 'unknown',
         sets: [],
         target_sets: te.sets || 3,
-        target_reps: te.reps || '10',
+        target_reps: String(te.reps || '10'), // Convert to string
         target_rest: te.rest || 60
       }
     })
@@ -103,7 +89,7 @@ export function WorkoutLogger({
       setEditingSetNumber(null)
     } else {
       // Add new set
-      const newSet: Set = {
+      const newSet: ExerciseSet = {
         set_number: setNumber,
         reps,
         weight,
@@ -113,7 +99,7 @@ export function WorkoutLogger({
       updatedLogs[currentExerciseIndex]!.sets.push(newSet)
 
       // Check if this was the last set of the current exercise
-      const completedAllSets = setNumber >= currentExercise.target_sets
+      const completedAllSets = setNumber >= (currentExercise.target_sets ?? 3)
 
       if (completedAllSets && currentExerciseIndex < exerciseLogs.length - 1) {
         // Auto-advance to next exercise after a short delay
@@ -123,7 +109,7 @@ export function WorkoutLogger({
         hapticFeedback('medium')
       } else if (!completedAllSets) {
         // Start rest timer if not last set
-        setRestTimer(currentExercise.target_rest)
+        setRestTimer(currentExercise.target_rest ?? 60)
         setIsResting(true)
       }
     }
@@ -179,8 +165,11 @@ export function WorkoutLogger({
         return total + exerciseVolume
       }, 0)
 
+      // For AI-generated workouts, template_id is not a real UUID, so pass null
+      const isGeneratedWorkout = template.id.startsWith('generated-')
+
       const workoutData: WorkoutData = {
-        template_id: template.id,
+        template_id: isGeneratedWorkout ? null : template.id,
         exercises_completed: exerciseLogs,
         duration_minutes: duration,
         total_volume: totalVolume
@@ -316,12 +305,12 @@ export function WorkoutLogger({
       <div className="p-4 pb-24 space-y-6 overflow-y-auto flex-1">
         {/* Exercise Info Card */}
         <div className={`ios-card p-6 text-center relative overflow-hidden ${
-          currentExercise.sets.length >= currentExercise.target_sets
+          currentExercise.sets.length >= (currentExercise.target_sets ?? 3)
             ? 'ring-2 ring-green-500/50 bg-green-500/5'
             : ''
         }`}>
           {/* Completed badge with confetti animation */}
-          {currentExercise.sets.length >= currentExercise.target_sets && (
+          {currentExercise.sets.length >= (currentExercise.target_sets ?? 3) && (
             <>
               <motion.div
                 initial={{ scale: 0, opacity: 0, rotate: -180 }}
@@ -370,7 +359,7 @@ export function WorkoutLogger({
             {currentExercise.target_sets} sets × {currentExercise.target_reps} reps
           </p>
           {/* Completion message with bounce */}
-          {currentExercise.sets.length >= currentExercise.target_sets && (
+          {currentExercise.sets.length >= (currentExercise.target_sets ?? 3) && (
             <motion.div
               initial={{ opacity: 0, y: 10, scale: 0.9 }}
               animate={{
@@ -399,9 +388,9 @@ export function WorkoutLogger({
           exerciseId={currentExercise.exercise_id}
           exerciseName={currentExercise.exercise_name}
           completedSets={currentExercise.sets}
-          targetSets={currentExercise.target_sets}
-          targetReps={currentExercise.target_reps}
-          targetRest={currentExercise.target_rest}
+          targetSets={currentExercise.target_sets ?? 3}
+          targetReps={currentExercise.target_reps ?? '10'}
+          targetRest={currentExercise.target_rest ?? 60}
           onAddSet={handleAddSet}
           onDeleteSet={handleDeleteSet}
           onEditSet={(setNumber) => setEditingSetNumber(setNumber)}

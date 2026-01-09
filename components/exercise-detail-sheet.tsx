@@ -2,10 +2,11 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ExerciseProgressView } from '@/components/workouts/ExerciseProgressView'
 import { useExercises } from '@/lib/hooks/use-workouts'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Dumbbell, Heart, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react'
+import { BarChart3, Dumbbell, Heart, Plus, RefreshCw, Search, Settings2, Trash2, X } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -26,23 +27,26 @@ interface Exercise {
 }
 
 interface ExerciseDetailSheetProps {
-  isOpen: boolean
+  isOpen: boolean                           
   exerciseIndex: number | null
   exercise: {
     _id?: string
+    exercise_id?: string
     name: string
     sets: number
-    reps: string
+    reps: string | number
     weight: number
     rest: number
     image_url?: string | null
     gif_url?: string | null
   } | null
   onClose: () => void
-  onUpdate: (updates: { sets: number; weight: number; reps: string; rest?: number }) => void
+  onUpdate: (updates: { sets: number; weight: number; reps: string | number; rest?: number }) => void
   onDelete: () => void
   onReplace: (newExercise: Exercise) => void
 }
+
+type TabView = 'settings' | 'progress'
 
 export function ExerciseDetailSheet({
   isOpen,
@@ -57,6 +61,7 @@ export function ExerciseDetailSheet({
   const [imageError, setImageError] = useState(false)
   const [showReplacePicker, setShowReplacePicker] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState<TabView>('settings')
 
   const { data: allExercises = [], isLoading } = useExercises()
 
@@ -74,7 +79,7 @@ export function ExerciseDetailSheet({
       const initialSets: ExerciseSet[] = []
       const numSets = exercise.sets || 3
       const weight = exercise.weight || 0
-      const reps = parseInt(exercise.reps) || 10
+      const reps = parseInt(exercise.reps.toString()) || 10
 
       for (let i = 0; i < numSets; i++) {
         initialSets.push({
@@ -87,6 +92,7 @@ export function ExerciseDetailSheet({
       setImageError(false)
       setShowReplacePicker(false)
       setSearchQuery('')
+      setActiveTab('settings')
     }
   }, [exercise])
 
@@ -125,7 +131,7 @@ export function ExerciseDetailSheet({
       onUpdate({
         sets: sets.length,
         weight: avgWeight,
-        reps: avgReps.toString()
+        reps: avgReps
       })
     }
     onClose()
@@ -221,10 +227,58 @@ export function ExerciseDetailSheet({
             ) : (
               /* Normal Detail View */
               <>
+                {/* Tab Switcher */}
+                <div className="px-5 py-3 border-b">
+                  <div className="flex bg-muted/50 rounded-xl p-1">
+                    <button
+                      onClick={() => {
+                        setActiveTab('settings')
+                        hapticFeedback('light')
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        activeTab === 'settings'
+                          ? 'bg-background shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      Settings
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('progress')
+                        hapticFeedback('light')
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        activeTab === 'progress'
+                          ? 'bg-background shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      Progress
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tab Content */}
+                {activeTab === 'progress' ? (
+                  /* Progress View */
+                  <div className="flex-1 overflow-y-auto px-5 py-6">
+                    <ExerciseProgressView
+                      exerciseId={exercise.exercise_id || exercise._id || ''}
+                      exerciseName={exercise.name}
+                      targetRepsMin={parseInt(exercise.reps.toString().split('-')[0]) || 8}
+                      targetRepsMax={parseInt(exercise.reps.toString().split('-')[1] || exercise.reps.toString()) || 12}
+                    />
+                  </div>
+                ) : (
+                  /* Settings View */
+                  <>
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto px-5 py-6">
                   {/* Exercise Image */}
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="w-full aspect-[4/3] rounded-2xl bg-muted/30 overflow-hidden relative mb-6"
@@ -336,6 +390,8 @@ export function ExerciseDetailSheet({
                     Replace
                   </Button>
                 </div>
+                  </>
+                )}
               </>
             )}
           </motion.div>

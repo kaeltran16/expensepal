@@ -60,3 +60,11 @@ export type WorkoutExerciseUpdate = Database['public']['Tables']['workout_exerci
 export type RecurringExpense = Database['public']['Tables']['recurring_expenses']['Row']
 export type RecurringExpenseInsert = Database['public']['Tables']['recurring_expenses']['Insert']
 export type RecurringExpenseUpdate = Database['public']['Tables']['recurring_expenses']['Update']
+
+// Workout Streaks & Achievements
+export type UserWorkoutStreak = Database['public']['Tables']['user_workout_streaks']['Row']
+export type UserWorkoutStreakInsert = Database['public']['Tables']['user_workout_streaks']['Insert']
+export type UserWorkoutStreakUpdate = Database['public']['Tables']['user_workout_streaks']['Update']
+export type UserAchievement = Database['public']['Tables']['user_achievements']['Row']
+export type UserAchievementInsert = Database['public']['Tables']['user_achievements']['Insert']
+export type UserAchievementUpdate = Database['public']['Tables']['user_achievements']['Update']

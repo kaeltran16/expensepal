@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_recommendations_cache: {
+        Row: {
+          ai_powered_count: number | null
+          algorithmic_count: number | null
+          created_at: string
+          data_points: number
+          expires_at: string
+          generated_at: string
+          id: string
+          months_analyzed: number
+          recommendations: Json
+          total_savings_opportunity: number | null
+          user_id: string
+        }
+        Insert: {
+          ai_powered_count?: number | null
+          algorithmic_count?: number | null
+          created_at?: string
+          data_points: number
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          months_analyzed?: number
+          recommendations: Json
+          total_savings_opportunity?: number | null
+          user_id: string
+        }
+        Update: {
+          ai_powered_count?: number | null
+          algorithmic_count?: number | null
+          created_at?: string
+          data_points?: number
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          months_analyzed?: number
+          recommendations?: Json
+          total_savings_opportunity?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           amount: number
@@ -823,6 +865,30 @@ export type Database = {
           },
         ]
       }
+      user_achievements: {
+        Row: {
+          achieved_at: string
+          achievement_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string
+          achievement_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string
+          achievement_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_email_settings: {
         Row: {
           app_password: string
@@ -906,6 +972,42 @@ export type Database = {
           notification_enabled?: boolean | null
           theme?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_workout_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_workout_date: string | null
+          longest_streak: number
+          streak_start_date: string | null
+          total_workouts: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_workout_date?: string | null
+          longest_streak?: number
+          streak_start_date?: string | null
+          total_workouts?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_workout_date?: string | null
+          longest_streak?: number
+          streak_start_date?: string | null
+          total_workouts?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1191,6 +1293,7 @@ export type Database = {
         Args: { exercise_sets: Json }
         Returns: number
       }
+      cleanup_expired_budget_recommendations: { Args: never; Returns: number }
       cleanup_old_processed_emails: { Args: never; Returns: number }
     }
     Enums: {
