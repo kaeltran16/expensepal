@@ -22,7 +22,7 @@ const nextConfig = {
       const swVersion =
         process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||  // First 7 chars of commit SHA
         process.env.VERCEL_DEPLOYMENT_ID ||                 // Fallback to deployment ID
-        `dev-${Date.now()}`                                  // Local dev fallback
+        'v1.0.0'                                            // Local dev/prod fallback
 
       config.module.rules.push({
         test: /sw\.js$/,

@@ -88,6 +88,8 @@ export function ServiceWorkerRegistration() {
         registrationRef.current?.update()
 
         // Auto-apply update if one is pending and user just came back
+        // We commented this out to prevent potential reload loops when version is unstable
+        /*
         if (updatePendingRef.current) {
           // Small delay to let the app settle
           setTimeout(() => {
@@ -98,6 +100,7 @@ export function ServiceWorkerRegistration() {
             }
           }, 1000)
         }
+        */
       }
     }
 
