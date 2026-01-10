@@ -21,12 +21,27 @@ export function ServiceWorkerRegistration() {
       return
     }
 
+    // Track last update check to prevent excessive checks
+    let lastUpdateCheck = 0
+    const UPDATE_CHECK_COOLDOWN = 5 * 60 * 1000 // 5 minutes cooldown between checks
+
     // Apply waiting service worker update
     const applyUpdate = () => {
       const waiting = registrationRef.current?.waiting
       if (waiting) {
         waiting.postMessage({ type: 'SKIP_WAITING' })
       }
+    }
+
+    // Throttled update check
+    const checkForUpdate = () => {
+      const now = Date.now()
+      if (now - lastUpdateCheck < UPDATE_CHECK_COOLDOWN) {
+        console.log('[SW] Skipping update check (cooldown active)')
+        return
+      }
+      lastUpdateCheck = now
+      registrationRef.current?.update()
     }
 
     // Register service worker
@@ -36,13 +51,10 @@ export function ServiceWorkerRegistration() {
         console.log('Service Worker registered:', registration)
         registrationRef.current = registration
 
-        // Check for updates immediately on load
-        registration.update()
-
-        // Check for updates periodically (every 30 minutes)
+        // Check for updates periodically (every 1 hour instead of 30 min)
         const updateInterval = setInterval(() => {
-          registration.update()
-        }, 30 * 60 * 1000)
+          checkForUpdate()
+        }, 60 * 60 * 1000)
 
         // Listen for updates
         registration.addEventListener('updatefound', () => {
@@ -75,42 +87,48 @@ export function ServiceWorkerRegistration() {
       })
 
     // When the new service worker takes over, reload the page
+    // Add a small delay on iOS to prevent flickering
     let refreshing = false
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (refreshing) return
       refreshing = true
-      window.location.reload()
+
+      // Detect if running as iOS PWA
+      const isIOSPWA = ('standalone' in navigator) && (navigator as any).standalone === true
+
+      if (isIOSPWA) {
+        // Add a slight delay for iOS to prevent flicker
+        setTimeout(() => {
+          window.location.reload()
+        }, 300)
+      } else {
+        window.location.reload()
+      }
     })
 
-    // Check for updates when app becomes visible (user switches back to PWA)
+    // Debounced visibility change handler
+    let visibilityTimeout: ReturnType<typeof setTimeout> | null = null
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        registrationRef.current?.update()
-
-        // Auto-apply update if one is pending and user just came back
-        // We commented this out to prevent potential reload loops when version is unstable
-        /*
-        if (updatePendingRef.current) {
-          // Small delay to let the app settle
-          setTimeout(() => {
-            const waiting = registrationRef.current?.waiting
-            if (waiting) {
-              toast.info('Updating app...', { duration: 2000 })
-              waiting.postMessage({ type: 'SKIP_WAITING' })
-            }
-          }, 1000)
+        // Clear any pending timeout
+        if (visibilityTimeout) {
+          clearTimeout(visibilityTimeout)
         }
-        */
+
+        // Debounce: only check for updates if user stays on the app for 3 seconds
+        visibilityTimeout = setTimeout(() => {
+          checkForUpdate()
+        }, 3000)
+      } else {
+        // Clear timeout when app goes to background
+        if (visibilityTimeout) {
+          clearTimeout(visibilityTimeout)
+          visibilityTimeout = null
+        }
       }
     }
 
-    // Check for updates on focus (for desktop browsers)
-    const handleFocus = () => {
-      registrationRef.current?.update()
-    }
-
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
 
     // Handle service worker messages
     const handleMessage = (event: MessageEvent) => {
@@ -121,8 +139,10 @@ export function ServiceWorkerRegistration() {
     navigator.serviceWorker.addEventListener('message', handleMessage)
 
     return () => {
+      if (visibilityTimeout) {
+        clearTimeout(visibilityTimeout)
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
       navigator.serviceWorker.removeEventListener('message', handleMessage)
     }
   }, [])
