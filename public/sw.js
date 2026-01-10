@@ -94,7 +94,8 @@ self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker version:', VERSION);
   event.waitUntil(
     precacheAssets(STATIC_CACHE, STATIC_ASSETS)
-      .then(() => self.skipWaiting())
+    // Don't call skipWaiting() automatically - wait for user to trigger it
+    // This prevents automatic updates that cause flickering on iOS
   );
 });
 

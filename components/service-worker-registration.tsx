@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 export function ServiceWorkerRegistration() {
   const updatePendingRef = useRef(false)
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null)
+  const reloadedThisSessionRef = useRef(false) // Prevent multiple reloads in same session
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
@@ -29,18 +30,27 @@ export function ServiceWorkerRegistration() {
     const applyUpdate = () => {
       const waiting = registrationRef.current?.waiting
       if (waiting) {
+        console.log('[SW] Applying update manually')
+        reloadedThisSessionRef.current = true // Mark that we're reloading
         waiting.postMessage({ type: 'SKIP_WAITING' })
       }
     }
 
     // Throttled update check
     const checkForUpdate = () => {
+      // Don't check if we already reloaded this session
+      if (reloadedThisSessionRef.current) {
+        console.log('[SW] Skipping update check (already reloaded this session)')
+        return
+      }
+
       const now = Date.now()
       if (now - lastUpdateCheck < UPDATE_CHECK_COOLDOWN) {
         console.log('[SW] Skipping update check (cooldown active)')
         return
       }
       lastUpdateCheck = now
+      console.log('[SW] Checking for updates')
       registrationRef.current?.update()
     }
 
@@ -51,7 +61,14 @@ export function ServiceWorkerRegistration() {
         console.log('Service Worker registered:', registration)
         registrationRef.current = registration
 
-        // Check for updates periodically (every 1 hour instead of 30 min)
+        // Check for updates on initial load (only once per session)
+        if (!reloadedThisSessionRef.current) {
+          console.log('[SW] Initial update check on app load')
+          registration.update()
+          lastUpdateCheck = Date.now() // Set cooldown
+        }
+
+        // Check for updates periodically (every 1 hour)
         const updateInterval = setInterval(() => {
           checkForUpdate()
         }, 60 * 60 * 1000)
@@ -64,6 +81,7 @@ export function ServiceWorkerRegistration() {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 updatePendingRef.current = true
 
+                console.log('[SW] Update available, showing notification')
                 // Show toast with update option
                 toast.info('New version available!', {
                   action: {
@@ -87,11 +105,19 @@ export function ServiceWorkerRegistration() {
       })
 
     // When the new service worker takes over, reload the page
-    // Add a small delay on iOS to prevent flickering
+    // ONLY if user manually triggered the update
     let refreshing = false
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (refreshing) return
+
+      // Only reload if user explicitly clicked "Update now"
+      if (!reloadedThisSessionRef.current) {
+        console.log('[SW] Controller changed but update not requested by user, skipping reload')
+        return
+      }
+
       refreshing = true
+      console.log('[SW] Reloading after user-initiated update')
 
       // Detect if running as iOS PWA
       const isIOSPWA = ('standalone' in navigator) && (navigator as any).standalone === true
@@ -106,7 +132,7 @@ export function ServiceWorkerRegistration() {
       }
     })
 
-    // Debounced visibility change handler
+    // Debounced visibility change handler to prevent iOS flicker
     let visibilityTimeout: ReturnType<typeof setTimeout> | null = null
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -115,10 +141,11 @@ export function ServiceWorkerRegistration() {
           clearTimeout(visibilityTimeout)
         }
 
-        // Debounce: only check for updates if user stays on the app for 3 seconds
+        // Only check for updates if user stays on the app for 5 seconds
+        // This prevents checks during quick app switching on iOS
         visibilityTimeout = setTimeout(() => {
           checkForUpdate()
-        }, 3000)
+        }, 5000)
       } else {
         // Clear timeout when app goes to background
         if (visibilityTimeout) {
