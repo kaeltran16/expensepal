@@ -139,15 +139,18 @@ export function generateBudgetRecommendations(
     const currentSpending = currentMonthSpending.get(category) || 0
     const { trend, percentChange } = detectTrend(currentSpending, avgSpending)
 
-    // Calculate suggested amount with 10% buffer for flexibility
-    let suggestedAmount = Math.ceil(avgSpending * 1.1)
+    // Calculate suggested amount with adequate buffer for flexibility
+    let suggestedAmount = Math.ceil(avgSpending * 1.15) // 15% buffer for stable
 
     // Adjust based on trend
     if (trend === 'increasing') {
-      suggestedAmount = Math.ceil(avgSpending * 1.2) // 20% buffer
+      suggestedAmount = Math.ceil(avgSpending * 1.25) // 25% buffer
     } else if (trend === 'decreasing') {
-      suggestedAmount = Math.ceil(avgSpending * 1.05) // 5% buffer
+      suggestedAmount = Math.ceil(avgSpending * 1.10) // 10% buffer
     }
+
+    // Round up to nearest 50,000 VND for cleaner numbers
+    suggestedAmount = Math.ceil(suggestedAmount / 50000) * 50000
 
     // Determine confidence based on data consistency
     let confidence: 'high' | 'medium' | 'low' = 'medium'
@@ -463,12 +466,20 @@ For each category, recommend:
 3. Confidence level (high/medium/low)
 4. Potential savings opportunities
 
-Consider:
+CRITICAL - Budget Calculation Rules:
+- Use the HIGHER of last6MonthsAverage or last12MonthsAverage as the baseline
+- For STABLE spending: add 15-20% buffer above the baseline
+- For INCREASING trends: add 25-30% buffer above the baseline
+- For DECREASING trends: add 10-15% buffer above the baseline
+- For VARIABLE (inconsistent) spending: add 25-35% buffer to handle fluctuations
+- The suggestedAmount must NEVER be below the baseline average
+- Round up to the nearest 50,000 VND for cleaner numbers
+
+Also consider:
 - Spending trends and seasonality
 - Consistency vs. variability
 - Common merchants (patterns)
 - Budget best practices (50/30/20 rule for essential/lifestyle/savings)
-- Realistic buffers for unexpected expenses
 
 Respond in JSON format:
 {
@@ -519,18 +530,41 @@ Be specific with VND amounts and provide actionable advice.`
       return basicRecommendations.map((rec) => ({ ...rec, isAI: false }))
     }
 
-    // Merge AI recommendations with historical data
+    // Merge AI recommendations with historical data and validate minimum buffers
     const aiRecommendations: AIBudgetRecommendation[] = parsed.recommendations.map((rec) => {
       const existingBudget = existingBudgets.find((b) => b.category === rec.category)
       const histData = historicalData.find((h) => h.category === rec.category)
 
-      const percentChange = histData && histData.last6MonthsAverage > 0
-        ? ((rec.suggestedAmount - histData.last6MonthsAverage) / histData.last6MonthsAverage) * 100
+      // Use the higher of 6-month or 12-month average as baseline
+      const baseline = histData
+        ? Math.max(histData.last6MonthsAverage, histData.last12MonthsAverage)
+        : 0
+
+      // Determine minimum buffer based on trend and consistency
+      let minBufferPercent = 0.15 // Default 15% for stable
+      if (rec.trend === 'increasing') {
+        minBufferPercent = 0.25
+      } else if (rec.trend === 'decreasing') {
+        minBufferPercent = 0.10
+      }
+      // Add extra buffer for variable spending
+      if (histData && histData.variance > histData.last6MonthsAverage * 0.3) {
+        minBufferPercent += 0.10
+      }
+
+      // Calculate minimum acceptable budget
+      const minBudget = Math.ceil((baseline * (1 + minBufferPercent)) / 50000) * 50000
+
+      // Use the higher of LLM suggestion or minimum budget
+      const suggestedAmount = Math.max(rec.suggestedAmount, minBudget)
+
+      const percentChange = baseline > 0
+        ? ((suggestedAmount - baseline) / baseline) * 100
         : 0
 
       return {
         category: rec.category,
-        suggestedAmount: rec.suggestedAmount,
+        suggestedAmount,
         currentAmount: existingBudget?.amount,
         reasoning: rec.reasoning,
         confidence: rec.confidence,

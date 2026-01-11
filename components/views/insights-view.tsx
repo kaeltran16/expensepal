@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Lightbulb, TrendingUp, TrendingDown, Award, AlertTriangle, Target } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Lightbulb, TrendingUp, TrendingDown, Award, AlertTriangle, Target, BarChart3 } from 'lucide-react'
 import { InsightsCards } from '@/components/insights-cards';
 import { SpendingAdvisor } from '@/components/spending-advisor';
-import { InsightCardSkeleton } from '@/components/skeleton-loader';
+import { WeeklySummary } from '@/components/weekly-summary';
+import { InsightCardSkeleton, ChartSkeleton } from '@/components/skeleton-loader';
 import {
   getComprehensiveInsights,
   analyzeCategoryTrends,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/analytics/spending-insights'
 import { getMerchantInsights, type MerchantInsight } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 
 interface InsightsViewProps {
   expenses: Expense[];
@@ -21,7 +23,10 @@ interface InsightsViewProps {
   onNavigate?: (view: 'budget' | 'analytics' | 'expenses') => void;
 }
 
+type TabType = 'weekly' | 'insights'
+
 export function InsightsView({ expenses, loading, onNavigate }: InsightsViewProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('weekly')
   const patterns = useMemo(() => getComprehensiveInsights(expenses), [expenses])
   const categoryTrends = useMemo(() => analyzeCategoryTrends(expenses), [expenses])
   const merchantInsights = useMemo(() => getMerchantInsights(expenses, 5), [expenses])
@@ -29,7 +34,14 @@ export function InsightsView({ expenses, loading, onNavigate }: InsightsViewProp
   if (loading) {
     return (
       <div className="space-y-4">
-        <InsightCardSkeleton />
+        {/* Segmented Control Skeleton */}
+        <div className="ios-card p-1">
+          <div className="grid grid-cols-2 gap-1">
+            <div className="h-10 bg-muted animate-pulse rounded-lg" />
+            <div className="h-10 bg-muted animate-pulse rounded-lg" />
+          </div>
+        </div>
+        <ChartSkeleton />
         <InsightCardSkeleton />
         <InsightCardSkeleton />
       </div>
@@ -38,47 +50,100 @@ export function InsightsView({ expenses, loading, onNavigate }: InsightsViewProp
 
   return (
     <div className="space-y-4 pb-24">
-      {/* Quick Insights Cards */}
-      <InsightsCards expenses={expenses} />
-
-      {/* Spending Patterns */}
-      {patterns.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="ios-headline px-1">Patterns & Streaks</h4>
-          <div className="ios-list-group">
-            {patterns.slice(0, 3).map((pattern, index) => (
-              <PatternCard key={`${pattern.type}-${index}`} pattern={pattern} index={index} />
-            ))}
-          </div>
+      {/* Segmented Control */}
+      <div className="ios-card p-1">
+        <div className="grid grid-cols-2 gap-1">
+          <button
+            onClick={() => setActiveTab('weekly')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2',
+              activeTab === 'weekly'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Summary
+          </button>
+          <button
+            onClick={() => setActiveTab('insights')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2',
+              activeTab === 'insights'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Lightbulb className="h-4 w-4" />
+            Insights
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Top Merchants - More prominent */}
-      {merchantInsights.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="ios-headline px-1">Top Spending</h4>
-          <div className="ios-list-group">
-            {merchantInsights.slice(0, 3).map((merchant, index) => (
-              <CompactMerchantCard key={merchant.merchant} merchant={merchant} index={index} />
-            ))}
-          </div>
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {activeTab === 'weekly' ? (
+          <motion.div
+            key="weekly"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <WeeklySummary expenses={expenses} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="insights"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-4"
+          >
+            {/* Quick Insights Cards */}
+            <InsightsCards expenses={expenses} />
 
-      {/* Category Trends - Simplified */}
-      {categoryTrends.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="ios-headline px-1">This Month vs Last Month</h4>
-          <div className="ios-list-group">
-            {categoryTrends.slice(0, 3).map((trend, index) => (
-              <SimpleTrendCard key={trend.category} trend={trend} index={index} />
-            ))}
-          </div>
-        </div>
-      )}
+            {/* Spending Patterns */}
+            {patterns.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="ios-headline px-1">Patterns & Streaks</h4>
+                <div className="ios-list-group">
+                  {patterns.slice(0, 3).map((pattern, index) => (
+                    <PatternCard key={`${pattern.type}-${index}`} pattern={pattern} index={index} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {/* AI Advisor */}
-      <SpendingAdvisor expenses={expenses} onNavigate={onNavigate} />
+            {/* Top Merchants - More prominent */}
+            {merchantInsights.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="ios-headline px-1">Top Spending</h4>
+                <div className="ios-list-group">
+                  {merchantInsights.slice(0, 3).map((merchant, index) => (
+                    <CompactMerchantCard key={merchant.merchant} merchant={merchant} index={index} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Category Trends - Simplified */}
+            {categoryTrends.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="ios-headline px-1">This Month vs Last Month</h4>
+                <div className="ios-list-group">
+                  {categoryTrends.slice(0, 3).map((trend, index) => (
+                    <SimpleTrendCard key={trend.category} trend={trend} index={index} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI Advisor */}
+            <SpendingAdvisor expenses={expenses} onNavigate={onNavigate} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

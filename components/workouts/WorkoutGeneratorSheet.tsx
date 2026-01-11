@@ -58,11 +58,13 @@ const MUSCLE_GROUPS = [
 const EQUIPMENT = [
   { id: 'barbell', label: 'Barbell' },
   { id: 'dumbbells', label: 'Dumbbells' },
+  { id: 'bench', label: 'Bench' },
   { id: 'cable', label: 'Cable Machine' },
   { id: 'machine', label: 'Machines' },
   { id: 'kettlebell', label: 'Kettlebell' },
   { id: 'bodyweight', label: 'Bodyweight' },
   { id: 'resistance bands', label: 'Bands' },
+  { id: 'pull-up bar', label: 'Pull-up Bar' },
 ]
 
 const DURATIONS = [
@@ -81,7 +83,7 @@ export function WorkoutGeneratorSheet({
   const [step, setStep] = useState<'input' | 'generating' | 'result'>('input')
   const [duration, setDuration] = useState(45)
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([])
-  const [selectedEquipment, setSelectedEquipment] = useState<string[]>(['dumbbells', 'barbell'])
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>(['dumbbells', 'barbell', 'bench'])
   const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate')
   const [workoutType, setWorkoutType] = useState<'strength' | 'hypertrophy' | 'endurance'>('hypertrophy')
   const [generatedWorkout, setGeneratedWorkout] = useState<GeneratedWorkout | null>(null)
@@ -229,19 +231,20 @@ export function WorkoutGeneratorSheet({
               {/* Target Muscles */}
               <div className="space-y-2">
                 <label className="ios-subheadline">Target Muscles</label>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {MUSCLE_GROUPS.map(muscle => (
                     <motion.button
                       key={muscle.id}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => toggleMuscle(muscle.id)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all border-2 ${
+                      className={`py-2 px-1 rounded-xl text-center transition-all border-2 ${
                         selectedMuscles.includes(muscle.id)
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-transparent bg-muted/50 active:bg-muted'
                       }`}
                     >
-                      {muscle.icon} {muscle.label}
+                      <div className="text-base">{muscle.icon}</div>
+                      <div className="text-[11px] font-medium">{muscle.label}</div>
                     </motion.button>
                   ))}
                 </div>
@@ -280,44 +283,28 @@ export function WorkoutGeneratorSheet({
               {/* Training Goal */}
               <div className="space-y-2">
                 <label className="ios-subheadline">Training Goal</label>
-                <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
                   {([
-                    { id: 'strength', label: 'Strength', desc: 'Heavy weight, low reps (3-6)' },
-                    { id: 'hypertrophy', label: 'Muscle Growth', desc: 'Moderate weight (8-12 reps)' },
-                    { id: 'endurance', label: 'Endurance', desc: 'Light weight, high reps (15+)' },
+                    { id: 'strength', label: 'Strength', desc: '3-6 reps', icon: '🏋️' },
+                    { id: 'hypertrophy', label: 'Growth', desc: '8-12 reps', icon: '💪' },
+                    { id: 'endurance', label: 'Endurance', desc: '15+ reps', icon: '🔥' },
                   ] as const).map(type => (
                     <motion.button
                       key={type.id}
-                      whileTap={{ scale: 0.98 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => {
                         setWorkoutType(type.id)
                         hapticFeedback('light')
                       }}
-                      className={`w-full ios-card p-3 border-2 transition-all text-left flex items-center gap-3 ${
+                      className={`ios-card p-3 text-center border-2 transition-all ${
                         workoutType === type.id
                           ? 'border-primary bg-primary/5'
                           : 'border-transparent'
                       }`}
                     >
-                      <div className="flex-1">
-                        <div className="ios-subheadline">{type.label}</div>
-                        <div className="ios-caption text-muted-foreground">{type.desc}</div>
-                      </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                        workoutType === type.id
-                          ? 'border-primary bg-primary'
-                          : 'border-muted-foreground/30'
-                      }`}>
-                        {workoutType === type.id && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                          >
-                            <Check className="h-3 w-3 text-primary-foreground" />
-                          </motion.div>
-                        )}
-                      </div>
+                      <div className="text-lg mb-1">{type.icon}</div>
+                      <div className="ios-caption font-medium">{type.label}</div>
+                      <div className="text-[10px] text-muted-foreground">{type.desc}</div>
                     </motion.button>
                   ))}
                 </div>
@@ -369,30 +356,21 @@ export function WorkoutGeneratorSheet({
               {/* Equipment */}
               <div className="space-y-2">
                 <label className="ios-subheadline">Equipment</label>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {EQUIPMENT.map(eq => (
                     <motion.button
                       key={eq.id}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => toggleEquipment(eq.id)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all border-2 flex items-center gap-1 ${
+                      className={`py-2 px-2 rounded-xl text-xs font-medium transition-all border-2 flex items-center justify-center gap-1 ${
                         selectedEquipment.includes(eq.id)
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-transparent bg-muted/50 active:bg-muted'
                       }`}
                     >
-                      <AnimatePresence mode="popLayout">
-                        {selectedEquipment.includes(eq.id) && (
-                          <motion.span
-                            initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: 'auto', opacity: 1 }}
-                            exit={{ width: 0, opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                          >
-                            <Check className="h-3 w-3" />
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
+                      {selectedEquipment.includes(eq.id) && (
+                        <Check className="h-3 w-3 flex-shrink-0" />
+                      )}
                       {eq.label}
                     </motion.button>
                   ))}

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import type { ScheduledWorkout } from '@/lib/hooks/use-workout-schedule'
 
 interface WorkoutHeroProps {
-  todayWorkout?: ScheduledWorkout
+  todayWorkout?: ScheduledWorkout | null
   todayCompleted: boolean
   completedCount: number
   onQuickStart?: () => void

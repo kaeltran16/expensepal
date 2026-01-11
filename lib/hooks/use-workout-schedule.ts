@@ -48,7 +48,7 @@ export function useTodayScheduledWorkout() {
 
   return useQuery({
     queryKey: ['scheduled-workout', 'today', today],
-    queryFn: async () => {
+    queryFn: async (): Promise<ScheduledWorkout | null> => {
       const response = await fetch(`/api/scheduled-workouts?start_date=${today}&end_date=${today}`)
 
       if (!response.ok) {
@@ -56,7 +56,7 @@ export function useTodayScheduledWorkout() {
       }
 
       const data = await response.json()
-      return data.scheduledWorkouts?.[0] as ScheduledWorkout | undefined
+      return data.scheduledWorkouts?.[0] ?? null
     },
     staleTime: 1000 * 60, // 1 minute
   })

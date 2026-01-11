@@ -2,10 +2,11 @@
 
 import { useState, lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
-import { BarChart3, Lightbulb } from 'lucide-react'
+import { BarChart3, Lightbulb, CalendarDays } from 'lucide-react'
 import { CategoryInsights } from '@/components/category-insights'
 import { InsightsCards } from '@/components/insights-cards'
 import { SpendingAdvisor } from '@/components/spending-advisor'
+import { WeeklySummary } from '@/components/weekly-summary'
 import { ChartSkeleton, InsightCardSkeleton } from '@/components/skeleton-loader'
 import { hapticFeedback } from '@/lib/utils'
 import type { Expense } from '@/lib/supabase'
@@ -28,10 +29,10 @@ interface AnalyticsInsightsViewProps {
   onNavigate?: (view: 'budget' | 'expenses') => void
 }
 
-type TabType = 'charts' | 'insights'
+type TabType = 'summary' | 'charts' | 'insights'
 
 export function AnalyticsInsightsView({ expenses, loading, onNavigate }: AnalyticsInsightsViewProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('charts')
+  const [activeTab, setActiveTab] = useState<TabType>('summary')
 
   // precompute insights data
   const patterns = useMemo(() => getComprehensiveInsights(expenses), [expenses])
@@ -76,7 +77,9 @@ export function AnalyticsInsightsView({ expenses, loading, onNavigate }: Analyti
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.2 }}
       >
-        {activeTab === 'charts' ? (
+        {activeTab === 'summary' ? (
+          <WeeklySummary expenses={expenses} />
+        ) : activeTab === 'charts' ? (
           <div className="space-y-4">
             <Suspense fallback={<ChartSkeleton />}>
               <AnalyticsCharts expenses={expenses} />
@@ -144,11 +147,31 @@ function TabSegmentedControl({
   return (
     <div className="ios-card p-1.5">
       <div className="relative flex gap-1">
+        {/* Summary tab */}
+        <button
+          onClick={() => onTabChange('summary')}
+          className={`
+            relative flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3
+            rounded-xl transition-colors duration-200
+            ${activeTab === 'summary' ? 'text-primary' : 'text-muted-foreground'}
+          `}
+        >
+          {activeTab === 'summary' && (
+            <motion.div
+              layoutId="activeTab"
+              className="absolute inset-0 bg-background rounded-xl shadow-sm"
+              transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+            />
+          )}
+          <CalendarDays className="h-4 w-4 relative z-10" />
+          <span className="text-sm font-medium relative z-10">Summary</span>
+        </button>
+
         {/* Charts tab */}
         <button
           onClick={() => onTabChange('charts')}
           className={`
-            relative flex-1 flex items-center justify-center gap-2 py-2.5 px-4
+            relative flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3
             rounded-xl transition-colors duration-200
             ${activeTab === 'charts' ? 'text-primary' : 'text-muted-foreground'}
           `}
@@ -168,7 +191,7 @@ function TabSegmentedControl({
         <button
           onClick={() => onTabChange('insights')}
           className={`
-            relative flex-1 flex items-center justify-center gap-2 py-2.5 px-4
+            relative flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3
             rounded-xl transition-colors duration-200
             ${activeTab === 'insights' ? 'text-primary' : 'text-muted-foreground'}
           `}
