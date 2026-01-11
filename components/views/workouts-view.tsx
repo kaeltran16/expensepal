@@ -143,6 +143,7 @@ export function WorkoutsView({
         templates={templates}
         onTemplateClick={handleTemplateClick}
         onEditTemplate={handleEditTemplate}
+        onDeleteTemplate={onDeleteTemplate ? (template) => onDeleteTemplate(template.id) : undefined}
         onCreateTemplate={() => setShowCreateDialog(true)}
         maxVisible={5}
       />

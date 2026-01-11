@@ -74,28 +74,33 @@ export function TemplateFormDialog({
 
   return (
     <AnimatePresence>
-      {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md"
-      />
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md"
+          />
 
-      {/* Dialog Container */}
-      <div
-        className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ y: '100%', opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: '100%', opacity: 0 }}
-          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          className="bg-background w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[calc(100vh-80px)] sm:max-h-[85vh] flex flex-col pointer-events-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
+          {/* Dialog Container */}
+          <div
+            key="dialog-container"
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none"
+            onClick={onClose}
+          >
+            <motion.div
+              key="dialog-content"
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="bg-background w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[calc(100vh-80px)] sm:max-h-[85vh] flex flex-col pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
           <form onSubmit={handleSubmit} className="flex flex-col h-full">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
@@ -223,8 +228,10 @@ export function TemplateFormDialog({
               </div>
             </div>
           </form>
-        </motion.div>
-      </div>
+            </motion.div>
+          </div>
+        </>
+      )}
     </AnimatePresence>
   )
 }

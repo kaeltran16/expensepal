@@ -1,18 +1,29 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, ChevronRight, Clock, Dumbbell, Edit, ArrowLeft } from 'lucide-react'
+import { Plus, ChevronRight, Clock, Dumbbell, Edit, ArrowLeft, Trash2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { hapticFeedback } from '@/lib/utils'
 import type { WorkoutTemplate } from '@/lib/supabase'
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 interface WorkoutTemplatesListProps {
   templates: WorkoutTemplate[]
   onTemplateClick: (template: WorkoutTemplate) => void
   onEditTemplate?: (template: WorkoutTemplate) => void
+  onDeleteTemplate?: (template: WorkoutTemplate) => void
   onCreateTemplate: () => void
   maxVisible?: number
 }
@@ -36,42 +47,133 @@ function TemplateCard({
   template,
   index,
   onClick,
-  onEdit
+  onEdit,
+  onDelete
 }: {
   template: WorkoutTemplate
   index: number
   onClick: () => void
   onEdit?: () => void
+  onDelete?: () => void
 }) {
   const exercises = (template.exercises as unknown as Array<{ exercise_id: string }>) || []
   const config = difficultyConfig[template.difficulty as keyof typeof difficultyConfig] || difficultyConfig.beginner
 
+  // Native touch-based swipe state
+  const [translateX, setTranslateX] = useState(0)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  const startXRef = useRef(0)
+  const currentXRef = useRef(0)
+  const isDraggingRef = useRef(false)
+  const hasTriggeredHapticRef = useRef(false)
+
+  const canDelete = onDelete && !template.is_default
+  const DELETE_THRESHOLD = -50
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!canDelete) return
+    startXRef.current = e.touches[0].clientX
+    currentXRef.current = 0
+    isDraggingRef.current = true
+    hasTriggeredHapticRef.current = false
+    setIsAnimating(false)
+  }, [canDelete])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDraggingRef.current || !canDelete) return
+
+    const deltaX = e.touches[0].clientX - startXRef.current
+
+    // Only allow left swipe (negative values)
+    if (deltaX > 0) {
+      currentXRef.current = 0
+      setTranslateX(0)
+      return
+    }
+
+    // Clamp to max swipe distance with rubber band effect
+    const clampedX = Math.max(deltaX * 0.8, -120)
+    currentXRef.current = clampedX
+    setTranslateX(clampedX)
+
+    // Haptic feedback at threshold
+    if (clampedX <= DELETE_THRESHOLD && !hasTriggeredHapticRef.current) {
+      hapticFeedback('medium')
+      hasTriggeredHapticRef.current = true
+    }
+  }, [canDelete])
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isDraggingRef.current || !canDelete) return
+    isDraggingRef.current = false
+
+    setIsAnimating(true)
+
+    if (currentXRef.current <= DELETE_THRESHOLD) {
+      // Show delete dialog
+      hapticFeedback('medium')
+      setShowDeleteDialog(true)
+    }
+
+    // Animate back to original position
+    setTranslateX(0)
+  }, [canDelete])
+
+  const handleDelete = () => {
+    if (onDelete) {
+      hapticFeedback('heavy')
+      onDelete()
+      setShowDeleteDialog(false)
+    }
+  }
+
+  // Calculate delete background opacity
+  const deleteOpacity = Math.min(Math.abs(translateX) / 50, 1)
+
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -20, scale: 0.95 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      transition={{
-        delay: index * 0.06,
-        type: "spring",
-        stiffness: 350,
-        damping: 25
-      }}
-      whileHover={{
-        scale: 1.02,
-        x: 4,
-        transition: { type: "spring", stiffness: 400, damping: 20 }
-      }}
-      whileTap={{
-        scale: 0.98,
-        transition: { duration: 0.1 }
-      }}
-      className={`w-full ios-card p-4 border-l-4 ${config.border} group cursor-pointer`}
-    >
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          delay: index * 0.05,
+          type: "spring",
+          stiffness: 400,
+          damping: 30
+        }}
+        className="relative w-full overflow-hidden rounded-xl"
+      >
+        {/* Delete background */}
+        {canDelete && (
+          <div
+            className="absolute inset-0 bg-destructive rounded-xl flex items-center justify-end px-6"
+            style={{ opacity: deleteOpacity }}
+          >
+            <Trash2 className="h-5 w-5 text-destructive-foreground" />
+          </div>
+        )}
+
+        {/* Swipeable card */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{
+            transform: `translate3d(${translateX}px, 0, 0)`,
+            transition: isAnimating ? 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+            willChange: 'transform',
+          }}
+          className={`w-full ios-card p-4 border-l-4 ${config.border} group cursor-pointer relative z-10 bg-background`}
+        >
       <div className="flex items-start justify-between gap-3 mb-3">
         <button
           onClick={() => {
-            onClick()
-            hapticFeedback('light')
+            if (!isDraggingRef.current) {
+              onClick()
+              hapticFeedback('light')
+            }
           }}
           className="flex-1 min-w-0 text-left"
         >
@@ -134,8 +236,10 @@ function TemplateCard({
 
       <button
         onClick={() => {
-          onClick()
-          hapticFeedback('light')
+          if (!isDraggingRef.current) {
+            onClick()
+            hapticFeedback('light')
+          }
         }}
         className="w-full flex items-center gap-4 text-sm text-muted-foreground"
       >
@@ -159,7 +263,33 @@ function TemplateCard({
         </motion.div>
         <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
       </button>
+      </div>
     </motion.div>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            Delete Template?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete <strong>"{template.name}"</strong>? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }
 
@@ -167,6 +297,7 @@ export function WorkoutTemplatesList({
   templates,
   onTemplateClick,
   onEditTemplate,
+  onDeleteTemplate,
   onCreateTemplate,
   maxVisible = 5
 }: WorkoutTemplatesListProps) {
@@ -175,7 +306,7 @@ export function WorkoutTemplatesList({
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="space-y-3 overflow-visible">
         <div className="flex items-center justify-between px-1">
           <h3 className="ios-headline">Templates</h3>
           <Button
@@ -204,7 +335,7 @@ export function WorkoutTemplatesList({
             }}
           />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-visible">
             {visibleTemplates.map((template, index) => (
               <TemplateCard
                 key={template.id}
@@ -212,6 +343,7 @@ export function WorkoutTemplatesList({
                 index={index}
                 onClick={() => onTemplateClick(template)}
                 onEdit={onEditTemplate ? () => onEditTemplate(template) : undefined}
+                onDelete={onDeleteTemplate ? () => onDeleteTemplate(template) : undefined}
               />
             ))}
 
@@ -284,8 +416,8 @@ export function WorkoutTemplatesList({
             </div>
 
             {/* Templates List */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              <div className="space-y-3 pb-6">
+            <div className="flex-1 overflow-y-auto overflow-x-visible px-4 py-4">
+              <div className="space-y-3 pb-6 overflow-visible">
                 {templates.map((template, index) => (
                   <TemplateCard
                     key={template.id}
@@ -299,6 +431,7 @@ export function WorkoutTemplatesList({
                       setShowAllTemplates(false)
                       onEditTemplate(template)
                     } : undefined}
+                    onDelete={onDeleteTemplate ? () => onDeleteTemplate(template) : undefined}
                   />
                 ))}
               </div>

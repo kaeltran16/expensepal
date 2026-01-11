@@ -34,6 +34,7 @@ export const POST = withAuthAndValidation(
       .insert({
         ...validatedData,
         user_id: user.id,
+        is_default: false, // Explicitly set as custom template
       })
       .select()
       .single()
