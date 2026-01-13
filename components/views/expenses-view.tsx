@@ -78,6 +78,7 @@ export function ExpensesView({
         description="Start tracking your spending by adding an expense manually or syncing your emails"
         size="lg"
         animationVariant="bounce"
+        data-testid="empty-expenses"
         action={{
           label: 'Add Your First Expense',
           onClick: onShowForm,
@@ -124,6 +125,7 @@ export function ExpensesView({
       ref={parentRef}
       className={useVirtualScroll ? 'h-[calc(100vh-280px)] overflow-auto' : 'space-y-3'}
       style={useVirtualScroll ? { contain: 'strict' } : undefined}
+      data-testid="expense-list"
     >
       {useVirtualScroll ? (
         // Virtual scrolling mode (for 50+ items)

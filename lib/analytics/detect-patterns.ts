@@ -1,4 +1,5 @@
-import type { Expense } from '@/lib/supabase'
+import type { PreprocessedData } from './preprocess-expenses'
+import { INSIGHT_THRESHOLDS } from './thresholds'
 
 export interface PatternInsight {
   type: 'pattern'
@@ -10,64 +11,35 @@ export interface PatternInsight {
 
 /**
  * Analyzes weekend vs weekday spending patterns by category
- * @param expenses - Expenses from last 30 days
+ * Uses preprocessed weekend/weekday aggregations
+ *
+ * @param data - Preprocessed expense data
  * @param formatCurrency - Currency formatting function
  * @returns Array of pattern insights for categories with significant differences
  */
 export function detectWeekendWeekdayPatterns(
-  expenses: Expense[],
+  data: PreprocessedData,
   formatCurrency: (amount: number, currency: string) => string
 ): PatternInsight[] {
   const results: PatternInsight[] = []
-  const now = new Date()
-  const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  // Filter to last 30 days
-  const last30DaysExpenses = expenses.filter(
-    (e) => new Date(e.transaction_date) >= last30Days
-  )
-
-  // Aggregate by category and day type
-  const weekdayByCategory: Record<string, number> = {}
-  const weekendByCategory: Record<string, number> = {}
-  const weekdayCount: Record<string, number> = {}
-  const weekendCount: Record<string, number> = {}
-
-  last30DaysExpenses.forEach((e) => {
-    const date = new Date(e.transaction_date)
-    const day = date.getDay()
-    const isWeekend = day === 0 || day === 6
-    const cat = e.category || 'Other'
-
-    if (isWeekend) {
-      weekendByCategory[cat] = (weekendByCategory[cat] || 0) + e.amount
-      weekendCount[cat] = (weekendCount[cat] || 0) + 1
-    } else {
-      weekdayByCategory[cat] = (weekdayByCategory[cat] || 0) + e.amount
-      weekdayCount[cat] = (weekdayCount[cat] || 0) + 1
-    }
-  })
-
-  // Find significant weekend/weekday differences (>30%)
   // Get all categories that have either weekend or weekday expenses
   const allCategories = new Set([
-    ...Object.keys(weekendByCategory),
-    ...Object.keys(weekdayByCategory),
+    ...Object.keys(data.weekendByCategory),
+    ...Object.keys(data.weekdayByCategory),
   ])
 
-  allCategories.forEach((category) => {
-    const weekendTotal = weekendByCategory[category] || 0
-    const weekdayTotal = weekdayByCategory[category] || 0
-    const hasWeekend = (weekendCount[category] || 0) > 0
-    const hasWeekday = (weekdayCount[category] || 0) > 0
+  for (const category of allCategories) {
+    const weekend = data.weekendByCategory[category]
+    const weekday = data.weekdayByCategory[category]
 
-    // Only compare if we have data for both weekend and weekday
-    if (hasWeekend && hasWeekday) {
-      const weekendAvg = weekendTotal / weekendCount[category]
-      const weekdayAvg = weekdayTotal / weekdayCount[category]
+    // Only compare if we have data for both
+    if (weekend?.count > 0 && weekday?.count > 0) {
+      const weekendAvg = weekend.total / weekend.count
+      const weekdayAvg = weekday.total / weekday.count
       const diff = ((weekendAvg - weekdayAvg) / weekdayAvg) * 100
 
-      if (diff > 30) {
+      if (diff > INSIGHT_THRESHOLDS.WEEKEND_WEEKDAY_DIFF) {
         results.push({
           type: 'pattern',
           category,
@@ -75,7 +47,7 @@ export function detectWeekendWeekdayPatterns(
           description: `${diff.toFixed(0)}% higher average per day`,
           value: formatCurrency(weekendAvg, 'VND') + ' avg',
         })
-      } else if (diff < -30) {
+      } else if (diff < -INSIGHT_THRESHOLDS.WEEKEND_WEEKDAY_DIFF) {
         results.push({
           type: 'pattern',
           category,
@@ -85,44 +57,33 @@ export function detectWeekendWeekdayPatterns(
         })
       }
     }
-  })
+  }
 
   return results
 }
 
 /**
  * Identifies the top spending category and calculates its percentage of total spending
- * @param expenses - Expenses from last 30 days
+ * Uses preprocessed category totals
+ *
+ * @param data - Preprocessed expense data
  * @returns Top category info or null if no data
  */
-export function findTopSpendingCategory(
-  expenses: Expense[]
-): {
+export function findTopSpendingCategory(data: PreprocessedData): {
   category: string
   amount: number
   percentage: number
 } | null {
-  const now = new Date()
-  const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const categoryTotals = data.categoryTotals.last30Days
+  const total = data.totals.last30Days
 
-  const last30DaysExpenses = expenses.filter(
-    (e) => new Date(e.transaction_date) >= last30Days
-  )
+  if (total === 0) return null
 
-  const categoryTotals: Record<string, number> = {}
-  last30DaysExpenses.forEach((e) => {
-    const cat = e.category || 'Other'
-    categoryTotals[cat] = (categoryTotals[cat] || 0) + e.amount
-  })
+  const topEntry = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0]
 
-  const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0]
+  if (!topEntry) return null
 
-  if (!topCategory) {
-    return null
-  }
-
-  const [category, amount] = topCategory
-  const total = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0)
+  const [category, amount] = topEntry
   const percentage = (amount / total) * 100
 
   return { category, amount, percentage }

@@ -39,3 +39,5 @@ next-env.d.ts
 .claude
 
 /expensepal-mobile/node_modules
+/test-results
+/playwright-report

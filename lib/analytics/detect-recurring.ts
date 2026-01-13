@@ -1,4 +1,6 @@
 import type { Expense } from '@/lib/supabase'
+import type { PreprocessedData } from './preprocess-expenses'
+import { INSIGHT_THRESHOLDS } from './thresholds'
 
 // Type for detected recurring patterns from transaction analysis
 export interface DetectedRecurringExpense {
@@ -19,7 +21,13 @@ export interface DetectedRecurringExpense {
 export type RecurringExpense = DetectedRecurringExpense
 
 // Frequency type shared between detection and storage
-export type RecurringFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom'
+export type RecurringFrequency =
+  | 'weekly'
+  | 'biweekly'
+  | 'monthly'
+  | 'quarterly'
+  | 'yearly'
+  | 'custom'
 
 interface MerchantGroup {
   merchant: string
@@ -32,7 +40,7 @@ interface MerchantGroup {
 /**
  * Detects recurring expenses from transaction history
  * Uses merchant name, amount similarity, and time intervals
- * Improvements: Better merchant grouping, minimum 4 transactions, recency weighting
+ * Note: This function needs raw expenses for full pattern analysis
  */
 export function detectRecurringExpenses(expenses: Expense[]): RecurringExpense[] {
   if (!expenses || expenses.length < 2) return []
@@ -45,8 +53,11 @@ export function detectRecurringExpenses(expenses: Expense[]): RecurringExpense[]
 
   for (const group of merchantGroups) {
     const pattern = analyzePattern(group)
-    // Increased threshold and minimum transaction count
-    if (pattern && pattern.confidence >= 65 && group.expenses.length >= 4) {
+    if (
+      pattern &&
+      pattern.confidence >= INSIGHT_THRESHOLDS.MIN_CONFIDENCE &&
+      group.expenses.length >= INSIGHT_THRESHOLDS.MIN_TRANSACTIONS
+    ) {
       recurring.push(pattern)
     }
   }
@@ -66,7 +77,9 @@ export function detectRecurringExpenses(expenses: Expense[]): RecurringExpense[]
 function levenshteinDistance(str1: string, str2: string): number {
   const len1 = str1.length
   const len2 = str2.length
-  const matrix: number[][] = Array(len1 + 1).fill(null).map(() => Array(len2 + 1).fill(0))
+  const matrix: number[][] = Array(len1 + 1)
+    .fill(null)
+    .map(() => Array(len2 + 1).fill(0))
 
   for (let i = 0; i <= len1; i++) matrix[i]![0] = i
   for (let j = 0; j <= len2; j++) matrix[0]![j] = j
@@ -75,8 +88,8 @@ function levenshteinDistance(str1: string, str2: string): number {
     for (let j = 1; j <= len2; j++) {
       const cost = str1[i - 1] === str2[j - 1] ? 0 : 1
       matrix[i]![j] = Math.min(
-        matrix[i - 1]![j]! + 1,      // deletion
-        matrix[i]![j - 1]! + 1,      // insertion
+        matrix[i - 1]![j]! + 1, // deletion
+        matrix[i]![j - 1]! + 1, // insertion
         matrix[i - 1]![j - 1]! + cost // substitution
       )
     }
@@ -102,13 +115,13 @@ function normalizeMerchant(merchant: string): string {
   return merchant
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s]/g, '') // Remove special characters
-    .replace(/\s+/g, ' ')     // Normalize whitespace
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
 }
 
 /**
  * Group expenses by merchant using fuzzy matching
- * Merchants with >80% similarity are grouped together
+ * Merchants with similarity above threshold are grouped together
  */
 function groupByMerchantFuzzy(expenses: Expense[]): MerchantGroup[] {
   const groups: MerchantGroup[] = []
@@ -122,20 +135,17 @@ function groupByMerchantFuzzy(expenses: Expense[]): MerchantGroup[] {
       const groupMerchant = normalizeMerchant(group.merchant)
       const similarity = similarityRatio(normalizedMerchant, groupMerchant)
 
-      // 80% similarity threshold
-      if (similarity >= 0.8) {
+      if (similarity >= INSIGHT_THRESHOLDS.MERCHANT_SIMILARITY) {
         matchedGroup = group
         break
       }
     }
 
     if (matchedGroup) {
-      // Add to existing group
       matchedGroup.expenses.push(expense)
       matchedGroup.amounts.push(expense.amount)
       matchedGroup.dates.push(new Date(expense.transaction_date))
     } else {
-      // Create new group
       groups.push({
         merchant: expense.merchant,
         category: expense.category || 'Other',
@@ -146,43 +156,12 @@ function groupByMerchantFuzzy(expenses: Expense[]): MerchantGroup[] {
     }
   }
 
-  // Only return merchants with 4+ transactions (minimum for reliable pattern detection)
-  return groups.filter(g => g.expenses.length >= 4)
-}
-
-/**
- * Group expenses by merchant name (case-insensitive, trimmed)
- * Legacy function - kept for backwards compatibility
- */
-function groupByMerchant(expenses: Expense[]): MerchantGroup[] {
-  const groups = new Map<string, MerchantGroup>()
-
-  for (const expense of expenses) {
-    const merchantKey = expense.merchant.toLowerCase().trim()
-
-    if (!groups.has(merchantKey)) {
-      groups.set(merchantKey, {
-        merchant: expense.merchant,
-        category: expense.category || 'Other',
-        expenses: [],
-        amounts: [],
-        dates: [],
-      })
-    }
-
-    const group = groups.get(merchantKey)!
-    group.expenses.push(expense)
-    group.amounts.push(expense.amount)
-    group.dates.push(new Date(expense.transaction_date))
-  }
-
-  // Only return merchants with 4+ transactions (minimum for pattern detection)
-  return Array.from(groups.values()).filter(g => g.expenses.length >= 4)
+  // Only return merchants with minimum transactions
+  return groups.filter((g) => g.expenses.length >= INSIGHT_THRESHOLDS.MIN_TRANSACTIONS)
 }
 
 /**
  * Analyze a merchant group for recurring patterns
- * Improvements: Recency weighting, better missed payment detection, improved confidence scoring
  */
 function analyzePattern(group: MerchantGroup): RecurringExpense | null {
   const { merchant, category, expenses, amounts, dates } = group
@@ -194,13 +173,11 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
 
   // Calculate intervals between transactions (in days)
   const intervals: number[] = []
-  const intervalDates: Date[] = []
   for (let i = 1; i < sorted.length; i++) {
     const days = Math.round(
       (sorted[i]!.date.getTime() - sorted[i - 1]!.date.getTime()) / (1000 * 60 * 60 * 24)
     )
     intervals.push(days)
-    intervalDates.push(sorted[i]!.date)
   }
 
   if (intervals.length === 0) return null
@@ -211,9 +188,10 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
   const olderIntervals = intervals.slice(0, -recentCount)
 
   const recentAvg = recentIntervals.reduce((sum, val) => sum + val, 0) / recentIntervals.length
-  const olderAvg = olderIntervals.length > 0
-    ? olderIntervals.reduce((sum, val) => sum + val, 0) / olderIntervals.length
-    : recentAvg
+  const olderAvg =
+    olderIntervals.length > 0
+      ? olderIntervals.reduce((sum, val) => sum + val, 0) / olderIntervals.length
+      : recentAvg
 
   const avgInterval = recentAvg * 0.6 + olderAvg * 0.4
 
@@ -232,11 +210,12 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
     (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
   )
 
-  // Recency factor: full confidence if within 2x average interval, decreases after that
+  // Recency factor: full confidence if within 2x average interval, decreases after
   const expectedGap = avgInterval * 2
-  const recencyFactor = daysSinceLastTransaction <= expectedGap
-    ? 100
-    : Math.max(20, 100 - ((daysSinceLastTransaction - expectedGap) / avgInterval) * 20)
+  const recencyFactor =
+    daysSinceLastTransaction <= expectedGap
+      ? 100
+      : Math.max(20, 100 - ((daysSinceLastTransaction - expectedGap) / avgInterval) * 20)
 
   // Overall confidence (weighted: interval 50%, amount 30%, recency 20%)
   const confidence = Math.round(
@@ -246,23 +225,23 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
   // Determine frequency category
   const frequency = categorizeFrequency(avgInterval)
 
-  // Calculate next expected date using frequency-based calculation for better accuracy
+  // Calculate next expected date
   const nextExpected = calculateNextExpectedDate(lastDate, frequency, avgInterval)
 
-  // Improved missed payment detection
+  // Missed payment detection
   const today = new Date()
   const daysSinceExpected = Math.round(
     (today.getTime() - nextExpected.getTime()) / (1000 * 60 * 60 * 24)
   )
 
-  // Grace period varies by frequency (weekly: 3 days, biweekly: 5 days, monthly+: 7 days)
+  // Grace period varies by frequency
   const gracePeriod = frequency === 'weekly' ? 3 : frequency === 'biweekly' ? 5 : 7
   const missedPayment = daysSinceExpected > gracePeriod
 
   // Calculate total spent this year
   const currentYear = new Date().getFullYear()
   const totalSpentThisYear = sorted
-    .filter(s => s.date.getFullYear() === currentYear)
+    .filter((s) => s.date.getFullYear() === currentYear)
     .reduce((sum, s) => sum + (s.amount || 0), 0)
 
   return {
@@ -274,14 +253,14 @@ function analyzePattern(group: MerchantGroup): RecurringExpense | null {
     lastDate: lastDate.toISOString(),
     nextExpected: nextExpected.toISOString(),
     confidence: Math.min(100, confidence),
-    transactions: sorted.map(s => s.expense),
+    transactions: sorted.map((s) => s.expense),
     totalSpentThisYear,
     missedPayment,
   }
 }
 
 /**
- * Calculate next expected date based on frequency for more accurate predictions
+ * Calculate next expected date based on frequency
  */
 function calculateNextExpectedDate(
   lastDate: Date,
@@ -292,23 +271,18 @@ function calculateNextExpectedDate(
 
   switch (frequency) {
     case 'weekly':
-      // Add 7 days
       next.setDate(next.getDate() + 7)
       break
     case 'biweekly':
-      // Add 14 days
       next.setDate(next.getDate() + 14)
       break
     case 'monthly':
-      // Add 1 month (preserves day of month)
       next.setMonth(next.getMonth() + 1)
       break
     case 'quarterly':
-      // Add 3 months (preserves day of month)
       next.setMonth(next.getMonth() + 3)
       break
     default:
-      // Fallback to average interval
       next.setDate(next.getDate() + Math.round(avgInterval))
   }
 
@@ -319,10 +293,10 @@ function calculateNextExpectedDate(
  * Categorize interval into frequency buckets
  */
 function categorizeFrequency(days: number): RecurringExpense['frequency'] {
-  if (days <= 9) return 'weekly' // 7 days ± 2
-  if (days <= 16) return 'biweekly' // 14 days ± 2
-  if (days <= 35) return 'monthly' // 30 days ± 5
-  return 'quarterly' // 90 days ± range
+  if (days <= 9) return 'weekly'
+  if (days <= 16) return 'biweekly'
+  if (days <= 35) return 'monthly'
+  return 'quarterly'
 }
 
 /**
@@ -332,14 +306,14 @@ function calculateStdDev(values: number[]): number {
   if (values.length === 0) return 0
 
   const avg = values.reduce((sum, val) => sum + val, 0) / values.length
-  const squaredDiffs = values.map(val => Math.pow(val - avg, 2))
+  const squaredDiffs = values.map((val) => Math.pow(val - avg, 2))
   const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length
 
   return Math.sqrt(variance)
 }
 
 /**
- * Get merchant-level spending insights
+ * Merchant-level spending insight
  */
 export interface MerchantInsight {
   merchant: string
@@ -353,54 +327,35 @@ export interface MerchantInsight {
   percentOfTotal: number
 }
 
-export function getMerchantInsights(
-  expenses: Expense[],
-  topN: number = 10
-): MerchantInsight[] {
-  if (!expenses || expenses.length === 0) return []
+/**
+ * Get merchant-level spending insights
+ * Uses preprocessed merchant data for O(1) lookup
+ */
+export function getMerchantInsights(data: PreprocessedData, topN: number = 10): MerchantInsight[] {
+  if (data.merchantMap.size === 0) return []
 
-  // Group by merchant
-  const merchantGroups = new Map<string, Expense[]>()
-
-  for (const expense of expenses) {
-    const key = expense.merchant.toLowerCase().trim()
-    if (!merchantGroups.has(key)) {
-      merchantGroups.set(key, [])
-    }
-    merchantGroups.get(key)!.push(expense)
-  }
-
-  const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0)
-
-  // Calculate insights for each merchant
+  const totalSpent = data.totals.all
   const insights: MerchantInsight[] = []
 
-  for (const [_, merchantExpenses] of merchantGroups) {
-    const sorted = merchantExpenses.sort(
-      (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
-    )
-
-    const total = merchantExpenses.reduce((sum, e) => sum + e.amount, 0)
-    const firstDate = new Date(sorted[0]!.transaction_date)
-    const lastDate = new Date(sorted[sorted.length - 1]!.transaction_date)
-
+  for (const [, merchantData] of data.merchantMap) {
     // Calculate months span
     const monthsSpan = Math.max(
       1,
-      (lastDate.getFullYear() - firstDate.getFullYear()) * 12 +
-        (lastDate.getMonth() - firstDate.getMonth()) + 1
+      (merchantData.lastDate.getFullYear() - merchantData.firstDate.getFullYear()) * 12 +
+        (merchantData.lastDate.getMonth() - merchantData.firstDate.getMonth()) +
+        1
     )
 
     insights.push({
-      merchant: sorted[0]!.merchant,
-      category: sorted[0]!.category || 'Other',
-      totalSpent: total,
-      transactionCount: merchantExpenses.length,
-      averageAmount: total / merchantExpenses.length,
-      firstTransaction: sorted[0]!.transaction_date,
-      lastTransaction: sorted[sorted.length - 1]!.transaction_date,
-      monthlyAverage: total / monthsSpan,
-      percentOfTotal: (total / totalSpent) * 100,
+      merchant: merchantData.merchant,
+      category: merchantData.category,
+      totalSpent: merchantData.total,
+      transactionCount: merchantData.count,
+      averageAmount: merchantData.total / merchantData.count,
+      firstTransaction: merchantData.firstDate.toISOString(),
+      lastTransaction: merchantData.lastDate.toISOString(),
+      monthlyAverage: merchantData.total / monthsSpan,
+      percentOfTotal: totalSpent > 0 ? (merchantData.total / totalSpent) * 100 : 0,
     })
   }
 

@@ -1,18 +1,24 @@
 'use client'
 
-import { useState, lazy, Suspense } from 'react'
+import { useState, lazy, Suspense, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { BarChart3, Lightbulb, CalendarDays } from 'lucide-react'
+import {
+  BarChart3,
+  Lightbulb,
+  CalendarDays,
+  TrendingUp,
+  TrendingDown,
+  Award,
+  AlertTriangle,
+  Target,
+} from 'lucide-react'
 import { CategoryInsights } from '@/components/category-insights'
 import { InsightsCards } from '@/components/insights-cards'
 import { SpendingAdvisor } from '@/components/spending-advisor'
 import { WeeklySummary } from '@/components/weekly-summary'
 import { ChartSkeleton, InsightCardSkeleton } from '@/components/skeleton-loader'
 import { hapticFeedback } from '@/lib/utils'
-import type { Expense } from '@/lib/supabase'
-
-// Lazy load heavy Recharts component to reduce initial bundle size
-const AnalyticsCharts = lazy(() => import('@/components/analytics-charts').then(mod => ({ default: mod.AnalyticsCharts })))
+import { usePreprocessedExpenses } from '@/lib/hooks/use-preprocessed-expenses'
 import {
   getComprehensiveInsights,
   analyzeCategoryTrends,
@@ -20,8 +26,12 @@ import {
   type CategoryTrend,
 } from '@/lib/analytics/spending-insights'
 import { getMerchantInsights, type MerchantInsight } from '@/lib/analytics/detect-recurring'
-import { useMemo } from 'react'
-import { TrendingUp, TrendingDown, Award, AlertTriangle, Target } from 'lucide-react'
+import type { Expense } from '@/lib/supabase'
+
+// Lazy load heavy Recharts component to reduce initial bundle size
+const AnalyticsCharts = lazy(() =>
+  import('@/components/analytics-charts').then((mod) => ({ default: mod.AnalyticsCharts }))
+)
 
 interface AnalyticsInsightsViewProps {
   expenses: Expense[]
@@ -31,20 +41,38 @@ interface AnalyticsInsightsViewProps {
 
 type TabType = 'summary' | 'charts' | 'insights'
 
-export function AnalyticsInsightsView({ expenses, loading, onNavigate }: AnalyticsInsightsViewProps) {
+export function AnalyticsInsightsView({
+  expenses,
+  loading,
+  onNavigate,
+}: AnalyticsInsightsViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>('summary')
 
-  // precompute insights data
-  const patterns = useMemo(() => getComprehensiveInsights(expenses), [expenses])
-  const categoryTrends = useMemo(() => analyzeCategoryTrends(expenses), [expenses])
-  const merchantInsights = useMemo(() => getMerchantInsights(expenses, 5), [expenses])
+  // Use preprocessed data for all insights (single-pass aggregation)
+  const { data: preprocessed, isLoading: isPreprocessing } = usePreprocessedExpenses(expenses)
+
+  // Derive insights from preprocessed data
+  const patterns = useMemo<SpendingPattern[]>(
+    () => (preprocessed ? getComprehensiveInsights(preprocessed) : []),
+    [preprocessed]
+  )
+
+  const categoryTrends = useMemo<CategoryTrend[]>(
+    () => (preprocessed ? analyzeCategoryTrends(preprocessed) : []),
+    [preprocessed]
+  )
+
+  const merchantInsights = useMemo<MerchantInsight[]>(
+    () => (preprocessed ? getMerchantInsights(preprocessed, 5) : []),
+    [preprocessed]
+  )
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab)
     hapticFeedback('light')
   }
 
-  if (loading) {
+  if (loading || isPreprocessing) {
     return (
       <div className="space-y-6 pb-24">
         <TabSegmentedControl activeTab={activeTab} onTabChange={handleTabChange} />
@@ -109,7 +137,11 @@ export function AnalyticsInsightsView({ expenses, loading, onNavigate }: Analyti
                 <h4 className="ios-headline px-1">Top Spending</h4>
                 <div className="ios-list-group">
                   {merchantInsights.slice(0, 3).map((merchant, index) => (
-                    <CompactMerchantCard key={merchant.merchant} merchant={merchant} index={index} />
+                    <CompactMerchantCard
+                      key={merchant.merchant}
+                      merchant={merchant}
+                      index={index}
+                    />
                   ))}
                 </div>
               </div>
@@ -211,11 +243,26 @@ function TabSegmentedControl({
   )
 }
 
-// helper components from insights view
+// helper components
 function PatternCard({ pattern, index }: { pattern: SpendingPattern; index: number }) {
-  const Icon = pattern.impact === 'positive' ? Award : pattern.impact === 'negative' ? AlertTriangle : Lightbulb
-  const bgColor = pattern.impact === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : pattern.impact === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : 'bg-blue-100 dark:bg-blue-900/20'
-  const iconColor = pattern.impact === 'positive' ? 'text-green-600 dark:text-green-400' : pattern.impact === 'negative' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'
+  const Icon =
+    pattern.impact === 'positive'
+      ? Award
+      : pattern.impact === 'negative'
+        ? AlertTriangle
+        : Lightbulb
+  const bgColor =
+    pattern.impact === 'positive'
+      ? 'bg-green-100 dark:bg-green-900/20'
+      : pattern.impact === 'negative'
+        ? 'bg-red-100 dark:bg-red-900/20'
+        : 'bg-blue-100 dark:bg-blue-900/20'
+  const iconColor =
+    pattern.impact === 'positive'
+      ? 'text-green-600 dark:text-green-400'
+      : pattern.impact === 'negative'
+        ? 'text-red-600 dark:text-red-400'
+        : 'text-blue-600 dark:text-blue-400'
 
   return (
     <motion.div
@@ -225,7 +272,9 @@ function PatternCard({ pattern, index }: { pattern: SpendingPattern; index: numb
       className="ios-list-item"
     >
       <div className="flex items-start gap-3">
-        <div className={`w-10 h-10 rounded-full ${bgColor} flex items-center justify-center flex-shrink-0`}>
+        <div
+          className={`w-10 h-10 rounded-full ${bgColor} flex items-center justify-center flex-shrink-0`}
+        >
           <Icon className={`h-5 w-5 ${iconColor}`} />
         </div>
         <div className="flex-1 min-w-0">
@@ -238,8 +287,14 @@ function PatternCard({ pattern, index }: { pattern: SpendingPattern; index: numb
 }
 
 function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number }) {
-  const TrendIcon = trend.trend === 'up' ? TrendingUp : trend.trend === 'down' ? TrendingDown : Target
-  const trendColor = trend.trend === 'up' ? 'text-red-500' : trend.trend === 'down' ? 'text-green-500' : 'text-muted-foreground'
+  const TrendIcon =
+    trend.trend === 'up' ? TrendingUp : trend.trend === 'down' ? TrendingDown : Target
+  const trendColor =
+    trend.trend === 'up'
+      ? 'text-red-500'
+      : trend.trend === 'down'
+        ? 'text-green-500'
+        : 'text-muted-foreground'
 
   return (
     <motion.div
@@ -254,12 +309,14 @@ function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number
           <div className="flex-1 min-w-0">
             <h4 className="ios-headline">{trend.category}</h4>
             <p className="ios-caption text-muted-foreground">
-              ₫{(trend.currentMonth / 1000).toFixed(0)}k this month
+              {'\u20AB'}
+              {(trend.currentMonth / 1000).toFixed(0)}k this month
             </p>
           </div>
         </div>
         <p className={`text-lg font-semibold ${trendColor}`}>
-          {trend.changePercent > 0 ? '+' : ''}{trend.changePercent.toFixed(0)}%
+          {trend.changePercent > 0 ? '+' : ''}
+          {trend.changePercent.toFixed(0)}%
         </p>
       </div>
     </motion.div>
@@ -279,12 +336,18 @@ function CompactMerchantCard({ merchant, index }: { merchant: MerchantInsight; i
           <div className="flex-1 min-w-0">
             <h4 className="ios-headline truncate">{merchant.merchant}</h4>
             <p className="ios-caption text-muted-foreground">
-              {merchant.transactionCount} visits • ₫{(merchant.averageAmount / 1000).toFixed(0)}k avg
+              {merchant.transactionCount} visits {'\u2022'} {'\u20AB'}
+              {(merchant.averageAmount / 1000).toFixed(0)}k avg
             </p>
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="font-semibold">₫{(merchant.totalSpent / 1000).toFixed(0)}k</p>
-            <p className="ios-caption text-muted-foreground">{merchant.percentOfTotal.toFixed(0)}%</p>
+            <p className="font-semibold">
+              {'\u20AB'}
+              {(merchant.totalSpent / 1000).toFixed(0)}k
+            </p>
+            <p className="ios-caption text-muted-foreground">
+              {merchant.percentOfTotal.toFixed(0)}%
+            </p>
           </div>
         </div>
         <div className="h-1 bg-secondary rounded-full overflow-hidden">

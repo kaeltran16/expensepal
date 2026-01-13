@@ -98,7 +98,7 @@ export function BudgetView({ expenses, loading }: BudgetViewProps) {
         transition={{ duration: 0.2 }}
       >
         {activeTab === 'budgets' ? (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="budget-tracker">
             {/* AI Budget Recommendations */}
             <AIBudgetRecommendationsPanel onSetBudget={handleSetBudget} />
 
@@ -113,7 +113,9 @@ export function BudgetView({ expenses, loading }: BudgetViewProps) {
             />
           </div>
         ) : (
-          <RecurringView expenses={expenses} />
+          <div data-testid="recurring-expenses">
+            <RecurringView expenses={expenses} />
+          </div>
         )}
       </motion.div>
     </div>

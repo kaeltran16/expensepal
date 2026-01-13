@@ -1,4 +1,5 @@
-import type { Expense } from '@/lib/supabase'
+import type { PreprocessedData } from './preprocess-expenses'
+import { INSIGHT_THRESHOLDS } from './thresholds'
 
 export interface SpendingPattern {
   type: 'day_of_week' | 'time_of_day' | 'category_trend' | 'streak'
@@ -18,38 +19,34 @@ export interface CategoryTrend {
 
 /**
  * Analyze day-of-week spending patterns
+ * Uses preprocessed day-of-week aggregations
  */
-export function analyzeDayOfWeekPatterns(expenses: Expense[]): SpendingPattern[] {
-  if (!expenses || expenses.length === 0) return []
-
-  const dayTotals = new Array(7).fill(0)
-  const dayCounts = new Array(7).fill(0)
-
-  for (const expense of expenses) {
-    const day = new Date(expense.transaction_date).getDay()
-    dayTotals[day] += expense.amount
-    dayCounts[day]++
-  }
-
+export function analyzeDayOfWeekPatterns(data: PreprocessedData): SpendingPattern[] {
+  const { totals, counts } = data.dayOfWeek
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  const averages = dayTotals.map((total, i) => (dayCounts[i] > 0 ? total / dayCounts[i] : 0))
+
+  // Calculate averages
+  const averages = totals.map((total, i) => (counts[i] > 0 ? total / counts[i] : 0))
+
+  const nonZeroAverages = averages.filter((a) => a > 0)
+  if (nonZeroAverages.length === 0) return []
 
   const maxAvg = Math.max(...averages)
-  const minAvg = Math.min(...averages.filter(a => a > 0))
+  const minAvg = Math.min(...nonZeroAverages)
   const maxDay = dayNames[averages.indexOf(maxAvg)]
   const minDay = dayNames[averages.indexOf(minAvg)]
 
   const patterns: SpendingPattern[] = []
 
   // High spending day pattern
-  if (maxAvg > minAvg * 1.5) {
+  if (maxAvg > minAvg * INSIGHT_THRESHOLDS.DAY_MULTIPLIER_THRESHOLD) {
     const multiplier = (maxAvg / minAvg).toFixed(1)
     patterns.push({
       type: 'day_of_week',
       title: `${maxDay} is your biggest spending day`,
       description: `You spend ${multiplier}x more on ${maxDay}s than ${minDay}s`,
       impact: 'neutral',
-      data: { dayTotals, dayNames, averages },
+      data: { dayTotals: totals, dayNames, averages },
     })
   }
 
@@ -58,52 +55,34 @@ export function analyzeDayOfWeekPatterns(expenses: Expense[]): SpendingPattern[]
 
 /**
  * Analyze category spending trends (month-over-month)
+ * Uses preprocessed category totals
  */
-export function analyzeCategoryTrends(expenses: Expense[]): CategoryTrend[] {
-  if (!expenses || expenses.length === 0) return []
+export function analyzeCategoryTrends(data: PreprocessedData): CategoryTrend[] {
+  const thisMonth = data.categoryTotals.thisMonth
+  const lastMonth = data.categoryTotals.lastMonth
 
-  const now = new Date()
-  const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  // Get all categories from both months
+  const allCategories = new Set([...Object.keys(thisMonth), ...Object.keys(lastMonth)])
 
-  // Group by category and month
-  const categoryData = new Map<string, { current: number; previous: number }>()
-
-  for (const expense of expenses) {
-    const expenseDate = new Date(expense.transaction_date)
-    const category = expense.category || 'Other'
-
-    if (!categoryData.has(category)) {
-      categoryData.set(category, { current: 0, previous: 0 })
-    }
-
-    const data = categoryData.get(category)!
-
-    if (expenseDate >= currentMonth) {
-      data.current += expense.amount
-    } else if (expenseDate >= previousMonth && expenseDate < currentMonth) {
-      data.previous += expense.amount
-    }
-  }
-
-  // Calculate trends
   const trends: CategoryTrend[] = []
 
-  for (const [category, data] of categoryData) {
-    if (data.current === 0 && data.previous === 0) continue
+  for (const category of allCategories) {
+    const current = thisMonth[category] || 0
+    const previous = lastMonth[category] || 0
 
-    const changePercent =
-      data.previous > 0 ? ((data.current - data.previous) / data.previous) * 100 : 0
+    if (current === 0 && previous === 0) continue
+
+    const changePercent = previous > 0 ? ((current - previous) / previous) * 100 : 0
 
     let trend: 'up' | 'down' | 'stable' = 'stable'
-    if (Math.abs(changePercent) > 10) {
+    if (Math.abs(changePercent) > INSIGHT_THRESHOLDS.STABLE_THRESHOLD) {
       trend = changePercent > 0 ? 'up' : 'down'
     }
 
     trends.push({
       category,
-      currentMonth: data.current,
-      previousMonth: data.previous,
+      currentMonth: current,
+      previousMonth: previous,
       changePercent,
       trend,
     })
@@ -114,75 +93,91 @@ export function analyzeCategoryTrends(expenses: Expense[]): CategoryTrend[] {
 
 /**
  * Detect spending streaks (no spending in a category)
+ * Uses preprocessed period expenses
  */
-export function detectSpendingStreaks(expenses: Expense[]): SpendingPattern[] {
-  if (!expenses || expenses.length === 0) return []
-
+export function detectSpendingStreaks(data: PreprocessedData): SpendingPattern[] {
   const categories = ['Shopping', 'Entertainment', 'Food', 'Transport']
   const patterns: SpendingPattern[] = []
 
+  // Group last 30 days expenses by category with latest date
+  const categoryLastDate = new Map<string, Date>()
+
+  for (const expense of data.byPeriod.last30Days) {
+    const cat = expense.category || 'Other'
+    const date = new Date(expense.transaction_date)
+
+    if (!categoryLastDate.has(cat) || date > categoryLastDate.get(cat)!) {
+      categoryLastDate.set(cat, date)
+    }
+  }
+
   for (const category of categories) {
-    const categoryExpenses = expenses
-      .filter(e => e.category === category)
-      .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
+    const lastExpenseDate = categoryLastDate.get(category)
 
-    if (categoryExpenses.length === 0) continue
+    if (!lastExpenseDate) continue
 
-    const lastExpense = new Date(categoryExpenses[0]!.transaction_date)
-    const daysSince = Math.floor((Date.now() - lastExpense.getTime()) / (1000 * 60 * 60 * 24))
+    const daysSince = Math.floor(
+      (Date.now() - lastExpenseDate.getTime()) / (1000 * 60 * 60 * 24)
+    )
 
-    if (daysSince >= 7) {
+    if (daysSince >= INSIGHT_THRESHOLDS.MIN_STREAK_DAYS) {
       patterns.push({
         type: 'streak',
         title: `${daysSince} days without ${category} expenses`,
-        description: `Great job! You haven't spent on ${category.toLowerCase()} since ${lastExpense.toLocaleDateString()}`,
+        description: `Great job! You haven't spent on ${category.toLowerCase()} since ${lastExpenseDate.toLocaleDateString()}`,
         impact: 'positive',
-        data: { category, daysSince, lastExpense },
+        data: { category, daysSince, lastExpense: lastExpenseDate },
       })
     }
   }
 
-  return patterns.sort((a, b) => ((b.data?.daysSince as number) || 0) - ((a.data?.daysSince as number) || 0))
+  return patterns.sort(
+    (a, b) => ((b.data?.daysSince as number) || 0) - ((a.data?.daysSince as number) || 0)
+  )
 }
 
 /**
  * Find unusual merchant spending (one-time large purchases)
+ * Uses preprocessed period expenses
  */
-export function findUnusualSpending(expenses: Expense[], threshold: number = 2): SpendingPattern[] {
-  if (!expenses || expenses.length === 0) return []
+export function findUnusualSpending(data: PreprocessedData): SpendingPattern[] {
+  const expenses = data.byPeriod.last30Days
+
+  if (expenses.length === 0) return []
 
   // Calculate overall average
-  const avgExpense = expenses.reduce((sum, e) => sum + e.amount, 0) / expenses.length
+  const avgExpense = data.totals.last30Days / expenses.length
 
   // Find expenses significantly above average
   const unusual = expenses
-    .filter(e => e.amount > avgExpense * threshold)
+    .filter((e) => e.amount > avgExpense * INSIGHT_THRESHOLDS.UNUSUAL_SPENDING_MULTIPLIER)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 3)
 
-  return unusual.map(expense => ({
+  return unusual.map((expense) => ({
     type: 'category_trend' as const,
     title: `Large ${expense.category || 'expense'} at ${expense.merchant}`,
     description: `${(expense.amount / avgExpense).toFixed(1)}x your average expense`,
     impact: 'neutral' as const,
-    data: expense,
+    data: expense as unknown as Record<string, unknown>,
   }))
 }
 
 /**
  * Get comprehensive spending insights
+ * Combines all pattern analysis functions
  */
-export function getComprehensiveInsights(expenses: Expense[]): SpendingPattern[] {
+export function getComprehensiveInsights(data: PreprocessedData): SpendingPattern[] {
   const insights: SpendingPattern[] = []
 
   // Add day-of-week patterns
-  insights.push(...analyzeDayOfWeekPatterns(expenses))
+  insights.push(...analyzeDayOfWeekPatterns(data))
 
   // Add spending streaks
-  insights.push(...detectSpendingStreaks(expenses))
+  insights.push(...detectSpendingStreaks(data))
 
   // Add unusual spending
-  insights.push(...findUnusualSpending(expenses))
+  insights.push(...findUnusualSpending(data))
 
   return insights.slice(0, 10) // Return top 10 insights
 }

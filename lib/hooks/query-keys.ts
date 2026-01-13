@@ -37,6 +37,7 @@ export const queryKeys = {
   // Insights (cached expensive calculations)
   insights: {
     all: ['insights'] as const,
+    preprocessed: (cacheKey: string) => [...queryKeys.insights.all, 'preprocessed', cacheKey] as const,
     byExpenses: (expenseCount: number) => [...queryKeys.insights.all, expenseCount] as const,
   },
 

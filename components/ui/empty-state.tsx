@@ -50,6 +50,11 @@ export interface EmptyStateProps {
    * @default 'default'
    */
   size?: 'sm' | 'default' | 'lg'
+
+  /**
+   * Test ID for E2E testing
+   */
+  'data-testid'?: string
 }
 
 const iconAnimationVariants = {
@@ -140,6 +145,7 @@ export function EmptyState({
   secondaryAction,
   animationVariant = 'default',
   size = 'default',
+  'data-testid': testId,
 }: EmptyStateProps) {
   const animation = iconAnimationVariants[animationVariant]
   const sizes = sizeClasses[size]
@@ -149,6 +155,7 @@ export function EmptyState({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className={`text-center ${sizes.container}`}
+      data-testid={testId}
     >
       {/* Animated Icon */}
       <motion.div

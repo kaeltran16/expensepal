@@ -31,6 +31,7 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
       animate={{ y: 0 }}
       transition={springs.default}
       className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 will-animate"
+      data-testid="bottom-navigation"
     >
       {/* iOS hairline border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-border/30" />
@@ -46,6 +47,7 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
               key={item.id}
               onClick={() => handleNavClick(item.id)}
               className="relative flex flex-col items-center justify-center flex-1 py-1 ios-touch"
+              data-testid={`nav-${item.id}`}
             >
               {/* Icon - using CSS transform for better performance */}
               <div
