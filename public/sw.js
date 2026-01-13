@@ -99,11 +99,18 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Handle skip waiting message from client
+// Handle messages from client
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
     console.log('[SW] Skip waiting requested, activating new version');
     self.skipWaiting();
+  }
+
+  // Only claim clients when user explicitly triggers update
+  // This prevents iOS PWA refresh loops
+  if (event.data?.type === 'CLAIM_CLIENTS') {
+    console.log('[SW] Claiming clients after user-initiated update');
+    self.clients.claim();
   }
 });
 
@@ -112,7 +119,9 @@ self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker version:', VERSION);
   event.waitUntil(
     Promise.all([
-      // Delete old caches
+      // Delete old caches (but don't claim clients automatically)
+      // clients.claim() is now triggered by CLAIM_CLIENTS message from user action
+      // This prevents iOS PWA refresh loops when SW activates in background
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
@@ -123,8 +132,6 @@ self.addEventListener('activate', (event) => {
           })
         );
       }),
-      // Take control of all clients immediately
-      self.clients.claim(),
       // Set badge to 0
       setBadge(0),
     ])

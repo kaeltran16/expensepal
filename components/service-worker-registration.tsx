@@ -32,6 +32,28 @@ export function ServiceWorkerRegistration() {
       if (waiting) {
         console.log('[SW] Applying update manually')
         reloadedThisSessionRef.current = true // Mark that we're reloading
+
+        const claimAndReload = () => {
+          console.log('[SW] New worker activated, claiming clients')
+          // Send CLAIM_CLIENTS to the newly activated SW
+          // This triggers clients.claim() which fires controllerchange
+          waiting.postMessage({ type: 'CLAIM_CLIENTS' })
+        }
+
+        // Check if already activated (edge case)
+        if (waiting.state === 'activated') {
+          claimAndReload()
+          return
+        }
+
+        // Listen for the waiting worker to become active
+        waiting.addEventListener('statechange', () => {
+          if (waiting.state === 'activated') {
+            claimAndReload()
+          }
+        })
+
+        // Tell the waiting SW to skip waiting and become active
         waiting.postMessage({ type: 'SKIP_WAITING' })
       }
     }
