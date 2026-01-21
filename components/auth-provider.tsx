@@ -66,7 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
-      router.refresh()
+
+      // Only refresh on token refresh events to update server components
+      // Don't refresh on SIGNED_IN to avoid redirect loops in Safari PWA
+      if (event === 'TOKEN_REFRESHED' && session) {
+        router.refresh()
+      }
     })
 
     return () => subscription.unsubscribe()
