@@ -37,6 +37,7 @@ export function ExpenseCardActions({ expense, onEdit, onDeleteClick }: ExpenseCa
             handleEdit();
           }}
           className="flex-1 h-11 gap-2 border-2 hover:border-primary hover:bg-primary/5"
+          data-testid="edit-expense"
         >
           <Edit className="w-4 h-4" />
           Edit Expense
@@ -51,6 +52,7 @@ export function ExpenseCardActions({ expense, onEdit, onDeleteClick }: ExpenseCa
             handleDeleteClick();
           }}
           className="flex-1 h-11 gap-2 border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive"
+          data-testid="delete-expense"
         >
           <Trash2 className="w-4 h-4" />
           Delete

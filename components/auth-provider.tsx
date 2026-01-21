@@ -73,17 +73,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase, router])
 
   const signInWithGoogle = async () => {
+    // Check if we're already on the open_in_browser flow to avoid redirect loop
+    const params = new URLSearchParams(window.location.search)
+    const openInBrowser = params.get('open_in_browser') === '1'
+
     // Detect iOS PWA - OAuth won't work properly, open in Safari instead
     const isIOSPWA =
       /iPad|iPhone|iPod/.test(navigator.userAgent) &&
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true
 
-    if (isIOSPWA) {
+    // Only redirect if we're in iOS PWA AND not already in the open_in_browser flow
+    if (isIOSPWA && !openInBrowser) {
       // Open login page in Safari - user logs in there, then returns to PWA
       window.location.href = `${window.location.origin}/login?open_in_browser=1`
       return
     }
 
+    // Proceed with OAuth (either non-iOS PWA or already in open_in_browser flow)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

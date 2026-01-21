@@ -224,3 +224,20 @@ export function withAuthAndQueryValidation<T extends z.ZodType>(
     }
   })
 }
+
+/**
+ * Helper function to safely parse JSON from request
+ * Handles empty bodies and malformed JSON gracefully
+ */
+export async function safeParseJSON(request: NextRequest): Promise<any> {
+  try {
+    const text = await request.text()
+    if (!text || text.trim() === '') {
+      return {}
+    }
+    return JSON.parse(text)
+  } catch (error) {
+    console.error('Failed to parse request body:', error)
+    throw new Error('Invalid JSON in request body')
+  }
+}

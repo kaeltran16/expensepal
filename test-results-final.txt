@@ -1,0 +1,172 @@
+
+> expense-tracker@1.0.0 test:e2e
+> playwright test --config=e2e/playwright.config.ts --project=chromium --workers=2
+
+[1A[2K[2m[WebServer] [22m[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+
+
+Running 24 tests using 2 workers
+
+[1A[2K[1/24] [chromium] › e2e\tests\auth\auth-flow.spec.ts:18:7 › Auth Flow › should show dev login form in development mode
+[1A[2K[2/24] [chromium] › e2e\tests\auth\auth-flow.spec.ts:11:7 › Auth Flow › should display login page for unauthenticated users
+[1A[2K[3/24] [chromium] › e2e\tests\auth\auth-flow.spec.ts:23:7 › Auth Flow › should login successfully with valid credentials
+[1A[2K[4/24] [chromium] › e2e\tests\auth\auth-flow.spec.ts:32:7 › Auth Flow › should show error for invalid credentials
+[1A[2K[5/24] [chromium] › e2e\tests\auth\auth-flow.spec.ts:43:7 › Auth Flow › should logout successfully
+[1A[2K[6/24] [chromium] › e2e\tests\auth\auth-flow.spec.ts:49:7 › Auth Flow › should protect routes when not authenticated
+[1A[2K[7/24] [chromium] › e2e\tests\budgets\budget-management.spec.ts:15:7 › Budget Management › should display budget view with tabs
+[1A[2K[8/24] [chromium] › e2e\tests\budgets\budget-management.spec.ts:20:7 › Budget Management › should create a new budget for a category
+[1A[2K  1) [chromium] › e2e\tests\budgets\budget-management.spec.ts:15:7 › Budget Management › should display budget view with tabs 
+
+    Error: Auth cookies not working after 5 attempts
+
+       at ..\fixtures\auth.fixture.ts:73
+
+      71 |         }
+      72 |
+    > 73 |         throw new Error('Auth cookies not working after 5 attempts')
+         |               ^
+      74 |       },
+      75 |
+      76 |       logout: async () => {
+        at Object.login (C:\Users\cktra\Projects\expensepal\e2e\fixtures\auth.fixture.ts:73:15)
+        at C:\Users\cktra\Projects\expensepal\e2e\tests\budgets\budget-management.spec.ts:8:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\budgets-budget-management--a4c59-splay-budget-view-with-tabs-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\budgets-budget-management--a4c59-splay-budget-view-with-tabs-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\budgets-budget-management--a4c59-splay-budget-view-with-tabs-chromium\error-context.md
+
+
+[1A[2K[9/24] [chromium] › e2e\tests\budgets\budget-management.spec.ts:27:7 › Budget Management › should update an existing budget
+[1A[2K[10/24] [chromium] › e2e\tests\budgets\budget-management.spec.ts:38:7 › Budget Management › should show budget progress based on expenses
+[1A[2K[11/24] [chromium] › e2e\tests\budgets\budget-management.spec.ts:48:7 › Budget Management › should show over-budget warning when exceeded
+[1A[2K  2) [chromium] › e2e\tests\budgets\budget-management.spec.ts:27:7 › Budget Management › should update an existing budget 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('[data-testid="budget-card"]:has-text("Transport")')
+    Expected substring: [32m"1,500,000"[39m
+    Received string:    [31m"🚗Transport0 of 1.500.000Edit0%1.500.000 left"[39m
+    Timeout: 10000ms
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 10000ms[22m
+    [2m  - waiting for locator('[data-testid="budget-card"]:has-text("Transport")')[22m
+    [2m    2 × locator resolved to <div class="ios-list-item" data-testid="budget-card">…</div>[22m
+    [2m      - unexpected value "🚗Transport0 of 1.000.000Edit0%1.000.000 left"[22m
+    [2m    12 × locator resolved to <div class="ios-list-item" data-testid="budget-card">…</div>[22m
+    [2m       - unexpected value "🚗Transport0 of 1.500.000Edit0%1.500.000 left"[22m
+
+
+       at ..\pages\budget.page.ts:67
+
+      65 |   async expectBudgetAmount(category: string, amount: string) {
+      66 |     const card = this.page.locator(`${this.budgetCard}:has-text("${category}")`)
+    > 67 |     await expect(card).toContainText(amount)
+         |                        ^
+      68 |   }
+      69 |
+      70 |   async expectBudgetProgressPercent(category: string, percent: number, tolerance = 5) {
+        at BudgetPage.expectBudgetAmount (C:\Users\cktra\Projects\expensepal\e2e\pages\budget.page.ts:67:24)
+        at C:\Users\cktra\Projects\expensepal\e2e\tests\budgets\budget-management.spec.ts:35:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\budgets-budget-management--6f762-d-update-an-existing-budget-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\budgets-budget-management--6f762-d-update-an-existing-budget-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\budgets-budget-management--6f762-d-update-an-existing-budget-chromium\error-context.md
+
+
+[1A[2K[12/24] [chromium] › e2e\tests\budgets\budget-management.spec.ts:58:7 › Budget Management › should switch between Budgets and Recurring tabs
+[1A[2K[13/24] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:14:7 › Expense CRUD › should display empty state when no expenses
+[1A[2K[14/24] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:19:7 › Expense CRUD › should create a new expense via form
+[1A[2K[15/24] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:31:7 › Expense CRUD › should edit an existing expense
+[1A[2K[16/24] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:50:7 › Expense CRUD › should delete an expense with confirmation
+[1A[2K  3) [chromium] › e2e\tests\expenses\expense-crud.spec.ts:31:7 › Expense CRUD › should edit an existing expense 
+
+    TimeoutError: locator.waitFor: Timeout 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="expense-card"]').first().locator('[data-testid="edit-expense"]') to be visible[22m
+
+
+       at ..\pages\expenses.page.ts:101
+
+       99 |     // Click edit button (always visible in the card)
+      100 |     const editBtn = card.locator(this.editBtn)
+    > 101 |     await editBtn.waitFor({ state: 'visible', timeout: 5000 })
+          |                   ^
+      102 |     await editBtn.click()
+      103 |
+      104 |     // Wait for form to appear
+        at ExpensesPage.editExpense (C:\Users\cktra\Projects\expensepal\e2e\pages\expenses.page.ts:101:19)
+        at C:\Users\cktra\Projects\expensepal\e2e\tests\expenses\expense-crud.spec.ts:41:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\expenses-expense-crud-Expe-36a9b-ld-edit-an-existing-expense-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\expenses-expense-crud-Expe-36a9b-ld-edit-an-existing-expense-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\expenses-expense-crud-Expe-36a9b-ld-edit-an-existing-expense-chromium\error-context.md
+
+
+[1A[2K[17/24] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:66:7 › Expense CRUD › should filter expenses by search query
+[1A[2K  4) [chromium] › e2e\tests\expenses\expense-crud.spec.ts:50:7 › Expense CRUD › should delete an expense with confirmation 
+
+    TimeoutError: locator.waitFor: Timeout 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="expense-card"]').first().locator('[data-testid="delete-expense"]') to be visible[22m
+
+
+       at ..\pages\expenses.page.ts:82
+
+      80 |     // Click delete button (always visible in the card)
+      81 |     const deleteBtn = card.locator(this.deleteBtn)
+    > 82 |     await deleteBtn.waitFor({ state: 'visible', timeout: 5000 })
+         |                     ^
+      83 |     await deleteBtn.click()
+      84 |
+      85 |     // Wait for confirmation dialog and click delete
+        at ExpensesPage.deleteExpense (C:\Users\cktra\Projects\expensepal\e2e\pages\expenses.page.ts:82:21)
+        at C:\Users\cktra\Projects\expensepal\e2e\tests\expenses\expense-crud.spec.ts:60:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\expenses-expense-crud-Expe-02cde-n-expense-with-confirmation-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\expenses-expense-crud-Expe-02cde-n-expense-with-confirmation-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\expenses-expense-crud-Expe-02cde-n-expense-with-confirmation-chromium\error-context.md
+
+
+[1A[2K[18/24] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:81:7 › Expense CRUD › should show expenses sorted by date (newest first)
+[1A[2K[2m[WebServer] [22mError saving to database: {
+[2m[WebServer] [22m  code: [32m'42501'[39m,
+[2m[WebServer] [22m  details: [1mnull[22m,
+[2m[WebServer] [22m  hint: [1mnull[22m,
+[2m[WebServer] [22m  message: [32m'new row violates row-level security policy for table "saved_foods"'[39m
+[2m[WebServer] [22m}
+
+[1A[2K[19/24] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:104:7 › Expense CRUD › should update quick stats after adding expense
+[1A[2K[20/24] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:119:7 › Expense CRUD › should persist expense after page reload
+[1A[2K[2m[WebServer] [22mError saving to database: {
+[2m[WebServer] [22m  code: [32m'42501'[39m,
+[2m[WebServer] [22m  details: [1mnull[22m,
+[2m[WebServer] [22m  hint: [1mnull[22m,
+[2m[WebServer] [22m  message: [32m'new row violates row-level security policy for table "saved_foods"'[39m
+[2m[WebServer] [22m}
+
+[1A[2K[21/24] [chromium] › e2e\tests\mobile\mobile-interactions.spec.ts:19:7 › Mobile Interactions › should swipe left on expense card to reveal delete action

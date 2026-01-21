@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, safeParseJSON } from '@/lib/api/middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +26,14 @@ export const GET = withAuth(async (request, user) => {
 // POST create new budget
 export const POST = withAuth(async (request, user) => {
   const supabase = createClient()
-  const body = await request.json()
+  const body = await safeParseJSON(request)
+
+  if (!body.category || !body.amount) {
+    return NextResponse.json(
+      { error: 'Missing required fields: category and amount' },
+      { status: 400 }
+    )
+  }
 
   const { data, error } = await supabase
     .from('budgets')

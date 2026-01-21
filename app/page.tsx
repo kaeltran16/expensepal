@@ -58,7 +58,7 @@ import { hapticFeedback } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Filter } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 // Workout completion data type
@@ -92,6 +92,7 @@ const ProfileView = lazy(() => import('@/components/views').then(mod => ({ defau
 
 function HomeContent() {
   // Client-side UI state (needs to be before hooks that depend on it)
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
 
@@ -237,6 +238,18 @@ function HomeContent() {
 
     return () => clearTimeout(prefetchTimer);
   }, [activeView, currentMonth, expenses.length, queryClient]);
+
+  // Sync active view with URL query params
+  useEffect(() => {
+    const currentView = searchParams.get('view') as ViewType;
+    if (activeView !== 'expenses' && activeView !== currentView) {
+      // Update URL when view changes (except for default 'expenses' view)
+      router.replace(`/?view=${activeView}`, { scroll: false });
+    } else if (activeView === 'expenses' && currentView) {
+      // Clear view param when on expenses (default view)
+      router.replace('/', { scroll: false });
+    }
+  }, [activeView, router, searchParams]);
 
   // Check if should show onboarding
   useEffect(() => {

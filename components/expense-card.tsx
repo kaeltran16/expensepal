@@ -171,6 +171,7 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
                   handleEdit()
                 }}
                 className="h-8 w-8"
+                data-testid="edit-expense"
               >
                 <Edit className="w-4 h-4" />
               </Button>
@@ -184,6 +185,7 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
                   handleDelete()
                 }}
                 className="h-8 w-8 text-destructive"
+                data-testid="delete-expense"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>

@@ -144,6 +144,7 @@ export function BudgetTracker({ expenses, initialEditCategory, initialEditValue 
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05, duration: 0.2 }}
               className="ios-list-item"
+              data-testid="budget-card"
             >
               <div className="space-y-3">
                 {/* Category Header */}
@@ -167,7 +168,7 @@ export function BudgetTracker({ expenses, initialEditCategory, initialEditValue 
                               <AlertCircle className="h-4 w-4 text-yellow-500 flex-shrink-0" />
                             )}
                             {status === 'exceeded' && (
-                              <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                              <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" data-testid="over-budget-warning" />
                             )}
                           </>
                         )}
@@ -192,6 +193,7 @@ export function BudgetTracker({ expenses, initialEditCategory, initialEditValue 
                     variant="ghost"
                     onClick={() => openBudgetDialog(category)}
                     className="h-9 px-3 ios-touch bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+                    data-testid="set-budget-btn"
                   >
                     <Edit2 className="h-4 w-4 mr-1.5" />
                     <span className="text-sm font-medium">
@@ -204,8 +206,8 @@ export function BudgetTracker({ expenses, initialEditCategory, initialEditValue 
                 {budget !== null && budget > 0 && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="ios-caption text-muted-foreground">
-                        {percentage.toFixed(0)}% used
+                      <span className="ios-caption text-muted-foreground" data-testid="budget-progress">
+                        {percentage.toFixed(0)}%
                       </span>
                       <span className="ios-caption text-muted-foreground">
                         {formatCurrency(Math.max(0, budget - spent), 'VND')} left

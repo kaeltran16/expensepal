@@ -155,6 +155,7 @@ export function SwipeableCard({
           opacity: backgroundOpacity,
           width: DELETE_BUTTON_WIDTH,
         }}
+        data-testid="delete-action"
       >
         <motion.div
           style={{

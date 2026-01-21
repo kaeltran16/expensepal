@@ -98,6 +98,7 @@ export function SetBudgetDialog({
             onClick={onClose}
           >
             <motion.div
+              data-testid="budget-dialog"
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}

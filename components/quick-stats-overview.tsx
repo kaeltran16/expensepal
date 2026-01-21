@@ -29,7 +29,7 @@ export function QuickStatsOverview({
   const hasSpentToday = todayTotal > 0;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="quick-stats">
       {/* Main Today Card with Premium Design */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -81,7 +81,7 @@ export function QuickStatsOverview({
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <p className="text-6xl font-black tracking-tighter leading-none mb-1">
+              <p className="text-6xl font-black tracking-tighter leading-none mb-1" data-testid="today-total">
                 <AnimatedCounter value={todayTotal} duration={1200} />
               </p>
               {hasSpentToday && (

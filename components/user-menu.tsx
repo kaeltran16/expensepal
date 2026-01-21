@@ -153,7 +153,7 @@ export function UserMenu({ onSyncEmails, isSyncing = false, onOpenProfile }: Use
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-muted transition-colors">
+        <Button data-testid="user-menu-trigger" variant="ghost" size="icon" className="relative rounded-full hover:bg-muted transition-colors">
           {user.user_metadata?.avatar_url ? (
             <img
               src={user.user_metadata.avatar_url}
@@ -257,6 +257,7 @@ export function UserMenu({ onSyncEmails, isSyncing = false, onOpenProfile }: Use
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
+          data-testid="logout-btn"
           onClick={handleSignOut}
           className="text-red-600 dark:text-red-400 cursor-pointer focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
         >

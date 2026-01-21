@@ -122,6 +122,7 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
         transition={springs.gentle}
         className="bg-background w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto will-animate"
         onClick={(e) => e.stopPropagation()}
+        data-testid="expense-form"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">

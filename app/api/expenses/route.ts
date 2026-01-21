@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getMealTimeFromDate } from '@/lib/meal-utils'
 import { calorieEstimator } from '@/lib/calorie-estimator'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, safeParseJSON } from '@/lib/api/middleware'
 import { createExpenseQuery } from '@/lib/api/query-builder'
 import { createListResponse } from '@/lib/api/types'
 import type { GetExpensesResponse } from '@/lib/api/types'
@@ -46,7 +46,14 @@ export const GET = withAuth(async (request, user) => {
 // POST create new expense
 export const POST = withAuth(async (request, user) => {
   const supabase = createClient()
-  const body = await request.json()
+  const body = await safeParseJSON(request)
+
+  if (!body.amount || !body.merchant) {
+    return NextResponse.json(
+      { error: 'Missing required fields: amount and merchant' },
+      { status: 400 }
+    )
+  }
 
   const { data, error } = await supabase
     .from('expenses')

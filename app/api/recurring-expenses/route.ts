@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, safeParseJSON } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -48,8 +48,16 @@ export const GET = withAuth(async (request, user) => {
  */
 export const POST = withAuth(async (request, user) => {
   const supabase = createClient()
-  const body = await request.json()
+  const body = await safeParseJSON(request)
 
+  if (!body.merchant || !body.amount || !body.frequency) {
+    return NextResponse.json(
+      { error: 'Missing required fields: merchant, amount, and frequency' },
+      { status: 400 }
+    )
+  }
+
+  // Handle both camelCase and snake_case field names from tests
   const { data, error } = await supabase
     .from('recurring_expenses')
     .insert({
@@ -60,15 +68,15 @@ export const POST = withAuth(async (request, user) => {
       amount: body.amount,
       currency: body.currency || 'VND',
       frequency: body.frequency,
-      interval_days: body.intervalDays || null,
-      start_date: body.startDate,
-      end_date: body.endDate || null,
-      next_due_date: body.nextDueDate,
-      is_active: body.isActive ?? true,
-      auto_create: body.autoCreate ?? false,
-      notify_before_days: body.notifyBeforeDays ?? 1,
-      is_detected: body.isDetected ?? false,
-      confidence_score: body.confidenceScore || null,
+      interval_days: body.intervalDays || body.interval_days || null,
+      start_date: body.startDate || body.start_date,
+      end_date: body.endDate || body.end_date || null,
+      next_due_date: body.nextDueDate || body.next_due_date || body.due_date,
+      is_active: body.isActive ?? body.is_active ?? true,
+      auto_create: body.autoCreate ?? body.auto_create ?? false,
+      notify_before_days: body.notifyBeforeDays ?? body.notify_before_days ?? 1,
+      is_detected: body.isDetected ?? body.is_detected ?? false,
+      confidence_score: body.confidenceScore || body.confidence_score || null,
       source: body.source || 'manual',
       notes: body.notes || null,
     })
@@ -77,5 +85,5 @@ export const POST = withAuth(async (request, user) => {
 
   if (error) throw error
 
-  return NextResponse.json(data)
+  return NextResponse.json({ recurringExpense: data })
 })

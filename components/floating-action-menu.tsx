@@ -154,6 +154,7 @@ export function FloatingActionMenu({
 
                     {/* Action Button */}
                     <motion.button
+                      data-testid={action.label === 'Add Expense' ? 'add-expense-action' : 'sync-emails-action'}
                       onClick={action.onClick}
                       disabled={action.disabled}
                       whileHover={{ scale: 1.1, rotate: 5 }}
@@ -199,6 +200,7 @@ export function FloatingActionMenu({
 
         {/* Main FAB Button - Enhanced */}
         <motion.button
+          data-testid="fab-menu"
           onClick={(e) => {
             createRipple(e)
             toggleMenu()

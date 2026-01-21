@@ -78,6 +78,7 @@ export function SearchBar({ expenses, onSearch }: SearchBarProps) {
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           placeholder="Search transactions..."
+          data-testid="search-bar"
           className="w-full pl-11 pr-11 py-3 rounded-2xl bg-muted/50 border border-transparent focus:border-primary/30 focus:bg-card transition-all text-sm min-h-touch placeholder:text-muted-foreground/60"
           style={{
             WebkitTapHighlightColor: 'transparent',

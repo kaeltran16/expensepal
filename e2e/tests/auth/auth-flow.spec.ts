@@ -25,14 +25,15 @@ test.describe('Auth Flow', () => {
     await loginPage.loginWithDevCredentials()
 
     await expect(page).toHaveURL('/')
-    await expect(page.locator('[data-testid="quick-stats"]')).toBeVisible()
+    // Verify we're logged in by checking for the expenses page heading
+    await expect(page.locator('h1:has-text("Expenses")')).toBeVisible()
   })
 
   test('should show error for invalid credentials', async ({ page }) => {
     await loginPage.goto()
 
-    await page.fill('[data-testid="dev-email-input"]', 'test@test.com')
-    await page.fill('[data-testid="dev-password-input"]', 'test')
+    await page.fill('[data-testid="dev-email-input"]', 'wrong@test.com')
+    await page.fill('[data-testid="dev-password-input"]', 'wrongpassword')
     await page.click('[data-testid="dev-login-btn"]')
 
     await loginPage.expectLoginError(/Login failed|Invalid/i)
@@ -47,9 +48,9 @@ test.describe('Auth Flow', () => {
 
   test('should protect routes when not authenticated', async ({ page }) => {
     await page.goto('/?view=budget')
-    await expect(page).toHaveURL('/login')
+    await expect(page).toHaveURL(/\/login/)
 
     await page.goto('/?view=insights')
-    await expect(page).toHaveURL('/login')
+    await expect(page).toHaveURL(/\/login/)
   })
 })

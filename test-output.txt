@@ -1,0 +1,99 @@
+
+> expense-tracker@1.0.0 test:e2e
+> playwright test --config=e2e/playwright.config.ts e2e/tests/expenses/expense-crud.spec.ts --project=chromium --workers=1
+
+[1A[2K[2m[WebServer] [22m[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+
+
+Running 8 tests using 1 worker
+
+[1A[2K[1/8] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:14:7 › Expense CRUD › should display empty state when no expenses
+[1A[2K[2/8] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:19:7 › Expense CRUD › should create a new expense via form
+[1A[2K[3/8] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:31:7 › Expense CRUD › should edit an existing expense
+[1A[2K  1) [chromium] › e2e\tests\expenses\expense-crud.spec.ts:31:7 › Expense CRUD › should edit an existing expense 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="expense-card"]').first().locator('[data-testid="edit-expense"]')[22m
+
+
+       at ..\pages\expenses.page.ts:64
+
+      62 |
+      63 |   async submitExpenseForm() {
+    > 64 |     await this.page.click(this.submitBtn)
+         |                                      ^
+      65 |     await this.waitForQuerySettle()
+      66 |   }
+      67 |
+        at ExpensesPage.editExpense (C:\Users\cktra\Projects\expensepal\e2e\pages\expenses.page.ts:64:38)
+        at C:\Users\cktra\Projects\expensepal\e2e\tests\expenses\expense-crud.spec.ts:41:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\expenses-expense-crud-Expe-36a9b-ld-edit-an-existing-expense-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\expenses-expense-crud-Expe-36a9b-ld-edit-an-existing-expense-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\expenses-expense-crud-Expe-36a9b-ld-edit-an-existing-expense-chromium\error-context.md
+
+
+[1A[2K[4/8] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:50:7 › Expense CRUD › should delete an expense with confirmation
+[1A[2K[2m[WebServer] [22m [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+
+[1A[2K  2) [chromium] › e2e\tests\expenses\expense-crud.spec.ts:50:7 › Expense CRUD › should delete an expense with confirmation 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="expense-card"]').first().locator('[data-testid="delete-expense"]')[22m
+    [2m    - waiting for" http://localhost:3000/" navigation to finish...[22m
+    [2m    - navigated to "http://localhost:3000/"[22m
+
+
+       at ..\pages\expenses.page.ts:57
+
+      55 |       // Wait for category button to be clickable
+      56 |       const categoryBtn = this.page.locator(`button:has-text("${data.category}")`).first()
+    > 57 |       await categoryBtn.waitFor({ state: 'visible', timeout: 5000 })
+         |                                        ^
+      58 |       // Use force click to avoid interception issues
+      59 |       await categoryBtn.click({ force: true })
+      60 |     }
+        at ExpensesPage.deleteExpense (C:\Users\cktra\Projects\expensepal\e2e\pages\expenses.page.ts:57:40)
+        at C:\Users\cktra\Projects\expensepal\e2e\tests\expenses\expense-crud.spec.ts:60:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\expenses-expense-crud-Expe-02cde-n-expense-with-confirmation-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\expenses-expense-crud-Expe-02cde-n-expense-with-confirmation-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\expenses-expense-crud-Expe-02cde-n-expense-with-confirmation-chromium\error-context.md
+
+
+[1A[2K[5/8] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:66:7 › Expense CRUD › should filter expenses by search query
+[1A[2K[6/8] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:81:7 › Expense CRUD › should show expenses sorted by date (newest first)
+[1A[2K[2m[WebServer] [22mError saving to database: {
+[2m[WebServer] [22m  code: [32m'42501'[39m,
+[2m[WebServer] [22m  details: [1mnull[22m,
+[2m[WebServer] [22m  hint: [1mnull[22m,
+[2m[WebServer] [22m  message: [32m'new row violates row-level security policy for table "saved_foods"'[39m
+[2m[WebServer] [22m}
+
+[1A[2K[7/8] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:104:7 › Expense CRUD › should update quick stats after adding expense
+[1A[2K[2m[WebServer] [22mError saving to database: {
+[2m[WebServer] [22m  code: [32m'42501'[39m,
+[2m[WebServer] [22m  details: [1mnull[22m,
+[2m[WebServer] [22m  hint: [1mnull[22m,
+[2m[WebServer] [22m  message: [32m'new row violates row-level security policy for table "saved_foods"'[39m
+[2m[WebServer] [22m}
+
+[1A[2K[8/8] [chromium] › e2e\tests\expenses\expense-crud.spec.ts:119:7 › Expense CRUD › should persist expense after page reload
+[1A[2K  2 failed
+    [chromium] › e2e\tests\expenses\expense-crud.spec.ts:31:7 › Expense CRUD › should edit an existing expense 
+    [chromium] › e2e\tests\expenses\expense-crud.spec.ts:50:7 › Expense CRUD › should delete an expense with confirmation 
+  6 passed (3.5m)

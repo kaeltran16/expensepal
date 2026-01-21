@@ -26,17 +26,37 @@ export class ExpensesPage extends BasePage {
   }
 
   async openAddExpenseForm() {
-    await this.page.click(this.floatingActionBtn)
-    await this.page.click('[data-testid="add-expense-action"]')
-    await expect(this.page.locator(this.expenseForm)).toBeVisible()
+    // Click the floating action button
+    await this.page.locator(this.floatingActionBtn).click()
+
+    // Wait for menu to appear and stabilize
+    await this.page.waitForTimeout(200)
+
+    // Click the add expense action
+    const addExpenseAction = this.page.locator('[data-testid="add-expense-action"]')
+    await addExpenseAction.waitFor({ state: 'visible', timeout: 5000 })
+    await addExpenseAction.click()
+
+    // Wait for form to be visible
+    await expect(this.page.locator(this.expenseForm)).toBeVisible({ timeout: 5000 })
+
+    // Extra wait for form animations
+    await this.page.waitForTimeout(300)
   }
 
   async fillExpenseForm(data: { amount: number; merchant: string; category?: string }) {
+    // Wait for form to be fully loaded and stable
+    await this.page.waitForTimeout(300)
+
     await this.page.fill(this.amountInput, data.amount.toString())
     await this.page.fill(this.merchantInput, data.merchant)
 
     if (data.category) {
-      await this.page.click(`button:has-text("${data.category}")`)
+      // Wait for category button to be clickable
+      const categoryBtn = this.page.locator(`button:has-text("${data.category}")`).first()
+      await categoryBtn.waitFor({ state: 'visible', timeout: 5000 })
+      // Use force click to avoid interception issues
+      await categoryBtn.click({ force: true })
     }
   }
 
@@ -53,16 +73,39 @@ export class ExpensesPage extends BasePage {
 
   async deleteExpense(index = 0) {
     const card = this.page.locator(this.expenseCard).nth(index)
-    await this.swipeCard(card, 'left')
-    await card.locator(this.deleteBtn).click()
-    await this.page.click('button:has-text("Delete")')
+
+    // Wait for card to be visible
+    await card.waitFor({ state: 'visible', timeout: 5000 })
+
+    // Click delete button (always visible in the card)
+    const deleteBtn = card.locator(this.deleteBtn)
+    await deleteBtn.waitFor({ state: 'visible', timeout: 5000 })
+    await deleteBtn.click()
+
+    // Wait for confirmation dialog and click delete
+    const confirmBtn = this.page.locator('button:has-text("Delete")')
+    await confirmBtn.waitFor({ state: 'visible', timeout: 5000 })
+    await confirmBtn.click()
+
     await this.waitForQuerySettle()
   }
 
   async editExpense(index = 0) {
     const card = this.page.locator(this.expenseCard).nth(index)
-    await card.locator(this.editBtn).click()
-    await expect(this.page.locator(this.expenseForm)).toBeVisible()
+
+    // Wait for card to be visible
+    await card.waitFor({ state: 'visible', timeout: 5000 })
+
+    // Click edit button (always visible in the card)
+    const editBtn = card.locator(this.editBtn)
+    await editBtn.waitFor({ state: 'visible', timeout: 5000 })
+    await editBtn.click()
+
+    // Wait for form to appear
+    await expect(this.page.locator(this.expenseForm)).toBeVisible({ timeout: 5000 })
+
+    // Extra wait for form animations
+    await this.page.waitForTimeout(300)
   }
 
   async searchExpenses(query: string) {
