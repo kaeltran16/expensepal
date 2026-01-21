@@ -159,9 +159,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy 1: Cache First (Static Assets - HTML, CSS, JS)
-  if (request.destination === 'document' ||
-      request.destination === 'style' ||
+  // Strategy 1: Cache First (Static Assets - CSS, JS)
+  // Use network-first for documents to avoid serving stale auth state in Safari PWA
+  if (request.destination === 'document') {
+    event.respondWith(networkFirst(request, DYNAMIC_CACHE));
+    return;
+  }
+
+  if (request.destination === 'style' ||
       request.destination === 'script' ||
       url.includes('/_next/static/')) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));

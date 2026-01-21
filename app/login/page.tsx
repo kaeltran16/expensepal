@@ -93,7 +93,8 @@ function LoginContent() {
   useEffect(() => {
     // Redirect to home if already logged in
     if (user && !loading) {
-      router.push('/')
+      // Use replace instead of push to prevent back button issues
+      router.replace('/')
     }
   }, [user, loading, router])
 
