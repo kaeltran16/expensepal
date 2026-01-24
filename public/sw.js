@@ -13,8 +13,13 @@ const STATIC_ASSETS = [
   '/icon-192x192.png',
   '/icon-512x512.png',
   '/icon-96x96.png',
+  '/icon-72x72.png',
+  '/icon-128x128.png',
+  '/icon-180x180.png',
+  '/icon-384x384.png',
   '/apple-touch-icon.png',
   '/manifest.json',
+  '/favicon.ico',
 ];
 
 // API endpoints to cache with network-first strategy (expanded for better offline support)
@@ -111,6 +116,39 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'CLAIM_CLIENTS') {
     console.log('[SW] Claiming clients after user-initiated update');
     self.clients.claim();
+  }
+
+  // Handle cache clearing on auth state changes
+  if (event.data?.type === 'CLEAR_AUTH_CACHES') {
+    console.log('[SW] Clearing auth-related caches');
+    event.waitUntil(
+      (async () => {
+        try {
+          // Clear dynamic cache (contains document responses)
+          const dynamicCache = await caches.open(DYNAMIC_CACHE);
+          const dynamicKeys = await dynamicCache.keys();
+          await Promise.all(
+            dynamicKeys
+              .filter(req => req.mode === 'navigate' || req.destination === 'document')
+              .map(req => dynamicCache.delete(req))
+          );
+
+          // Clear API cache (may contain user-specific data)
+          await caches.delete(API_CACHE);
+          await caches.open(API_CACHE); // Recreate empty cache
+
+          console.log('[SW] Auth-related caches cleared successfully');
+
+          // Notify client that cache clear is complete
+          const clients = await self.clients.matchAll({ type: 'window' });
+          clients.forEach(client => {
+            client.postMessage({ type: 'CACHE_CLEARED' });
+          });
+        } catch (error) {
+          console.error('[SW] Error clearing caches:', error);
+        }
+      })()
+    );
   }
 });
 

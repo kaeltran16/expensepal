@@ -139,6 +139,7 @@ export const UpdateProfileSchema = z.object({
   email: z.string().email('Invalid email format').optional(),
   currency: z.enum(['VND', 'USD', 'EUR', 'GBP', 'JPY']).optional(),
   theme: z.enum(['light', 'dark', 'system']).optional(),
+  has_seen_onboarding: z.boolean().optional(),
 })
 
 // ============================================================================

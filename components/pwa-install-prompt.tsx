@@ -32,16 +32,16 @@ export function PWAInstallPrompt() {
     const dismissedTime = dismissed ? parseInt(dismissed) : 0
     const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
 
-    // Don't show if standalone or recently dismissed
-    if (standalone || daysSinceDismissed < 7) {
+    // Don't show if standalone or recently dismissed (30 days cooldown)
+    if (standalone || daysSinceDismissed < 30) {
       return
     }
 
-    // For iOS, show after a delay
+    // For iOS, show after user has had time to explore the app
     if (ios) {
       const timer = setTimeout(() => {
         setShowPrompt(true)
-      }, 3000)
+      }, 15000)  // 15 seconds instead of 3
       return () => clearTimeout(timer)
     }
 

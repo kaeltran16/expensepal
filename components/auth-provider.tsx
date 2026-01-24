@@ -22,6 +22,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const supabase = createClient()
 
+  // Helper to clear service worker caches
+  const clearServiceWorkerCaches = async () => {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      console.log('[Auth] Requesting service worker to clear auth caches')
+      navigator.serviceWorker.controller.postMessage({
+        type: 'CLEAR_AUTH_CACHES'
+      })
+
+      // Wait for cache clear confirmation (with timeout)
+      return new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          console.warn('[Auth] Cache clear timeout, proceeding anyway')
+          resolve()
+        }, 1000)
+
+        const handler = (event: MessageEvent) => {
+          if (event.data?.type === 'CACHE_CLEARED') {
+            clearTimeout(timeout)
+            navigator.serviceWorker.removeEventListener('message', handler)
+            console.log('[Auth] Service worker caches cleared')
+            resolve()
+          }
+        }
+
+        navigator.serviceWorker.addEventListener('message', handler)
+      })
+    }
+  }
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
@@ -60,6 +89,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null)
         setUser(null)
         setLoading(false)
+
+        // Clear service worker caches to prevent serving stale auth state
+        clearServiceWorkerCaches().then(() => {
+          console.log('[Auth] Caches cleared after sign out')
+        }).catch(err => {
+          console.error('[Auth] Failed to clear caches:', err)
+        })
+
         return
       }
 

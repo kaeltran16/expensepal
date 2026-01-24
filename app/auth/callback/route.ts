@@ -36,5 +36,8 @@ export async function GET(request: Request) {
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(`${origin}/`)
+  // Add cache-busting query parameter to force fresh fetch
+  const redirectUrl = new URL('/', origin)
+  redirectUrl.searchParams.set('_auth', Date.now().toString())
+  return NextResponse.redirect(redirectUrl.toString())
 }

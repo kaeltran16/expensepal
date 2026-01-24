@@ -45,10 +45,8 @@ export function Onboarding({ onComplete, onAddExpense, onSyncEmails }: Onboardin
   const [show, setShow] = useState(false)
 
   useEffect(() => {
-    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding')
-    if (!hasSeenOnboarding) {
-      setTimeout(() => setShow(true), 500)
-    }
+    // Show onboarding after a short delay for better UX
+    setTimeout(() => setShow(true), 500)
   }, [])
 
   const handleNext = () => {
@@ -73,7 +71,6 @@ export function Onboarding({ onComplete, onAddExpense, onSyncEmails }: Onboardin
   }
 
   const handleComplete = () => {
-    localStorage.setItem('hasSeenOnboarding', 'true')
     setShow(false)
     setTimeout(onComplete, 300)
   }

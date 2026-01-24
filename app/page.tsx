@@ -107,9 +107,7 @@ function HomeContent() {
     { enabled: ['budget', 'expenses'].includes(activeView) } // Load for budget view + expenses (for alerts)
   );
 
-  const { data: profile, isLoading: profileLoading } = useProfile({
-    enabled: activeView === 'profile'
-  });
+  const { data: profile, isLoading: profileLoading } = useProfile();
   const { mutateAsync: updateProfile } = useUpdateProfile();
 
   // Workout tracking hooks - only load when viewing workouts
@@ -251,13 +249,76 @@ function HomeContent() {
     }
   }, [activeView, router, searchParams]);
 
-  // Check if should show onboarding
+  // Check if should show onboarding - use profile data instead of localStorage
   useEffect(() => {
-    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-    if (!hasSeenOnboarding) {
+    if (profileLoading || !profile) return;
+
+    // Show onboarding if user hasn't seen it yet
+    if (!profile.has_seen_onboarding) {
       setShowOnboarding(true);
     }
-  }, []);
+  }, [profile, profileLoading]);
+
+  // Clean up auth cache-busting parameter
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('_auth')) {
+      // Remove the cache-busting parameter added by auth callback
+      url.searchParams.delete('_auth')
+      window.history.replaceState({}, '', url.pathname + url.search)
+
+      // Clear service worker caches on first load after login
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'CLEAR_AUTH_CACHES'
+        })
+      }
+    }
+  }, [])
+
+  // Handle shared content from Web Share Target API
+  useEffect(() => {
+    const source = searchParams.get('source')
+    const action = searchParams.get('action')
+
+    if (source === 'share' && action === 'add') {
+      // Retrieve shared data from cache
+      if ('caches' in window) {
+        // Find the dynamic cache (versioned)
+        caches.keys().then(cacheNames => {
+          const dynamicCache = cacheNames.find(name => name.startsWith('dynamic-'))
+          if (!dynamicCache) return
+
+          return caches.open(dynamicCache)
+        }).then(cache => {
+          if (!cache) return
+          cache.match('/shared-data').then(response => {
+            if (response) {
+              response.json().then(data => {
+                console.log('[Share Target] Received shared data:', data)
+                // TODO: Pre-fill expense form with shared data
+                // For now, just show the add expense view
+                setActiveView('expenses')
+                setShowForm(true)
+
+                // Clean up the URL
+                const url = new URL(window.location.href)
+                url.searchParams.delete('source')
+                url.searchParams.delete('action')
+                window.history.replaceState({}, '', url.pathname + url.search)
+              }).catch(err => {
+                console.error('[Share Target] Error parsing shared data:', err)
+              })
+            }
+          }).catch(err => {
+            console.error('[Share Target] Error retrieving shared data:', err)
+          })
+        }).catch(err => {
+          console.error('[Share Target] Error opening cache:', err)
+        })
+      }
+    }
+  }, [searchParams])
 
   // Scroll detection for sticky header
   useEffect(() => {
@@ -633,7 +694,15 @@ function HomeContent() {
         {/* Onboarding */}
         {showOnboarding && (
           <Onboarding
-            onComplete={() => setShowOnboarding(false)}
+            onComplete={async () => {
+              setShowOnboarding(false);
+              // Save onboarding completion to profile
+              try {
+                await updateProfile({ has_seen_onboarding: true });
+              } catch (error) {
+                console.error('Failed to update onboarding status:', error);
+              }
+            }}
             onAddExpense={() => {
               setShowForm(true);
               setShowOnboarding(false);

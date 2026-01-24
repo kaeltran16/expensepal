@@ -942,6 +942,7 @@ export type Database = {
           currency: string | null
           date_format: string | null
           full_name: string | null
+          has_seen_onboarding: boolean | null
           id: string
           notification_enabled: boolean | null
           theme: string | null
@@ -955,6 +956,7 @@ export type Database = {
           currency?: string | null
           date_format?: string | null
           full_name?: string | null
+          has_seen_onboarding?: boolean | null
           id?: string
           notification_enabled?: boolean | null
           theme?: string | null
@@ -968,6 +970,7 @@ export type Database = {
           currency?: string | null
           date_format?: string | null
           full_name?: string | null
+          has_seen_onboarding?: boolean | null
           id?: string
           notification_enabled?: boolean | null
           theme?: string | null

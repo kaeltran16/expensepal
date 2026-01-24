@@ -83,10 +83,29 @@
 </head>
 <body>
     <div class="container">
-        <div class="icon">📡</div>
+        <div class="icon">
+            <img src="/icon-192x192.png" alt="ExpensePal" style="width: 100px; height: 100px; border-radius: 50%;">
+        </div>
         <h1>You're Offline</h1>
-        <p>It looks like you've lost your internet connection. Please check your network and try again.</p>
-        <button class="retry-btn" onclick="location.reload()">Try Again</button>
+        <p>Don't worry! You can still use ExpensePal while offline. Your changes will sync when you're back online.</p>
+
+        <div class="features" style="text-align: left; margin: 30px 0; background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 15px;">
+            <h3 style="margin-bottom: 15px; font-size: 18px;">Available Offline:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li style="padding: 8px 0; opacity: 0.95;">✓ View recent expenses</li>
+                <li style="padding: 8px 0; opacity: 0.95;">✓ Add new expenses</li>
+                <li style="padding: 8px 0; opacity: 0.95;">✓ Check budgets</li>
+                <li style="padding: 8px 0; opacity: 0.95;">✓ View analytics</li>
+            </ul>
+        </div>
+
+        <nav style="margin: 20px 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a href="/" style="color: white; text-decoration: none; background: rgba(255, 255, 255, 0.2); padding: 10px 20px; border-radius: 20px; font-size: 14px;">Home</a>
+            <a href="/?view=expenses" style="color: white; text-decoration: none; background: rgba(255, 255, 255, 0.2); padding: 10px 20px; border-radius: 20px; font-size: 14px;">Expenses</a>
+            <a href="/?view=budgets" style="color: white; text-decoration: none; background: rgba(255, 255, 255, 0.2); padding: 10px 20px; border-radius: 20px; font-size: 14px;">Budgets</a>
+        </nav>
+
+        <button class="retry-btn" onclick="location.reload()">Retry Connection</button>
     </div>
 </body>
 </html>

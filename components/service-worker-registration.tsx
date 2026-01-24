@@ -104,7 +104,7 @@ export function ServiceWorkerRegistration() {
                 updatePendingRef.current = true
 
                 console.log('[SW] Update available, showing notification')
-                // Show toast with update option
+                // Show toast with update option (auto-dismiss after 30 seconds)
                 toast.info('New version available!', {
                   action: {
                     label: 'Update now',
@@ -112,7 +112,7 @@ export function ServiceWorkerRegistration() {
                       applyUpdate()
                     },
                   },
-                  duration: Infinity, // Keep visible until dismissed
+                  duration: 30000, // Auto-dismiss after 30 seconds
                   id: 'sw-update', // Prevent duplicates
                 })
               }

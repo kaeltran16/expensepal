@@ -69,6 +69,13 @@ export function PushNotificationManager() {
 
   const subscribeToPushNotifications = async () => {
     try {
+      // Validate VAPID key is configured
+      if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+        console.error('VAPID public key not configured')
+        toast.error('Push notifications not properly configured')
+        return
+      }
+
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         const registration = await navigator.serviceWorker.ready
 
@@ -80,7 +87,7 @@ export function PushNotificationManager() {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(
-              process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
+              process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
             ),
           })
 
