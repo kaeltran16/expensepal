@@ -174,7 +174,16 @@ export default function RootLayout({
               <ServiceWorkerRegistration />
               {children}
               <PWAInstallPrompt />
-              <Toaster position="top-center" richColors closeButton />
+              <Toaster
+                position="top-center"
+                richColors
+                closeButton
+                toastOptions={{
+                  style: {
+                    marginTop: 'max(env(safe-area-inset-top), 1rem)',
+                  }
+                }}
+              />
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>
