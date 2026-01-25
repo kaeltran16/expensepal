@@ -193,3 +193,64 @@ export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>
 export type CreateCalorieGoalInput = z.infer<typeof CreateCalorieGoalSchema>
 export type UpdateCalorieGoalInput = z.infer<typeof UpdateCalorieGoalSchema>
 export type CreateCategoryInput = z.infer<typeof CreateCategorySchema>
+
+// ============================================================================
+// Weight Log Schemas
+// ============================================================================
+
+export const CreateWeightLogSchema = z.object({
+  weight: z.number().positive('Weight must be positive').max(999.99, 'Weight too large'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  notes: z.string().max(500).optional(),
+})
+
+export const WeightLogFiltersSchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  limit: z.coerce.number().positive().max(100).default(30),
+})
+
+export type CreateWeightLogInput = z.infer<typeof CreateWeightLogSchema>
+
+// ============================================================================
+// Water Log Schemas
+// ============================================================================
+
+export const UpdateWaterLogSchema = z.object({
+  amount_ml: z.number().int().nonnegative('Amount must be non-negative').max(10000, 'Amount too large'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional(),
+  timezoneOffset: z.number().int().optional(),
+})
+
+export const AddWaterSchema = z.object({
+  amount_ml: z.number().int().positive('Amount must be positive').max(2000, 'Single add too large'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional(),
+  timezoneOffset: z.number().int().optional(),
+})
+
+export type UpdateWaterLogInput = z.infer<typeof UpdateWaterLogSchema>
+export type AddWaterInput = z.infer<typeof AddWaterSchema>
+
+// ============================================================================
+// Saved Foods / Favorites Schemas
+// ============================================================================
+
+export const CreateSavedFoodSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(200),
+  calories: z.number().positive('Calories must be positive').max(10000),
+  protein: z.number().nonnegative().optional().default(0),
+  carbs: z.number().nonnegative().optional().default(0),
+  fat: z.number().nonnegative().optional().default(0),
+  is_favorite: z.boolean().optional().default(false),
+  portion_description: z.string().max(200).optional(),
+  notes: z.string().max(500).optional(),
+})
+
+export const UpdateSavedFoodSchema = z.object({
+  is_favorite: z.boolean().optional(),
+  use_count: z.number().int().nonnegative().optional(),
+  last_used_at: z.string().datetime().optional(),
+})
+
+export type CreateSavedFoodInput = z.infer<typeof CreateSavedFoodSchema>
+export type UpdateSavedFoodInput = z.infer<typeof UpdateSavedFoodSchema>

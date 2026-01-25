@@ -12,7 +12,9 @@
     "test:e2e": "playwright test --config=e2e/playwright.config.ts",
     "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
     "test:e2e:debug": "playwright test --config=e2e/playwright.config.ts --debug",
-    "import-exercises": "npx tsx scripts/import-exercises.ts"
+    "import-exercises": "npx tsx scripts/import-exercises.ts",
+    "db:gen-types": "supabase gen types typescript --linked > lib/supabase/database.types.ts",
+    "db:push": "supabase db push && npm run db:gen-types"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

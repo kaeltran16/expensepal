@@ -11,103 +11,138 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { hapticFeedback } from '@/lib/utils'
-import { motion, PanInfo, useAnimation, useMotionValue, useTransform } from 'framer-motion'
-import { AlertTriangle, Trash2 } from 'lucide-react'
+import { motion, PanInfo, useAnimation, useMotionValue, useTransform, animate } from 'framer-motion'
+import { AlertTriangle, Trash2, Heart } from 'lucide-react'
 import { ReactNode, useRef, useState } from 'react'
 
 interface SwipeableCardProps {
   children: ReactNode
   onDelete: () => void
+  onFavorite?: () => void
   disabled?: boolean
   className?: string
   confirmTitle?: string
   confirmMessage?: string
 }
 
-const SWIPE_THRESHOLD = -60 // Reduced to -60 for much easier triggering
-const DELETE_BUTTON_WIDTH = 70
+const SWIPE_THRESHOLD = 60
+const ACTION_BUTTON_WIDTH = 70
 
 export function SwipeableCard({
   children,
   onDelete,
+  onFavorite,
   disabled = false,
   className = '',
   confirmTitle = 'Delete Item?',
   confirmMessage = 'Are you sure you want to delete this item? This action cannot be undone.',
 }: SwipeableCardProps) {
   const x = useMotionValue(0)
-  const iconControls = useAnimation()
+  const deleteIconControls = useAnimation()
+  const favoriteIconControls = useAnimation()
   const cardControls = useAnimation()
   const isDragging = useRef(false)
-  const hasTriggeredHaptic = useRef(false)
+  const hasTriggeredDeleteHaptic = useRef(false)
+  const hasTriggeredFavoriteHaptic = useRef(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-  // Background opacity based on swipe distance (fade in gradually)
-  const backgroundOpacity = useTransform(
+  // Delete background opacity (left swipe)
+  const deleteBackgroundOpacity = useTransform(
     x,
-    [SWIPE_THRESHOLD, -30, 0],
+    [-SWIPE_THRESHOLD, -30, 0],
     [1, 0.7, 0]
   )
 
-  // Icon scale animation based on swipe distance
-  const iconScale = useTransform(
+  // Favorite background opacity (right swipe)
+  const favoriteBackgroundOpacity = useTransform(
     x,
-    [SWIPE_THRESHOLD, -30, 0],
+    [0, 30, SWIPE_THRESHOLD],
+    [0, 0.7, 1]
+  )
+
+  // Delete icon scale
+  const deleteIconScale = useTransform(
+    x,
+    [-SWIPE_THRESHOLD, -30, 0],
     [1.2, 1, 0.7]
   )
 
-  // Icon rotation animation
-  const iconRotate = useTransform(
+  // Favorite icon scale
+  const favoriteIconScale = useTransform(
     x,
-    [SWIPE_THRESHOLD, 0],
-    [8, 0]
+    [0, 30, SWIPE_THRESHOLD],
+    [0.7, 1, 1.2]
   )
 
   const handleDragStart = () => {
     if (disabled) return
     isDragging.current = true
-    hasTriggeredHaptic.current = false
+    hasTriggeredDeleteHaptic.current = false
+    hasTriggeredFavoriteHaptic.current = false
   }
 
   const handleDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (disabled) return
 
-    // Only allow left swipe
-    if (info.offset.x > 0) {
-      x.set(0)
-      return
-    }
-
-    // Trigger haptic when crossing threshold
-    if (info.offset.x <= SWIPE_THRESHOLD && !hasTriggeredHaptic.current) {
+    // Left swipe (delete) haptic
+    if (info.offset.x <= -SWIPE_THRESHOLD && !hasTriggeredDeleteHaptic.current) {
       hapticFeedback('medium')
-      hasTriggeredHaptic.current = true
-      // Pulse animation for the icon
-      iconControls.start({
+      hasTriggeredDeleteHaptic.current = true
+      deleteIconControls.start({
         scale: [1, 1.3, 1],
         transition: { duration: 0.3, ease: 'easeOut' }
       })
     }
 
-    // Reset haptic flag if user drags back
-    if (info.offset.x > SWIPE_THRESHOLD && hasTriggeredHaptic.current) {
-      hasTriggeredHaptic.current = false
+    // Right swipe (favorite) haptic
+    if (onFavorite && info.offset.x >= SWIPE_THRESHOLD && !hasTriggeredFavoriteHaptic.current) {
+      hapticFeedback('medium')
+      hasTriggeredFavoriteHaptic.current = true
+      favoriteIconControls.start({
+        scale: [1, 1.3, 1],
+        transition: { duration: 0.3, ease: 'easeOut' }
+      })
     }
+
+    // Reset haptic flags if user drags back
+    if (info.offset.x > -SWIPE_THRESHOLD && hasTriggeredDeleteHaptic.current) {
+      hasTriggeredDeleteHaptic.current = false
+    }
+    if (info.offset.x < SWIPE_THRESHOLD && hasTriggeredFavoriteHaptic.current) {
+      hasTriggeredFavoriteHaptic.current = false
+    }
+  }
+
+  const snapBack = () => {
+    // Animate the x motion value back to 0 with spring physics
+    animate(x, 0, { type: 'spring', stiffness: 500, damping: 30 })
   }
 
   const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (disabled) return
     isDragging.current = false
 
-    // If swiped past threshold, show confirmation dialog
-    if (info.offset.x <= SWIPE_THRESHOLD) {
+    // Left swipe - delete
+    if (info.offset.x <= -SWIPE_THRESHOLD) {
       hapticFeedback('medium')
       setShowDeleteDialog(true)
-      // Snap back to show the dialog
-      x.set(0)
-    } else {
-      // Snap back to original position with spring animation
-      x.set(0)
+      snapBack()
+    }
+    // Right swipe - favorite
+    else if (onFavorite && info.offset.x >= SWIPE_THRESHOLD) {
+      hapticFeedback('medium')
+
+      // Heart pulse animation
+      favoriteIconControls.start({
+        scale: [1, 1.5, 1],
+        transition: { duration: 0.4, ease: 'easeOut' }
+      })
+
+      onFavorite()
+      snapBack()
+    }
+    else {
+      snapBack()
     }
   }
 
@@ -115,17 +150,15 @@ export function SwipeableCard({
     hapticFeedback('heavy')
     setShowDeleteDialog(false)
 
-    // Enhanced icon animation with more bounce
-    iconControls.start({
+    deleteIconControls.start({
       rotate: [0, -15, 15, -10, 10, 0],
       scale: [1, 1.3, 1.3, 1.2, 1.1, 1],
       transition: {
         duration: 0.5,
-        ease: [0.34, 1.56, 0.64, 1] // Bounce easing
+        ease: [0.34, 1.56, 0.64, 1]
       }
     })
 
-    // Card fade and scale animation
     cardControls.start({
       opacity: 0,
       scale: 0.95,
@@ -135,8 +168,6 @@ export function SwipeableCard({
       }
     })
 
-    // Trigger delete immediately after the internal animation starts
-    // The parent component will handle the actual removal and layout animation
     setTimeout(() => {
       onDelete()
     }, 300)
@@ -147,22 +178,38 @@ export function SwipeableCard({
       animate={cardControls}
       className={`relative overflow-hidden rounded-xl ${className}`}
     >
-      {/* Delete background - compact red area with icon */}
+      {/* Favorite background (right swipe) - Pink */}
+      {onFavorite && (
+        <motion.div
+          className="absolute inset-y-0 left-0 flex items-center justify-center rounded-l-xl"
+          style={{
+            background: 'linear-gradient(135deg, rgb(236, 72, 153), rgb(244, 63, 94))',
+            opacity: favoriteBackgroundOpacity,
+            width: ACTION_BUTTON_WIDTH,
+          }}
+        >
+          <motion.div
+            style={{ scale: favoriteIconScale }}
+            animate={favoriteIconControls}
+          >
+            <Heart className="w-5 h-5 text-white drop-shadow-sm" />
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Delete background (left swipe) - Red */}
       <motion.div
         className="absolute inset-y-0 right-0 flex items-center justify-center rounded-r-xl"
         style={{
           backgroundColor: 'rgb(239 68 68)',
-          opacity: backgroundOpacity,
-          width: DELETE_BUTTON_WIDTH,
+          opacity: deleteBackgroundOpacity,
+          width: ACTION_BUTTON_WIDTH,
         }}
         data-testid="delete-action"
       >
         <motion.div
-          style={{
-            scale: iconScale,
-            rotate: iconRotate,
-          }}
-          animate={iconControls}
+          style={{ scale: deleteIconScale }}
+          animate={deleteIconControls}
         >
           <Trash2 className="w-5 h-5 text-white drop-shadow-sm" />
         </motion.div>
@@ -171,8 +218,11 @@ export function SwipeableCard({
       {/* Swipeable content */}
       <motion.div
         drag={disabled ? false : 'x'}
-        dragConstraints={{ left: -DELETE_BUTTON_WIDTH, right: 0 }}
-        dragElastic={{ left: 0.15, right: 0 }}
+        dragConstraints={{
+          left: -ACTION_BUTTON_WIDTH,
+          right: onFavorite ? ACTION_BUTTON_WIDTH : 0
+        }}
+        dragElastic={{ left: 0.15, right: onFavorite ? 0.15 : 0 }}
         dragMomentum={false}
         dragTransition={{ bounceStiffness: 700, bounceDamping: 35 }}
         onDragStart={handleDragStart}

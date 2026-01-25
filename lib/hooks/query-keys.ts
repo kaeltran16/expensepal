@@ -133,6 +133,32 @@ export const queryKeys = {
     due: () => [...queryKeys.recurringExpenses.all, 'due'] as const,
     upcoming: (days?: number) => [...queryKeys.recurringExpenses.all, 'upcoming', days] as const,
   },
+  // Weight Logs
+  weightLogs: {
+    all: ['weightLogs'] as const,
+    lists: () => [...queryKeys.weightLogs.all, 'list'] as const,
+    list: (filters?: WeightLogFilters) => [...queryKeys.weightLogs.lists(), filters] as const,
+  },
+
+  // Water Logs
+  waterLogs: {
+    all: ['waterLogs'] as const,
+    today: (date?: string) => [...queryKeys.waterLogs.all, 'today', date] as const,
+  },
+
+  // Meal Streaks
+  mealStreaks: {
+    all: ['mealStreaks'] as const,
+    current: () => [...queryKeys.mealStreaks.all, 'current'] as const,
+  },
+
+  // Saved Foods / Favorites
+  savedFoods: {
+    all: ['savedFoods'] as const,
+    lists: () => [...queryKeys.savedFoods.all, 'list'] as const,
+    list: (favoritesOnly?: boolean) => [...queryKeys.savedFoods.lists(), { favoritesOnly }] as const,
+    favorites: () => [...queryKeys.savedFoods.all, 'favorites'] as const,
+  },
 } as const
 
 // Filter types
@@ -181,4 +207,10 @@ export interface RecurringExpenseFilters {
   isActive?: boolean
   source?: 'manual' | 'detected'
   category?: string
+}
+
+export interface WeightLogFilters {
+  startDate?: string
+  endDate?: string
+  limit?: number
 }

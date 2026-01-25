@@ -16,6 +16,7 @@ import { CategoryInsights } from '@/components/category-insights'
 import { InsightsCards } from '@/components/insights-cards'
 import { SpendingAdvisor } from '@/components/spending-advisor'
 import { WeeklySummary } from '@/components/weekly-summary'
+import { WeeklyNutritionSummary } from '@/components/weekly-nutrition-summary'
 import { ChartSkeleton, InsightCardSkeleton } from '@/components/skeleton-loader'
 import { hapticFeedback } from '@/lib/utils'
 import { usePreprocessedExpenses } from '@/lib/hooks/use-preprocessed-expenses'
@@ -106,7 +107,10 @@ export function AnalyticsInsightsView({
         transition={{ duration: 0.2 }}
       >
         {activeTab === 'summary' ? (
-          <WeeklySummary expenses={expenses} />
+          <div className="space-y-4">
+            <WeeklySummary expenses={expenses} />
+            <WeeklyNutritionSummary />
+          </div>
         ) : activeTab === 'charts' ? (
           <div className="space-y-4">
             <Suspense fallback={<ChartSkeleton />}>

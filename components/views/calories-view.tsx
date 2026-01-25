@@ -7,6 +7,10 @@ import { MealFilterSheet } from '@/components/meal-filter-sheet';
 import { InsightCardSkeleton } from '@/components/skeleton-loader';
 import { NutritionChartSkeleton } from '@/components/ui/chart-skeleton';
 import { Button } from '@/components/ui/button';
+import { StreakCounter } from '@/components/streak-counter';
+import { WaterIntake } from '@/components/water-intake';
+import { WeightTracker } from '@/components/weight-tracker';
+import { FavoriteMeals } from '@/components/favorite-meals';
 import { motion } from 'framer-motion';
 import { hapticFeedback } from '@/lib/utils';
 import { useMealFilters } from '@/lib/hooks';
@@ -64,11 +68,23 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
   // Content view
   return (
     <div className="space-y-6">
+      {/* Streak Counter */}
+      <StreakCounter />
+
       {/* Quick meal form */}
       <QuickMealForm />
 
       {/* Daily calorie tracker */}
       <CalorieTracker />
+
+      {/* Water Intake Tracker */}
+      <WaterIntake />
+
+      {/* Weight Tracker */}
+      <WeightTracker />
+
+      {/* Favorite Meals for quick add */}
+      <FavoriteMeals />
 
       {/* Meal list with filter button */}
       <div>

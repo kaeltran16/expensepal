@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SwipeableCard } from '@/components/ui/swipeable-card'
-import { useDeleteMealOptimistic } from '@/lib/hooks'
+import { useDeleteMealOptimistic, useSaveFoodAsFavorite } from '@/lib/hooks'
 import type { Meal, Expense } from '@/lib/supabase'
 import { formatTimeGMT7 } from '@/lib/timezone'
 import { hapticFeedback } from '@/lib/utils'
@@ -45,6 +45,7 @@ const CONFIDENCE_BADGES = {
 export function MealList({ meals, onMealDeleted, showAll = false }: MealListProps) {
   // Use optimistic delete mutation
   const deleteMealMutation = useDeleteMealOptimistic()
+  const saveFavorite = useSaveFoodAsFavorite()
 
   const handleDelete = async (id: string) => {
     try {
@@ -58,6 +59,17 @@ export function MealList({ meals, onMealDeleted, showAll = false }: MealListProp
       console.error('Error deleting meal:', error)
       // Error toast is handled by the mutation
     }
+  }
+
+  const handleSaveAsFavorite = (meal: Meal) => {
+    hapticFeedback('medium')
+    saveFavorite.mutate({
+      name: meal.name,
+      calories: meal.calories,
+      protein: meal.protein || 0,
+      carbs: meal.carbs || 0,
+      fat: meal.fat || 0,
+    })
   }
 
   if (meals.length === 0) {
@@ -86,6 +98,7 @@ export function MealList({ meals, onMealDeleted, showAll = false }: MealListProp
           <SwipeableCard
             key={meal.id}
             onDelete={() => handleDelete(meal.id)}
+            onFavorite={() => handleSaveAsFavorite(meal)}
             confirmTitle="Delete Meal?"
             confirmMessage={`Are you sure you want to delete "${meal.name}"? This will remove ${meal.calories} calories from your daily log. This action cannot be undone.`}
           >

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       budget_recommendations_cache: {
@@ -940,11 +965,13 @@ export type Database = {
           bio: string | null
           created_at: string | null
           currency: string | null
+          daily_water_goal_ml: number | null
           date_format: string | null
           full_name: string | null
           has_seen_onboarding: boolean | null
           id: string
           notification_enabled: boolean | null
+          target_weight: number | null
           theme: string | null
           updated_at: string | null
           user_id: string
@@ -954,11 +981,13 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           currency?: string | null
+          daily_water_goal_ml?: number | null
           date_format?: string | null
           full_name?: string | null
           has_seen_onboarding?: boolean | null
           id?: string
           notification_enabled?: boolean | null
+          target_weight?: number | null
           theme?: string | null
           updated_at?: string | null
           user_id: string
@@ -968,11 +997,13 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           currency?: string | null
+          daily_water_goal_ml?: number | null
           date_format?: string | null
           full_name?: string | null
           has_seen_onboarding?: boolean | null
           id?: string
           notification_enabled?: boolean | null
+          target_weight?: number | null
           theme?: string | null
           updated_at?: string | null
           user_id?: string
@@ -1012,6 +1043,63 @@ export type Database = {
           total_workouts?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      water_logs: {
+        Row: {
+          amount_ml: number
+          created_at: string | null
+          date: string
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_ml: number
+          created_at?: string | null
+          date: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_ml?: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      weight_logs: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          notes: string | null
+          updated_at: string | null
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id: string
+          weight: number
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -1426,6 +1514,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

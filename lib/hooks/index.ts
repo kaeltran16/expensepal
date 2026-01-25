@@ -6,7 +6,7 @@
 
 // Query keys
 export { queryKeys } from './query-keys'
-export type { ExpenseFilters, BudgetFilters, GoalFilters, MealFilters } from './query-keys'
+export type { ExpenseFilters, BudgetFilters, GoalFilters, MealFilters, WeightLogFilters } from './query-keys'
 
 // Expenses
 export {
@@ -57,6 +57,7 @@ export {
   useMeals,
   useCalorieStats,
   useCalorieGoal,
+  useUpdateCalorieGoal,
   useCreateMealOptimistic,
   useDeleteMealOptimistic,
   type Meal,
@@ -126,3 +127,20 @@ export {
   achievementKeys,
 } from './use-achievements'
 export type { UserStreak, UserAchievement } from './use-achievements'
+
+// Health Tracking (Weight, Water, Streaks, Favorites)
+export {
+  useWeightLogs,
+  useLogWeight,
+  useDeleteWeightLog,
+  useWaterLog,
+  useAddWater,
+  useSetWater,
+  useMealStreak,
+  useSavedFoods,
+  useFavoriteMeals,
+  useToggleFavorite,
+  useQuickAddMeal,
+  useSaveFoodAsFavorite,
+} from './use-health-tracking'
+export type { WeightLog, WaterLog, MealStreak, SavedFood } from './use-health-tracking'
