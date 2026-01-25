@@ -4,25 +4,92 @@ import { springs } from '@/lib/animation-config'
 import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { Dumbbell, Flame, Lightbulb, Target, Wallet } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { Dumbbell, Lightbulb, MoreHorizontal, Plus, Wallet } from 'lucide-react'
 
 interface BottomNavProps {
   activeView: ViewType
   onViewChange: (view: ViewType) => void
+  onAddExpense?: () => void
+  onOpenMore?: () => void
+  isMoreOpen?: boolean
 }
 
-const NAV_ITEMS = [
-  { id: 'expenses' as const, label: 'Expenses', icon: Wallet },
-  { id: 'calories' as const, label: 'Calories', icon: Flame },
-  { id: 'workouts' as const, label: 'Workouts', icon: Dumbbell },
-  { id: 'budget' as const, label: 'Budget', icon: Target },
-  { id: 'insights' as const, label: 'Insights', icon: Lightbulb },
+type NavItem = {
+  id: ViewType | 'more'
+  label: string
+  icon: LucideIcon
+}
+
+const LEFT_NAV_ITEMS: NavItem[] = [
+  { id: 'expenses', label: 'Expenses', icon: Wallet },
+  { id: 'workouts', label: 'Workouts', icon: Dumbbell },
 ]
 
-export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
-  const handleNavClick = (viewId: typeof activeView) => {
+const RIGHT_NAV_ITEMS: NavItem[] = [
+  { id: 'insights', label: 'Insights', icon: Lightbulb },
+  { id: 'more', label: 'More', icon: MoreHorizontal },
+]
+
+// Views that are accessible from the "More" menu
+const MORE_VIEWS: ViewType[] = ['calories', 'budget', 'recurring', 'profile']
+
+export function BottomNavigation({ activeView, onViewChange, onAddExpense, onOpenMore, isMoreOpen }: BottomNavProps) {
+  const handleNavClick = (viewId: ViewType | 'more') => {
     hapticFeedback('light')
-    onViewChange(viewId)
+    if (viewId === 'more') {
+      onOpenMore?.()
+    } else {
+      onViewChange(viewId)
+    }
+  }
+
+  const handleAddClick = () => {
+    hapticFeedback('medium')
+    onAddExpense?.()
+  }
+
+  const renderNavItem = (item: NavItem) => {
+    const Icon = item.icon
+    // "More" is active if the sheet is open OR if current view is one of the "more" views
+    const isActive = item.id === 'more'
+      ? (isMoreOpen || MORE_VIEWS.includes(activeView))
+      : activeView === item.id
+
+    return (
+      <button
+        key={item.id}
+        onClick={() => handleNavClick(item.id)}
+        className="relative flex flex-col items-center justify-center flex-1 py-1 ios-touch"
+        data-testid={`nav-${item.id}`}
+      >
+        {/* Icon - using CSS transform for better performance */}
+        <div
+          className={`relative mb-1 transition-transform duration-200 ease-out ${
+            isActive ? 'scale-100' : 'scale-[0.94]'
+          }`}
+        >
+          <Icon
+            className={`h-6 w-6 transition-colors duration-200 ${
+              isActive ? 'text-primary' : 'text-muted-foreground'
+            }`}
+            strokeWidth={isActive ? 2.5 : 2}
+          />
+        </div>
+
+        {/* Label - using CSS for color transition */}
+        <span
+          className={`text-[10px] font-medium transition-colors duration-200 ${
+            isActive ? 'text-primary' : 'text-muted-foreground'
+          }`}
+          style={{
+            letterSpacing: '-0.1px',
+          }}
+        >
+          {item.label}
+        </span>
+      </button>
+    )
   }
 
   return (
@@ -36,47 +103,27 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavProps) {
       {/* iOS hairline border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-border/30" />
 
-      {/* Tab items */}
+      {/* Tab items with center CTA */}
       <div className="flex items-end justify-around px-safe-left px-safe-right pb-1 pt-2 max-w-screen-sm mx-auto">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon
-          const isActive = activeView === item.id
+        {/* Left nav items */}
+        {LEFT_NAV_ITEMS.map(renderNavItem)}
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className="relative flex flex-col items-center justify-center flex-1 py-1 ios-touch"
-              data-testid={`nav-${item.id}`}
-            >
-              {/* Icon - using CSS transform for better performance */}
-              <div
-                className={`relative mb-1 transition-transform duration-200 ease-out ${
-                  isActive ? 'scale-100' : 'scale-[0.94]'
-                }`}
-              >
-                <Icon
-                  className={`h-6 w-6 transition-colors duration-200 ${
-                    isActive ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
-              </div>
+        {/* Center CTA Button */}
+        <div className="relative flex flex-col items-center justify-center flex-1 py-1">
+          <motion.button
+            onClick={handleAddClick}
+            whileTap={{ scale: 0.9 }}
+            className="relative -mt-6 w-14 h-14 rounded-full bg-primary shadow-lg flex items-center justify-center ios-touch"
+            data-testid="nav-add"
+          >
+            <Plus className="h-7 w-7 text-primary-foreground" strokeWidth={2.5} />
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 rounded-full bg-primary/20 blur-md -z-10" />
+          </motion.button>
+        </div>
 
-              {/* Label - using CSS for color transition */}
-              <span
-                className={`text-[10px] font-medium transition-colors duration-200 ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
-                style={{
-                  letterSpacing: '-0.1px',
-                }}
-              >
-                {item.label}
-              </span>
-            </button>
-          )
-        })}
+        {/* Right nav items */}
+        {RIGHT_NAV_ITEMS.map(renderNavItem)}
       </div>
 
       {/* Safe area padding for iOS home indicator */}

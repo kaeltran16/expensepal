@@ -6,7 +6,6 @@ import { BottomNavigation } from '@/components/bottom-navigation';
 import { BudgetAlerts } from '@/components/budget-alerts';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { FilterSheet } from '@/components/filter-sheet';
-import { FloatingActionMenu } from '@/components/floating-action-menu';
 import { Navbar } from '@/components/navbar';
 import { NetworkStatus } from '@/components/network-status';
 import { Onboarding } from '@/components/onboarding';
@@ -60,6 +59,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Filter } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { MoreSheet } from '@/components/more-sheet';
 
 // Workout completion data type
 type WorkoutCompletionData = {
@@ -144,6 +144,7 @@ function HomeContent() {
   const [editingWorkoutExercises, setEditingWorkoutExercises] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [showMoreSheet, setShowMoreSheet] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
@@ -566,16 +567,22 @@ function HomeContent() {
                 />
               </ErrorBoundary>
             </Suspense>
-          ) : activeView === 'insights' ? (
-            <Suspense fallback={<AnalyticsViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load insights" errorDescription="Unable to generate spending insights">
-                <AnalyticsInsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
-              </ErrorBoundary>
-            </Suspense>
           ) : activeView === 'budget' ? (
             <Suspense fallback={<BudgetViewSkeleton />}>
               <ErrorBoundary errorTitle="Failed to load budget" errorDescription="Something went wrong while loading your budget">
                 <BudgetView expenses={expenses} loading={loading} />
+              </ErrorBoundary>
+            </Suspense>
+          ) : activeView === 'recurring' ? (
+            <Suspense fallback={<RecurringViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load recurring" errorDescription="Unable to load your subscriptions">
+                <RecurringView expenses={expenses} />
+              </ErrorBoundary>
+            </Suspense>
+          ) : activeView === 'insights' ? (
+            <Suspense fallback={<AnalyticsViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load insights" errorDescription="Unable to generate spending insights">
+                <AnalyticsInsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
               </ErrorBoundary>
             </Suspense>
           ) : activeView === 'goals' ? (
@@ -600,12 +607,6 @@ function HomeContent() {
                   showAllMeals={showAllMeals}
                   onToggleShowAll={() => setShowAllMeals(!showAllMeals)}
                 />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'recurring' ? (
-            <Suspense fallback={<RecurringViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load recurring expenses" errorDescription="Unable to load your subscriptions">
-                <RecurringView expenses={expenses} />
               </ErrorBoundary>
             </Suspense>
           ) : activeView === 'workouts' ? (
@@ -656,18 +657,27 @@ function HomeContent() {
             </Suspense>
           ) : null}
         </div>
-        {/* Floating Action Menu */}
-        <FloatingActionMenu
+
+        {/* Bottom Navigation */}
+        <BottomNavigation
+          activeView={activeView}
+          onViewChange={setActiveView}
           onAddExpense={() => {
             setEditingExpense(undefined);
             setShowForm(true);
+            hapticFeedback('medium');
           }}
-          onSyncEmails={handleSync}
-          syncing={isSyncing}
+          onOpenMore={() => setShowMoreSheet(true)}
+          isMoreOpen={showMoreSheet}
         />
 
-        {/* Bottom Navigation */}
-        <BottomNavigation activeView={activeView} onViewChange={setActiveView} />
+        {/* More Sheet */}
+        <MoreSheet
+          isOpen={showMoreSheet}
+          onClose={() => setShowMoreSheet(false)}
+          onNavigate={setActiveView}
+          activeView={activeView}
+        />
 
         {/* Network Status */}
         <NetworkStatus syncing={isSyncing} lastSynced={lastSynced} />

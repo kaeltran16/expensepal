@@ -2,7 +2,6 @@
 
 import { CalorieTracker } from '@/components/calorie-tracker';
 import { MealList } from '@/components/meal-list';
-import { MealPlanner } from '@/components/meal-planner';
 import { QuickMealForm } from '@/components/quick-meal-form';
 import { MealFilterSheet } from '@/components/meal-filter-sheet';
 import { InsightCardSkeleton } from '@/components/skeleton-loader';
@@ -70,9 +69,6 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
 
       {/* Daily calorie tracker */}
       <CalorieTracker />
-
-      {/* Meal planner */}
-      <MealPlanner />
 
       {/* Meal list with filter button */}
       <div>
