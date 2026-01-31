@@ -9,8 +9,7 @@ export class BudgetPage extends BasePage {
   readonly saveBudgetBtn = 'button:has-text("Set Budget")'
   readonly updateBudgetBtn = 'button:has-text("Update Budget")'
   readonly budgetProgress = '[data-testid="budget-progress"]'
-  readonly tabBudgets = 'button:has-text("Budgets")'
-  readonly tabRecurring = 'button:has-text("Recurring")'
+  readonly budgetTracker = '[data-testid="budget-tracker"]'
   readonly aiRecommendations = '[data-testid="ai-recommendations"]'
   readonly budgetPredictions = '[data-testid="budget-predictions"]'
 
@@ -19,13 +18,39 @@ export class BudgetPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/?view=budget')
+    // First go to home page
+    await this.page.goto('/')
     await this.waitForQuerySettle()
+
+    // Wait for navigation to be ready
+    await this.page.locator('[data-testid="nav-more"]').waitFor({ state: 'visible', timeout: 10000 })
+
+    // Navigate to budget via More sheet
+    await this.page.click('[data-testid="nav-more"]')
+
+    // Wait for the More sheet to be visible (it slides up from bottom)
+    // The sheet contains buttons with text like "Budget", "Calories", etc.
+    await this.page.waitForTimeout(500) // Animation time
+
+    // Click Budget option - look for the specific button with "Budget" label
+    // The button has structure: icon + label "Budget" + description + chevron
+    const budgetOption = this.page.locator('button').filter({ hasText: 'Budget' }).filter({ hasText: 'Manage spending' })
+    await budgetOption.waitFor({ state: 'visible', timeout: 5000 })
+    await budgetOption.click()
+
+    await this.waitForQuerySettle()
+
+    // Wait for budget tracker to be visible
+    await this.page.locator(this.budgetTracker).waitFor({ state: 'visible', timeout: 15000 })
   }
 
   async openSetBudgetDialog(category: string) {
-    await this.page.click(`${this.budgetCard}:has-text("${category}") ${this.setBudgetBtn}`)
-    await expect(this.page.locator(this.budgetDialog)).toBeVisible()
+    // Find the budget card for this category and click its set budget button
+    const card = this.page.locator(`${this.budgetCard}:has-text("${category}")`)
+    await card.waitFor({ state: 'visible', timeout: 5000 })
+    const btn = card.locator(this.setBudgetBtn)
+    await btn.click()
+    await expect(this.page.locator(this.budgetDialog)).toBeVisible({ timeout: 5000 })
   }
 
   async setBudget(category: string, amount: number) {
@@ -37,18 +62,32 @@ export class BudgetPage extends BasePage {
 
   async updateBudget(category: string, newAmount: number) {
     await this.openSetBudgetDialog(category)
+    await this.page.fill(this.budgetAmountInput, '')
     await this.page.fill(this.budgetAmountInput, newAmount.toString())
-    await this.page.click(this.updateBudgetBtn)
+    // If a budget exists, the button shows "Update Budget" instead of "Set Budget"
+    const updateBtn = this.page.locator(this.updateBudgetBtn)
+    const setBtn = this.page.locator(this.saveBudgetBtn)
+    if (await updateBtn.isVisible()) {
+      await updateBtn.click()
+    } else {
+      await setBtn.click()
+    }
     await this.waitForQuerySettle()
   }
 
-  async switchToRecurringTab() {
-    await this.page.click(this.tabRecurring)
+  async navigateToRecurring() {
+    // Navigate to recurring view via More sheet
+    await this.page.click('[data-testid="nav-more"]')
+    await this.page.waitForTimeout(300)
+    await this.page.click('button:has-text("Recurring")')
     await this.waitForQuerySettle()
   }
 
-  async switchToBudgetsTab() {
-    await this.page.click(this.tabBudgets)
+  async navigateToBudget() {
+    // Navigate back to budget view via More sheet
+    await this.page.click('[data-testid="nav-more"]')
+    await this.page.waitForTimeout(300)
+    await this.page.click('button:has-text("Budget")')
     await this.waitForQuerySettle()
   }
 

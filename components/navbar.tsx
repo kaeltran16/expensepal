@@ -4,7 +4,7 @@ import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { UserMenu } from '@/components/user-menu'
 import { motion } from 'framer-motion'
-import { LogIn, Moon, Sun, Wallet } from 'lucide-react'
+import { LogIn, Mail, Moon, Sun, Wallet } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 
@@ -58,6 +58,53 @@ export function Navbar({ onSyncEmails, isSyncing, onOpenProfile, onLogoClick }: 
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Sync Emails Button */}
+            {user && onSyncEmails && (
+              <motion.div whileTap={{ scale: 0.9 }} className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onSyncEmails}
+                  disabled={isSyncing}
+                  className="rounded-full hover:bg-muted/50 ios-touch min-h-touch w-11"
+                >
+                  <Mail className={`h-5 w-5 transition-colors duration-200 ${isSyncing ? 'text-blue-500' : ''}`} />
+                  <span className="sr-only">Sync emails</span>
+                </Button>
+                {/* Flowing circle progress */}
+                {isSyncing && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, rotate: 360 }}
+                    transition={{
+                      opacity: { duration: 0.2 },
+                      rotate: { duration: 1, repeat: Infinity, ease: 'linear' }
+                    }}
+                    className="absolute inset-0 pointer-events-none"
+                  >
+                    <svg className="w-full h-full" viewBox="0 0 44 44">
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="20"
+                        fill="none"
+                        stroke="url(#syncGradient)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <defs>
+                        <linearGradient id="syncGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0" />
+                          <stop offset="50%" stopColor="#3b82f6" stopOpacity="1" />
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+
             {/* Theme Toggle */}
             <motion.div whileTap={{ scale: 0.9 }}>
               <Button
@@ -71,33 +118,6 @@ export function Navbar({ onSyncEmails, isSyncing, onOpenProfile, onLogoClick }: 
                 <span className="sr-only">Toggle theme</span>
               </Button>
             </motion.div>
-
-            {/* Sync Status Badge */}
-            {isSyncing && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: 'spring', bounce: 0.4 }}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20"
-              >
-                <motion.div
-                  className="w-1.5 h-1.5 rounded-full bg-blue-500"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [1, 0.6, 1],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
-                <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                  Syncing
-                </span>
-              </motion.div>
-            )}
 
             {/* User Menu or Login */}
             {loading ? (

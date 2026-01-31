@@ -8,6 +8,7 @@ import type { Expense } from '@/lib/supabase'
 import { describe, expect, it, vi } from 'vitest'
 
 import { generateInsights } from '@/lib/analytics/generate-insights'
+import { preprocessExpenses } from '@/lib/analytics/preprocess-expenses'
 import { createMockExpense } from '../../mocks/supabase'
 
 // Mock currency formatter
@@ -73,7 +74,7 @@ function createExpenseOnDayOfWeek(
 describe('generateInsights', () => {
   describe('basic functionality', () => {
     it('should return empty array for empty expenses', () => {
-      const result = generateInsights([], mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses([]), mockFormatCurrency, mockIcons)
       expect(result).toEqual([])
     })
 
@@ -81,7 +82,7 @@ describe('generateInsights', () => {
       // Single expense with no patterns to detect
       const expenses = [createExpenseWithDate(15, { amount: 50000 })]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       // May have some insights depending on data, but should not throw
       expect(Array.isArray(result)).toBe(true)
@@ -97,7 +98,7 @@ describe('generateInsights', () => {
         createExpenseInMonth(0, 15, { category: 'Food', amount: 200000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const trendInsight = result.find(
         (i) => i.type === 'trend' && i.category === 'Food'
@@ -113,7 +114,7 @@ describe('generateInsights', () => {
         createExpenseInMonth(0, 15, { category: 'Food', amount: 100000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const trendInsight = result.find(
         (i) => i.type === 'trend' && i.category === 'Food'
@@ -128,7 +129,7 @@ describe('generateInsights', () => {
         createExpenseInMonth(0, 15, { category: 'Gaming', amount: 200000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const newCategoryAlert = result.find(
         (i) => i.type === 'alert' && i.category === 'Gaming'
@@ -149,7 +150,7 @@ describe('generateInsights', () => {
         createExpenseOnDayOfWeek(2, 3, { category: 'Food', amount: 70000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const patternInsight = result.find((i) => i.type === 'pattern')
       if (patternInsight) {
@@ -167,7 +168,7 @@ describe('generateInsights', () => {
         createExpenseWithDate(2, { category: 'Transport', amount: 20000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const tipInsight = result.find(
         (i) => i.type === 'tip' && i.category === 'Food'
@@ -185,7 +186,7 @@ describe('generateInsights', () => {
         createExpenseWithDate(3, { category: 'Shopping', amount: 100000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const tipInsight = result.find((i) => i.type === 'tip')
       expect(tipInsight).toBeUndefined()
@@ -197,7 +198,7 @@ describe('generateInsights', () => {
         createExpenseWithDate(2, { category: 'Other', amount: 10000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const tipInsight = result.find(
         (i) => i.type === 'tip' && i.category === 'CustomCategory'
@@ -219,7 +220,7 @@ describe('generateInsights', () => {
         createExpenseWithDate(7, { amount: 600000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const spikeAlert = result.find(
         (i) => i.type === 'alert' && i.title?.includes('spike')
@@ -242,7 +243,7 @@ describe('generateInsights', () => {
         createExpenseWithDate(10, { amount: 50000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const velocityInsight = result.find(
         (i) => i.title?.includes('accelerating') || i.title?.includes('slowing')
@@ -258,7 +259,7 @@ describe('generateInsights', () => {
         createExpenseWithDate(8, { amount: 100000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const velocityInsight = result.find((i) => i.title?.includes('accelerating'))
       if (velocityInsight) {
@@ -272,7 +273,7 @@ describe('generateInsights', () => {
         createExpenseWithDate(8, { amount: 200000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       const velocityInsight = result.find((i) => i.title?.includes('slowing'))
       if (velocityInsight) {
@@ -299,7 +300,7 @@ describe('generateInsights', () => {
         createExpenseWithDate(8, { category: 'Other', amount: 500000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       // Should have various insight types
       const types = [...new Set(result.map((i) => i.type))]
@@ -314,7 +315,7 @@ describe('generateInsights', () => {
         createExpenseInMonth(0, 15, { category: 'Food', amount: 200000 }),
       ]
 
-      const result = generateInsights(expenses, mockFormatCurrency, mockIcons)
+      const result = generateInsights(preprocessExpenses(expenses), mockFormatCurrency, mockIcons)
 
       result.forEach((insight) => {
         expect(insight).toHaveProperty('type')

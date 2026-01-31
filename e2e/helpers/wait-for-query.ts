@@ -3,24 +3,33 @@ import { Page, expect } from '@playwright/test'
 /**
  * Wait for React Query to settle (no pending queries)
  */
-export async function waitForQueryToSettle(page: Page, timeout = 10000) {
+export async function waitForQueryToSettle(page: Page, timeout = 15000) {
+  // Wait for page to be ready
+  await page.waitForLoadState('domcontentloaded')
+
+  // Wait for skeleton loaders to disappear (these indicate data is loading)
+  // The skeleton cards have the animate-pulse class
+  try {
+    // Wait up to the timeout for skeletons to disappear
+    await page.waitForFunction(() => {
+      const skeletons = document.querySelectorAll('.animate-pulse')
+      // Ignore small pulse elements (like notification badges)
+      return Array.from(skeletons).filter(el => {
+        const rect = el.getBoundingClientRect()
+        return rect.width > 50 && rect.height > 20
+      }).length === 0
+    }, { timeout })
+  } catch {
+    // If skeletons persist, continue anyway
+  }
+
   // Wait for loading indicators to disappear
-  await expect(page.locator('[data-loading="true"]')).toHaveCount(0, { timeout }).catch(() => {
+  await expect(page.locator('[data-loading="true"]')).toHaveCount(0, { timeout: 5000 }).catch(() => {
     // If loading indicators persist, continue anyway
   })
 
-  // Wait for skeleton loaders to disappear - but don't fail if they persist
-  // Some components might have persistent animations
-  try {
-    await expect(page.locator('.animate-pulse')).toHaveCount(0, { timeout: 5000 })
-  } catch {
-    // Skeleton loaders might be from non-loading UI elements, ignore
-  }
-
-  // Additional network idle check
-  await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {
-    // Network idle might not be reached if there are long-polling requests
-  })
+  // Brief pause to allow React to finish rendering
+  await page.waitForTimeout(300)
 }
 
 /**

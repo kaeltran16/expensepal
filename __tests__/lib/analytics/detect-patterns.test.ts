@@ -11,6 +11,7 @@ import {
   detectWeekendWeekdayPatterns,
   findTopSpendingCategory,
 } from '@/lib/analytics/detect-patterns'
+import { preprocessExpenses } from '@/lib/analytics/preprocess-expenses'
 import { createMockExpense } from '../../mocks/supabase'
 
 // Mock currency formatter
@@ -45,22 +46,36 @@ function createExpenseWithDate(
 ): Expense {
   const date = new Date()
   date.setDate(date.getDate() - daysAgo)
+  // Use local date format to avoid UTC timezone issues
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
   return createMockExpense({
-    transaction_date: date.toISOString().slice(0, 10),
+    transaction_date: `${year}-${month}-${day}`,
     ...overrides,
   })
+}
+
+// Helper to find days ago for a specific day of week (0=Sun, 6=Sat)
+function daysAgoForDayOfWeek(targetDay: number): number {
+  const today = new Date()
+  const currentDay = today.getDay()
+  // Calculate how many days ago was the most recent occurrence of targetDay
+  // If today is targetDay, return 7 (last week) to avoid edge cases
+  const diff = (currentDay - targetDay + 7) % 7
+  return diff === 0 ? 7 : diff
 }
 
 describe('detectWeekendWeekdayPatterns', () => {
   describe('basic functionality', () => {
     it('should return empty array for empty expenses', () => {
-      const result = detectWeekendWeekdayPatterns([], mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses([]), mockFormatCurrency)
       expect(result).toEqual([])
     })
 
     it('should return empty array for single expense', () => {
       const expenses = [createExpenseWithDate(1)]
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toEqual([])
     })
 
@@ -70,31 +85,35 @@ describe('detectWeekendWeekdayPatterns', () => {
         createExpenseWithDate(35, { category: 'Food', amount: 100000 }),
         createExpenseWithDate(40, { category: 'Food', amount: 200000 }),
       ]
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toEqual([])
     })
   })
 
   describe('weekend higher spending detection', () => {
     it('should detect when weekend spending is >30% higher', () => {
-      // Get a recent Saturday and Sunday
-      const now = new Date()
-      const daysSinceSaturday = (now.getDay() + 1) % 7 // Days since last Saturday
+      // Find days ago for specific days of week
+      const satDaysAgo = daysAgoForDayOfWeek(6) // Saturday
+      const sunDaysAgo = daysAgoForDayOfWeek(0) // Sunday
+      const monDaysAgo = daysAgoForDayOfWeek(1) // Monday
+      const tueDaysAgo = daysAgoForDayOfWeek(2) // Tuesday
+      const wedDaysAgo = daysAgoForDayOfWeek(3) // Wednesday
+      const thuDaysAgo = daysAgoForDayOfWeek(4) // Thursday
 
       const expenses: Expense[] = [
-        // Recent weekend (Sat & Sun) - avg 250k
-        createExpenseWithDate(daysSinceSaturday, { category: 'Food', amount: 250000 }),      // Last Sat
-        createExpenseWithDate(daysSinceSaturday - 1, { category: 'Food', amount: 240000 }),  // Last Sun
-        createExpenseWithDate(daysSinceSaturday + 7, { category: 'Food', amount: 260000 }), // Sat before
-        createExpenseWithDate(daysSinceSaturday + 6, { category: 'Food', amount: 250000 }), // Sun before
-        // Weekdays - avg 150k (60% of weekend, so weekend is 67% higher)
-        createExpenseWithDate(daysSinceSaturday - 2, { category: 'Food', amount: 150000 }),
-        createExpenseWithDate(daysSinceSaturday - 3, { category: 'Food', amount: 140000 }),
-        createExpenseWithDate(daysSinceSaturday - 4, { category: 'Food', amount: 160000 }),
-        createExpenseWithDate(daysSinceSaturday - 5, { category: 'Food', amount: 150000 }),
+        // Weekend expenses - higher amounts (avg 250k)
+        createExpenseWithDate(satDaysAgo, { category: 'Food', amount: 250000 }),
+        createExpenseWithDate(sunDaysAgo, { category: 'Food', amount: 240000 }),
+        createExpenseWithDate(satDaysAgo + 7, { category: 'Food', amount: 260000 }),
+        createExpenseWithDate(sunDaysAgo + 7, { category: 'Food', amount: 250000 }),
+        // Weekday expenses - lower amounts (avg 150k)
+        createExpenseWithDate(monDaysAgo, { category: 'Food', amount: 150000 }),
+        createExpenseWithDate(tueDaysAgo, { category: 'Food', amount: 140000 }),
+        createExpenseWithDate(wedDaysAgo, { category: 'Food', amount: 160000 }),
+        createExpenseWithDate(thuDaysAgo, { category: 'Food', amount: 150000 }),
       ]
 
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(result.length).toBeGreaterThanOrEqual(1)
       expect(result[0]).toMatchObject({
@@ -107,22 +126,27 @@ describe('detectWeekendWeekdayPatterns', () => {
 
   describe('weekday higher spending detection', () => {
     it('should detect when weekday spending is >30% higher', () => {
-      const now = new Date()
-      const daysSinceSaturday = (now.getDay() + 1) % 7
+      // Find days ago for specific days of week
+      const satDaysAgo = daysAgoForDayOfWeek(6) // Saturday
+      const sunDaysAgo = daysAgoForDayOfWeek(0) // Sunday
+      const monDaysAgo = daysAgoForDayOfWeek(1) // Monday
+      const tueDaysAgo = daysAgoForDayOfWeek(2) // Tuesday
+      const wedDaysAgo = daysAgoForDayOfWeek(3) // Wednesday
+      const thuDaysAgo = daysAgoForDayOfWeek(4) // Thursday
 
       const expenses: Expense[] = [
-        // Weekend - avg 50k
-        createExpenseWithDate(daysSinceSaturday, { category: 'Transport', amount: 50000 }),
-        createExpenseWithDate(daysSinceSaturday - 1, { category: 'Transport', amount: 60000 }),
-        createExpenseWithDate(daysSinceSaturday + 7, { category: 'Transport', amount: 40000 }),
-        // Weekdays - avg 150k (200% more than weekend)
-        createExpenseWithDate(daysSinceSaturday - 2, { category: 'Transport', amount: 150000 }),
-        createExpenseWithDate(daysSinceSaturday - 3, { category: 'Transport', amount: 140000 }),
-        createExpenseWithDate(daysSinceSaturday - 4, { category: 'Transport', amount: 160000 }),
-        createExpenseWithDate(daysSinceSaturday - 5, { category: 'Transport', amount: 150000 }),
+        // Weekend expenses - lower amounts (avg 50k)
+        createExpenseWithDate(satDaysAgo, { category: 'Transport', amount: 50000 }),
+        createExpenseWithDate(sunDaysAgo, { category: 'Transport', amount: 60000 }),
+        createExpenseWithDate(satDaysAgo + 7, { category: 'Transport', amount: 40000 }),
+        // Weekday expenses - higher amounts (avg 150k, ~200% more than weekend)
+        createExpenseWithDate(monDaysAgo, { category: 'Transport', amount: 150000 }),
+        createExpenseWithDate(tueDaysAgo, { category: 'Transport', amount: 140000 }),
+        createExpenseWithDate(wedDaysAgo, { category: 'Transport', amount: 160000 }),
+        createExpenseWithDate(thuDaysAgo, { category: 'Transport', amount: 150000 }),
       ]
 
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(result.length).toBeGreaterThanOrEqual(1)
       expect(result[0]).toMatchObject({
@@ -145,7 +169,7 @@ describe('detectWeekendWeekdayPatterns', () => {
         createExpenseOnDayOfWeek(3, 4, { category: 'Food', amount: 100000 }),
       ]
 
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toHaveLength(0)
     })
   })
@@ -164,7 +188,7 @@ describe('detectWeekendWeekdayPatterns', () => {
         createExpenseOnDayOfWeek(1, 2, { category: 'Shopping', amount: 100000 }),
       ]
 
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(result.length).toBeGreaterThanOrEqual(2)
       expect(result.find((r) => r.category === 'Food')).toBeDefined()
@@ -180,7 +204,7 @@ describe('detectWeekendWeekdayPatterns', () => {
       ]
 
       // No weekday data to compare, should return empty
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toEqual([])
     })
 
@@ -191,7 +215,7 @@ describe('detectWeekendWeekdayPatterns', () => {
       ]
 
       // No weekend data, should return empty
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toEqual([])
     })
 
@@ -201,7 +225,7 @@ describe('detectWeekendWeekdayPatterns', () => {
         createExpenseOnDayOfWeek(1, 2, { category: null as unknown as string, amount: 100000 }),
       ]
 
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
       if (result.length > 0) {
         expect(result[0].category).toBe('Other')
       }
@@ -213,7 +237,7 @@ describe('detectWeekendWeekdayPatterns', () => {
         createExpenseOnDayOfWeek(1, 2, { category: 'Food', amount: 100000 }),
       ]
 
-      const result = detectWeekendWeekdayPatterns(expenses, mockFormatCurrency)
+      const result = detectWeekendWeekdayPatterns(preprocessExpenses(expenses), mockFormatCurrency)
 
       if (result.length > 0) {
         expect(result[0]).toMatchObject({
@@ -231,7 +255,7 @@ describe('detectWeekendWeekdayPatterns', () => {
 describe('findTopSpendingCategory', () => {
   describe('basic functionality', () => {
     it('should return null for empty expenses', () => {
-      const result = findTopSpendingCategory([])
+      const result = findTopSpendingCategory(preprocessExpenses([]))
       expect(result).toBeNull()
     })
 
@@ -239,7 +263,7 @@ describe('findTopSpendingCategory', () => {
       const expenses = [
         createExpenseWithDate(35, { category: 'Food', amount: 100000 }),
       ]
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
       expect(result).toBeNull()
     })
 
@@ -248,7 +272,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(1, { category: 'Food', amount: 100000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       expect(result).toMatchObject({
         category: 'Food',
@@ -266,7 +290,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(3, { category: 'Shopping', amount: 200000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       expect(result).toMatchObject({
         category: 'Shopping',
@@ -282,7 +306,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(4, { category: 'Transport', amount: 100000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       expect(result).toMatchObject({
         category: 'Food',
@@ -298,7 +322,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(2, { category: 'Transport', amount: 40000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       expect(result).toMatchObject({
         category: 'Food',
@@ -313,7 +337,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(2, { category: 'Food', amount: 50000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       expect(result?.percentage).toBe(100)
     })
@@ -326,7 +350,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(4, { category: 'Entertainment', amount: 20000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       // Total: 200k, Food: 100k = 50%
       expect(result).toMatchObject({
@@ -343,7 +367,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(1, { category: null as unknown as string, amount: 100000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       expect(result).toMatchObject({
         category: 'Other',
@@ -360,7 +384,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(1, { category: 'Food', amount: 100000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       expect(result).toMatchObject({
         category: 'Food',
@@ -374,7 +398,7 @@ describe('findTopSpendingCategory', () => {
         createExpenseWithDate(2, { category: 'Beta', amount: 100000 }),
       ]
 
-      const result = findTopSpendingCategory(expenses)
+      const result = findTopSpendingCategory(preprocessExpenses(expenses))
 
       // Both have same amount, result depends on sort stability
       expect(result?.amount).toBe(100000)

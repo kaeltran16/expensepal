@@ -4,15 +4,24 @@ import { waitForQueryToSettle } from '../helpers/wait-for-query'
 export class BasePage {
   constructor(protected page: Page) {}
 
-  async navigateTo(view: 'expenses' | 'budget' | 'insights' | 'goals') {
-    const viewMap = {
-      expenses: '[data-testid="nav-expenses"]',
-      budget: '[data-testid="nav-budget"]',
-      insights: '[data-testid="nav-insights"]',
-      goals: '[data-testid="nav-goals"]',
+  async navigateTo(view: 'expenses' | 'budget' | 'insights' | 'workouts' | 'calories' | 'recurring' | 'profile') {
+    // Views directly on bottom nav
+    const directNavViews = ['expenses', 'workouts', 'insights']
+
+    // Views accessed via "More" sheet
+    const moreSheetViews = ['budget', 'calories', 'recurring', 'profile']
+
+    if (directNavViews.includes(view)) {
+      await this.page.click(`[data-testid="nav-${view}"]`)
+    } else if (moreSheetViews.includes(view)) {
+      // Open More sheet
+      await this.page.click('[data-testid="nav-more"]')
+      await this.page.waitForTimeout(300) // Wait for sheet animation
+
+      // Click the view in the More sheet
+      await this.page.click(`button:has-text("${view.charAt(0).toUpperCase() + view.slice(1)}")`)
     }
 
-    await this.page.click(viewMap[view])
     await waitForQueryToSettle(this.page)
   }
 

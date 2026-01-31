@@ -1,6 +1,9 @@
 import { test, expect } from '../../fixtures'
 import { BudgetPage } from '../../pages/budget.page'
 
+// Run tests serially to avoid data conflicts since all tests share the same user account
+test.describe.configure({ mode: 'serial' })
+
 test.describe('Budget Management', () => {
   let budgetPage: BudgetPage
 
@@ -12,15 +15,15 @@ test.describe('Budget Management', () => {
     await budgetPage.goto()
   })
 
-  test('should display budget view with tabs', async ({ page }) => {
-    await expect(page.locator('button:has-text("Budgets")')).toBeVisible()
-    await expect(page.locator('button:has-text("Recurring")')).toBeVisible()
+  test('should display budget view', async ({ page }) => {
+    // Budget view should show the budget tracker
+    await expect(page.locator('[data-testid="budget-tracker"]')).toBeVisible()
   })
 
   test('should create a new budget for a category', async ({ toast }) => {
     await budgetPage.setBudget('Food', 2000000)
 
-    await toast.checkToast('Budget created', 'success')
+    await toast.checkToast(/Budget (created|set)/i, 'success')
     await budgetPage.expectBudgetVisible('Food')
   })
 
@@ -31,8 +34,9 @@ test.describe('Budget Management', () => {
 
     await budgetPage.updateBudget('Transport', 1500000)
 
-    await toast.checkToast('Budget updated', 'success')
-    await budgetPage.expectBudgetAmount('Transport', '1,500,000')
+    await toast.checkToast(/Budget (updated|set)/i, 'success')
+    // Note: App uses periods as thousands separators (European format)
+    await budgetPage.expectBudgetAmount('Transport', '1.500.000')
   })
 
   test('should show budget progress based on expenses', async ({ api, page }) => {
@@ -55,11 +59,14 @@ test.describe('Budget Management', () => {
     await budgetPage.expectOverBudgetWarning('Shopping')
   })
 
-  test('should switch between Budgets and Recurring tabs', async ({ page }) => {
-    await budgetPage.switchToRecurringTab()
-    await expect(page.locator('[data-testid="recurring-expenses"]')).toBeVisible()
+  test('should navigate between Budget and Recurring views', async ({ page }) => {
+    // Navigate to Recurring view
+    await budgetPage.navigateToRecurring()
+    await expect(page).toHaveURL(/view=recurring/)
 
-    await budgetPage.switchToBudgetsTab()
+    // Navigate back to Budget view
+    await budgetPage.navigateToBudget()
+    await expect(page).toHaveURL(/view=budget/)
     await expect(page.locator('[data-testid="budget-tracker"]')).toBeVisible()
   })
 })

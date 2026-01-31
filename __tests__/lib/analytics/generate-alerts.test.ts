@@ -11,6 +11,7 @@ import {
   detectSpendingSpikes,
   detectSpendingVelocity,
 } from '@/lib/analytics/generate-alerts'
+import { preprocessExpenses } from '@/lib/analytics/preprocess-expenses'
 import { createMockExpense } from '../../mocks/supabase'
 
 // Mock currency formatter
@@ -34,7 +35,7 @@ function createExpenseWithDate(
 describe('detectSpendingSpikes', () => {
   describe('basic functionality', () => {
     it('should return null for empty expenses', () => {
-      const result = detectSpendingSpikes([], mockFormatCurrency)
+      const result = detectSpendingSpikes(preprocessExpenses([]), mockFormatCurrency)
       expect(result).toBeNull()
     })
 
@@ -49,7 +50,7 @@ describe('detectSpendingSpikes', () => {
         // Only 6 days
       ]
 
-      const result = detectSpendingSpikes(expenses, mockFormatCurrency)
+      const result = detectSpendingSpikes(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toBeNull()
     })
 
@@ -65,7 +66,7 @@ describe('detectSpendingSpikes', () => {
         createExpenseWithDate(41, { amount: 100000 }),
       ]
 
-      const result = detectSpendingSpikes(expenses, mockFormatCurrency)
+      const result = detectSpendingSpikes(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toBeNull()
     })
   })
@@ -85,7 +86,7 @@ describe('detectSpendingSpikes', () => {
         createExpenseWithDate(7, { amount: 500000 }),
       ]
 
-      const result = detectSpendingSpikes(expenses, mockFormatCurrency)
+      const result = detectSpendingSpikes(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(result).not.toBeNull()
       expect(result?.type).toBe('alert')
@@ -106,7 +107,7 @@ describe('detectSpendingSpikes', () => {
         createExpenseWithDate(7, { amount: 200000 }),
       ]
 
-      const result = detectSpendingSpikes(expenses, mockFormatCurrency)
+      const result = detectSpendingSpikes(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toBeNull()
     })
 
@@ -126,7 +127,7 @@ describe('detectSpendingSpikes', () => {
         createExpenseWithDate(7, { amount: 200000 }),
       ]
 
-      const result = detectSpendingSpikes(expenses, mockFormatCurrency)
+      const result = detectSpendingSpikes(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(result).not.toBeNull()
       expect(result?.type).toBe('alert')
@@ -145,7 +146,7 @@ describe('detectSpendingSpikes', () => {
         createExpenseWithDate(6, { amount: 500000 }),
       ]
 
-      const result = detectSpendingSpikes(expenses, mockFormatCurrency)
+      const result = detectSpendingSpikes(preprocessExpenses(expenses), mockFormatCurrency)
 
       // Should work with exactly 7 days
       expect(result).not.toBeNull()
@@ -156,7 +157,7 @@ describe('detectSpendingSpikes', () => {
         createExpenseWithDate(i, { amount: i === 7 ? 500000 : 100000 })
       )
 
-      const result = detectSpendingSpikes(expenses, mockFormatCurrency)
+      const result = detectSpendingSpikes(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(result).toMatchObject({
         type: 'alert',
@@ -172,7 +173,7 @@ describe('detectSpendingSpikes', () => {
         createExpenseWithDate(i, { amount: i === 7 ? 500000 : 100000 })
       )
 
-      detectSpendingSpikes(expenses, mockFormatCurrency)
+      detectSpendingSpikes(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(mockFormatCurrency).toHaveBeenCalledWith(500000, 'VND')
     })
@@ -182,7 +183,7 @@ describe('detectSpendingSpikes', () => {
 describe('detectSpendingVelocity', () => {
   describe('basic functionality', () => {
     it('should return null for empty expenses', () => {
-      const result = detectSpendingVelocity([], mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses([]), mockFormatCurrency)
       expect(result).toBeNull()
     })
 
@@ -194,7 +195,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(2, { amount: 100000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toBeNull()
     })
   })
@@ -216,7 +217,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(12, { amount: 50000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(result).not.toBeNull()
       expect(result?.type).toBe('alert')
@@ -242,7 +243,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(12, { amount: 100000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
 
       expect(result).not.toBeNull()
       expect(result?.type).toBe('tip')
@@ -262,7 +263,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(9, { amount: 50000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toBeNull()
     })
 
@@ -274,7 +275,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(8, { amount: 100000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
       expect(result).toBeNull()
     })
   })
@@ -288,7 +289,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(8, { amount: 100000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
 
       // 200k vs 200k = 0% change, should be null
       if (result !== null) {
@@ -302,7 +303,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(8, { amount: 100000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
 
       if (result?.type === 'alert') {
         expect(result).toMatchObject({
@@ -321,7 +322,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(8, { amount: 200000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
 
       if (result?.type === 'tip') {
         expect(result).toMatchObject({
@@ -342,7 +343,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(8, { amount: 100000 }),
       ]
 
-      detectSpendingVelocity(expenses, mockFormatCurrency)
+      detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
 
       // Should format 200k (last 7 days total)
       expect(mockFormatCurrency).toHaveBeenCalledWith(200000, 'VND')
@@ -362,7 +363,7 @@ describe('detectSpendingVelocity', () => {
         createExpenseWithDate(20, { amount: 1000000 }),
       ]
 
-      const result = detectSpendingVelocity(expenses, mockFormatCurrency)
+      const result = detectSpendingVelocity(preprocessExpenses(expenses), mockFormatCurrency)
 
       // 300k vs 150k = 100% increase
       expect(result).not.toBeNull()

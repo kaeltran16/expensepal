@@ -2,10 +2,13 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './tests',
-  fullyParallel: true,
+  // Disable full parallelism since all tests share the same user account
+  // This prevents auth race conditions between test suites
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 4 : undefined,
+  // Use single worker locally, more in CI
+  workers: process.env.CI ? 2 : 1,
   timeout: 30000,
   expect: {
     timeout: 10000,

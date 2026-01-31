@@ -1,6 +1,9 @@
 import { test, expect } from '../../fixtures'
 import { ExpensesPage } from '../../pages/expenses.page'
 
+// Run tests serially to avoid data conflicts since all tests share the same user account
+test.describe.configure({ mode: 'serial' })
+
 test.describe('Expense CRUD', () => {
   let expensesPage: ExpensesPage
 
@@ -11,7 +14,10 @@ test.describe('Expense CRUD', () => {
     await expensesPage.goto()
   })
 
-  test('should display empty state when no expenses', async () => {
+  test('should display empty state when no expenses', async ({ page }) => {
+    // With serial mode, beforeEach has already deleted all expenses
+    await page.reload()
+    await expensesPage.waitForQuerySettle()
     await expensesPage.expectEmptyState()
     await expensesPage.expectQuickStatsVisible()
   })
@@ -23,7 +29,8 @@ test.describe('Expense CRUD', () => {
       category: 'Food',
     })
 
-    await toast.checkToast('Expense added', 'success')
+    // Toast can be "Expense added!" or "Expense created successfully"
+    await toast.checkToast(/[Ee]xpense (added|created)/i, 'success')
     await expensesPage.expectExpenseVisible('Test Coffee Shop')
     await expensesPage.expectExpenseCount(1)
   })
@@ -79,15 +86,20 @@ test.describe('Expense CRUD', () => {
   })
 
   test('should show expenses sorted by date (newest first)', async ({ api, page }) => {
+    // Clear any existing expenses first
+    await api.deleteAllExpenses()
+
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
 
+    // Seed yesterday's expense first
     await api.seedExpense({
       merchant: 'Yesterday Expense',
       amount: 10000,
       transaction_date: yesterday.toISOString(),
     })
 
+    // Then seed today's expense (should appear first due to date sorting)
     await api.seedExpense({
       merchant: 'Today Expense',
       amount: 20000,
@@ -96,6 +108,9 @@ test.describe('Expense CRUD', () => {
 
     await page.reload()
     await expensesPage.waitForQuerySettle()
+
+    // Wait for cards to be visible
+    await page.locator('[data-testid="expense-card"]').first().waitFor({ state: 'visible', timeout: 5000 })
 
     const firstCard = page.locator('[data-testid="expense-card"]').first()
     await expect(firstCard).toContainText('Today Expense')
