@@ -68,7 +68,7 @@ export function WaterIntake() {
       {/* Header with icon and stats */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
             <Droplets className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -80,7 +80,7 @@ export function WaterIntake() {
         </div>
         <div className="text-right">
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <span className="text-2xl font-bold text-primary">
               {(currentAmount / 1000).toFixed(1)}
             </span>
             <span className="text-sm text-muted-foreground">L</span>
@@ -92,15 +92,15 @@ export function WaterIntake() {
       </div>
 
       {/* Animated progress bar */}
-      <div className="relative h-3 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-5 overflow-hidden">
+      <div className="relative h-3 rounded-full bg-primary/10 dark:bg-primary/20 mb-5 overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className={`absolute inset-y-0 left-0 rounded-full ${
             progress >= 100
-              ? 'bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500'
-              : 'bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500'
+              ? 'bg-success'
+              : 'bg-primary'
           }`}
         />
         {/* Shimmer effect */}
@@ -129,9 +129,9 @@ export function WaterIntake() {
               className={`
                 relative w-8 h-10 rounded-xl overflow-hidden transition-all duration-300
                 ${isFilled
-                  ? 'bg-gradient-to-b from-blue-400 to-blue-600 shadow-md shadow-blue-500/40'
+                  ? 'bg-primary shadow-md shadow-primary/40'
                   : isSelected
-                    ? 'bg-blue-200 dark:bg-blue-800 border-2 border-blue-500 dark:border-blue-400 ring-2 ring-blue-500/30'
+                    ? 'bg-primary/20 dark:bg-primary/30 border-2 border-primary ring-2 ring-primary/30'
                     : 'bg-muted/50 dark:bg-muted/30 border-2 border-muted-foreground/20'
                 }
               `}
@@ -142,7 +142,7 @@ export function WaterIntake() {
                   initial={{ height: 0 }}
                   animate={{ height: `${fillPercent}%` }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-500 to-blue-400"
+                  className="absolute bottom-0 left-0 right-0 bg-primary"
                 />
               )}
 
@@ -160,9 +160,9 @@ export function WaterIntake() {
                     isFilled
                       ? 'text-white'
                       : isSelected
-                        ? 'text-blue-600 dark:text-blue-300'
+                        ? 'text-primary'
                         : isPartial
-                          ? 'text-blue-500'
+                          ? 'text-primary'
                           : 'text-muted-foreground/50'
                   }`}
                 />
@@ -185,7 +185,7 @@ export function WaterIntake() {
             className={`
               flex-1 py-2 px-3 rounded-full text-sm font-medium transition-all duration-200
               ${selectedAmount === amount
-                ? 'bg-white dark:bg-card text-blue-600 dark:text-blue-400 shadow-sm'
+                ? 'bg-white dark:bg-card text-primary shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
               }
             `}
@@ -198,7 +198,7 @@ export function WaterIntake() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="flex-1 py-2 px-3 rounded-full text-sm font-medium bg-white dark:bg-card text-blue-600 dark:text-blue-400 shadow-sm text-center"
+            className="flex-1 py-2 px-3 rounded-full text-sm font-medium bg-white dark:bg-card text-primary shadow-sm text-center"
           >
             {selectedAmount}ml
           </motion.div>
@@ -233,8 +233,8 @@ export function WaterIntake() {
             flex-1 flex items-center justify-center gap-2 h-12 rounded-full
             font-semibold text-base transition-all duration-200
             ${addWater.isPending
-              ? 'bg-blue-400 text-white/70 cursor-not-allowed'
-              : 'bg-blue-500 hover:bg-blue-600 text-white active:scale-[0.98] shadow-lg shadow-blue-500/25'
+              ? 'bg-primary/70 text-white/70 cursor-not-allowed'
+              : 'bg-primary hover:bg-primary/90 text-white active:scale-[0.98] shadow-lg shadow-primary/25'
             }
           `}
         >
@@ -248,17 +248,17 @@ export function WaterIntake() {
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex items-center justify-center gap-2 mt-4 py-3 px-4 rounded-2xl bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800/50"
+          className="flex items-center justify-center gap-2 mt-4 py-3 px-4 rounded-2xl bg-success/10 dark:bg-success/20 border border-success/30"
         >
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-            className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-md shadow-green-500/30"
+            className="w-6 h-6 rounded-full bg-success flex items-center justify-center shadow-md shadow-success/30"
           >
             <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
           </motion.div>
-          <span className="text-sm font-semibold text-green-700 dark:text-green-400">
+          <span className="text-sm font-semibold text-success">
             Daily hydration goal complete!
           </span>
         </motion.div>

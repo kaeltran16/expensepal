@@ -347,8 +347,15 @@ Your estimate:`
         return
       }
 
-      // RLS automatically sets user_id
+      // Get the authenticated user's ID for RLS
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.log('No authenticated user, skipping database save')
+        return
+      }
+
       const { error } = await supabase.from('saved_foods').insert({
+        user_id: user.id,
         name: foodDescription,
         calories: estimate.calories,
         protein: estimate.protein,

@@ -216,10 +216,10 @@ describe('ExpenseCardHeader', () => {
       expect(CATEGORY_CONFIG).toHaveProperty('Other')
     })
 
-    it('should have emoji, gradient and color for each category', () => {
+    it('should have emoji, bg and color for each category', () => {
       Object.values(CATEGORY_CONFIG).forEach((config) => {
         expect(config).toHaveProperty('emoji')
-        expect(config).toHaveProperty('gradient')
+        expect(config).toHaveProperty('bg')
         expect(config).toHaveProperty('color')
       })
     })

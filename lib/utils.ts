@@ -44,20 +44,12 @@ export function formatDate(date: string | Date): string {
   }).format(d)
 }
 
-// Category color system
-export const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  Food: { bg: 'bg-orange-100 dark:bg-orange-950', border: 'border-l-orange-500', text: 'text-orange-700 dark:text-orange-400' },
-  Transport: { bg: 'bg-blue-100 dark:bg-blue-950', border: 'border-l-blue-500', text: 'text-blue-700 dark:text-blue-400' },
-  Shopping: { bg: 'bg-pink-100 dark:bg-pink-950', border: 'border-l-pink-500', text: 'text-pink-700 dark:text-pink-400' },
-  Entertainment: { bg: 'bg-purple-100 dark:bg-purple-950', border: 'border-l-purple-500', text: 'text-purple-700 dark:text-purple-400' },
-  Bills: { bg: 'bg-yellow-100 dark:bg-yellow-950', border: 'border-l-yellow-500', text: 'text-yellow-700 dark:text-yellow-400' },
-  Health: { bg: 'bg-red-100 dark:bg-red-950', border: 'border-l-red-500', text: 'text-red-700 dark:text-red-400' },
-  Other: { bg: 'bg-gray-100 dark:bg-gray-800', border: 'border-l-gray-500', text: 'text-gray-700 dark:text-gray-400' },
-}
-
-export function getCategoryColor(category: string) {
-  return CATEGORY_COLORS[category] || CATEGORY_COLORS.Other
-}
+// Re-export category colors from theme system
+export {
+  expenseCategoryColors as CATEGORY_COLORS,
+  getCategoryColor,
+  getCategoryEmoji,
+} from './theme'
 
 // Haptic feedback (works on mobile browsers that support it)
 export function hapticFeedback(type: 'light' | 'medium' | 'heavy' = 'medium') {

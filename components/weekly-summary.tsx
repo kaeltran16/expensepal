@@ -160,13 +160,8 @@ export function WeeklySummary({ expenses }: WeeklySummaryProps) {
         transition={springs.gentle}
       >
         <Card className="relative overflow-hidden">
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5" />
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent"
-            animate={{ x: ['-100%', '100%'] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-          />
+          {/* Background */}
+          <div className="absolute inset-0 bg-primary/5" />
 
           <div className="relative p-6">
             {/* Header */}
@@ -478,7 +473,7 @@ export function WeeklySummary({ expenses }: WeeklySummaryProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, ...springs.gentle }}
       >
-        <Card className="p-5 bg-gradient-to-br from-muted/50 to-muted/30">
+        <Card className="p-5 bg-muted/40">
           <h3 className="text-base font-semibold mb-3">Week Comparison</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">

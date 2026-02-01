@@ -244,7 +244,7 @@ export function ExerciseProgressView({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="ios-card p-5 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/20"
+          className="ios-card p-5 bg-yellow-500/10 border-yellow-500/20"
         >
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-yellow-500/20">

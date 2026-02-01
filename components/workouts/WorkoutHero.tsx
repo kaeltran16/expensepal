@@ -70,7 +70,7 @@ export function WorkoutHero({
         stiffness: 260,
         damping: 20
       }}
-      className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20"
+      className="relative overflow-hidden rounded-3xl p-6 bg-primary/10 border border-primary/20"
     >
       <div className="relative z-10">
         <motion.div
@@ -121,7 +121,7 @@ export function WorkoutHero({
           >
             <Button
               size="lg"
-              className="w-full touch-xl gap-2 bg-gradient-to-r from-primary to-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              className="w-full touch-xl gap-2 bg-primary shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
               onClick={onQuickStart}
             >
               {content.buttonIcon}

@@ -4,40 +4,67 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useBudgets, useAIInsights } from '@/lib/hooks'
 import type { Expense } from '@/lib/supabase'
-import { formatCurrency } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { formatCurrency, hapticFeedback } from '@/lib/utils'
+import { AnimatePresence, motion, useMotionValue, useTransform, PanInfo } from 'framer-motion'
+import { springs, stagger } from '@/lib/animation-config'
 import {
   AlertTriangle,
-  ChevronRight,
+  ArrowRight,
+  Award,
+  CheckCircle2,
+  Eye,
+  Filter,
+  Flame,
+  Gift,
   Lightbulb,
+  PiggyBank,
+  Plus,
+  RefreshCcw,
+  Settings2,
   Sparkles,
   Target,
   TrendingUp,
-  Zap
+  X,
+  Zap,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
+
+interface RecommendationAction {
+  label: string
+  icon: React.ElementType
+  variant: 'primary' | 'secondary'
+  onClick: () => void
+}
 
 interface Recommendation {
   id: string
-  type: 'savings' | 'warning' | 'optimization' | 'goal' | 'opportunity' | 'pattern'
+  type: 'savings' | 'warning' | 'optimization' | 'goal' | 'opportunity' | 'pattern' | 'achievement' | 'challenge'
   title: string
   description: string
   impact: 'high' | 'medium' | 'low'
-  action?: string
   amount?: number
+  progress?: number
+  dismissable?: boolean
   isAI?: boolean
+  actions?: RecommendationAction[]
+  metadata?: {
+    category?: string
+    merchant?: string
+    percentChange?: number
+    daysLeft?: number
+  }
 }
 
 interface SpendingAdvisorProps {
   expenses: Expense[]
-  onNavigate?: (view: 'budget' | 'expenses') => void
+  onNavigate?: (view: 'budget' | 'expenses', params?: { category?: string; merchant?: string }) => void
 }
 
 export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) {
   const currentMonth = new Date().toISOString().slice(0, 7)
   const { data: budgets = [] } = useBudgets({ month: currentMonth })
   const { data: aiInsights, isLoading: aiLoading } = useAIInsights(expenses)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set())
 
   const recommendations: Recommendation[] = useMemo(() => {
     if (expenses.length === 0) return []
@@ -47,6 +74,9 @@ export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) 
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const daysElapsed = now.getDate()
+    const daysRemaining = daysInMonth - daysElapsed
 
     // Current month expenses
     const currentMonthExpenses = expenses.filter((e) => {
@@ -60,309 +90,602 @@ export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) 
       return date >= lastMonthStart && date <= lastMonthEnd
     })
 
+    const currentMonthTotal = currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0)
+    const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0)
+
     // Category analysis
-    const categoryTotals: Record<string, { current: number; last: number }> = {}
+    const categoryTotals: Record<string, { current: number; last: number; count: number }> = {}
 
     currentMonthExpenses.forEach((e) => {
-      if (!categoryTotals[e.category || 'Other']) {
-        categoryTotals[e.category || 'Other'] = { current: 0, last: 0 }
+      const cat = e.category || 'Other'
+      if (!categoryTotals[cat]) {
+        categoryTotals[cat] = { current: 0, last: 0, count: 0 }
       }
-      categoryTotals[e.category || 'Other']!.current += e.amount
+      categoryTotals[cat].current += e.amount
+      categoryTotals[cat].count++
     })
 
     lastMonthExpenses.forEach((e) => {
-      if (!categoryTotals[e.category || 'Other']) {
-        categoryTotals[e.category || 'Other'] = { current: 0, last: 0 }
+      const cat = e.category || 'Other'
+      if (!categoryTotals[cat]) {
+        categoryTotals[cat] = { current: 0, last: 0, count: 0 }
       }
-      categoryTotals[e.category || 'Other']!.last += e.amount
+      categoryTotals[cat].last += e.amount
     })
 
-    // 1. Detect unusual spending spikes
-    Object.entries(categoryTotals).forEach(([category, totals]) => {
-      if (totals.last > 0) {
-        const increase = ((totals.current - totals.last) / totals.last) * 100
-        if (increase > 30) {
-          recs.push({
-            id: `spike-${category}`,
-            type: 'warning',
-            title: `${category} spending increased by ${increase.toFixed(0)}%`,
-            description: `You spent ${formatCurrency(totals.current, 'VND')} this month vs ${formatCurrency(totals.last, 'VND')} last month. Consider reviewing your ${category.toLowerCase()} expenses.`,
-            impact: increase > 50 ? 'high' : 'medium',
-            amount: totals.current - totals.last,
-          })
-        }
+    // Merchant analysis
+    const merchantTotals: Record<string, { total: number; count: number; category: string }> = {}
+    currentMonthExpenses.forEach((e) => {
+      if (!merchantTotals[e.merchant]) {
+        merchantTotals[e.merchant] = { total: 0, count: 0, category: e.category || 'Other' }
       }
+      merchantTotals[e.merchant].total += e.amount
+      merchantTotals[e.merchant].count++
     })
 
-    // 2. Savings opportunities from reduced categories
-    Object.entries(categoryTotals).forEach(([category, totals]) => {
-      if (totals.last > 0) {
-        const decrease = ((totals.last - totals.current) / totals.last) * 100
-        if (decrease > 20) {
-          recs.push({
-            id: `savings-${category}`,
-            type: 'savings',
-            title: `Great job reducing ${category} spending!`,
-            description: `You've saved ${formatCurrency(totals.last - totals.current, 'VND')} compared to last month. Keep it up!`,
-            impact: 'high',
-            amount: totals.last - totals.current,
-            action: 'Maintain this trend',
-          })
-        }
-      }
-    })
+    // === GENERATE SMART RECOMMENDATIONS ===
 
-    // 3. Budget optimization suggestions
+    // 1. Budget alerts (near limit or over)
     budgets.forEach((budget) => {
       const spent = categoryTotals[budget.category]?.current || 0
       const percentage = (spent / budget.amount) * 100
+      const remaining = budget.amount - spent
 
-      if (percentage < 50) {
+      if (percentage >= 100) {
         recs.push({
-          id: `budget-${budget.category}`,
-          type: 'optimization',
-          title: `${budget.category} budget underutilized`,
-          description: `You've only used ${percentage.toFixed(0)}% of your ${budget.category} budget. Consider reallocating to categories you use more.`,
-          impact: 'low',
-          action: 'Adjust budget',
+          id: `budget-over-${budget.category}`,
+          type: 'warning',
+          title: `${budget.category} budget exceeded`,
+          description: `You've spent ${formatCurrency(spent, 'VND')} of your ${formatCurrency(budget.amount, 'VND')} budget.`,
+          impact: 'high',
+          amount: spent - budget.amount,
+          progress: 100,
+          metadata: { category: budget.category, percentChange: percentage - 100 },
+          actions: [
+            {
+              label: 'View expenses',
+              icon: Eye,
+              variant: 'primary',
+              onClick: () => onNavigate?.('expenses', { category: budget.category }),
+            },
+            {
+              label: 'Adjust',
+              icon: Settings2,
+              variant: 'secondary',
+              onClick: () => onNavigate?.('budget'),
+            },
+          ],
+        })
+      } else if (percentage >= 80) {
+        const dailyAllowance = remaining / Math.max(1, daysRemaining)
+        recs.push({
+          id: `budget-warning-${budget.category}`,
+          type: 'goal',
+          title: `${budget.category} at ${percentage.toFixed(0)}%`,
+          description: `${formatCurrency(remaining, 'VND')} left for ${daysRemaining} days (${formatCurrency(dailyAllowance, 'VND')}/day).`,
+          impact: 'medium',
+          progress: percentage,
+          dismissable: true,
+          metadata: { category: budget.category, daysLeft: daysRemaining },
+          actions: [
+            {
+              label: 'View expenses',
+              icon: Filter,
+              variant: 'primary',
+              onClick: () => onNavigate?.('expenses', { category: budget.category }),
+            },
+          ],
         })
       }
     })
 
-    // 4. Recurring expense patterns
-    const merchantFrequency: Record<string, number> = {}
-    currentMonthExpenses.forEach((e) => {
-      merchantFrequency[e.merchant] = (merchantFrequency[e.merchant] || 0) + 1
+    // 2. Unusual spending spikes
+    Object.entries(categoryTotals).forEach(([category, totals]) => {
+      if (totals.last > 0) {
+        const increase = ((totals.current - totals.last) / totals.last) * 100
+        if (increase > 50 && totals.current > currentMonthTotal * 0.1) {
+          const topMerchant = Object.entries(merchantTotals)
+            .filter(([_, data]) => data.category === category)
+            .sort((a, b) => b[1].total - a[1].total)[0]
+
+          recs.push({
+            id: `spike-${category}`,
+            type: 'warning',
+            title: `${category} up ${increase.toFixed(0)}%`,
+            description: `${formatCurrency(totals.current - totals.last, 'VND')} more than last month.${topMerchant ? ` Top: ${topMerchant[0]}` : ''}`,
+            impact: increase > 75 ? 'high' : 'medium',
+            amount: totals.current - totals.last,
+            dismissable: true,
+            metadata: { category, percentChange: increase, merchant: topMerchant?.[0] },
+            actions: [
+              {
+                label: 'View expenses',
+                icon: Filter,
+                variant: 'primary',
+                onClick: () => onNavigate?.('expenses', { category }),
+              },
+              ...(topMerchant ? [{
+                label: 'Top merchant',
+                icon: Eye,
+                variant: 'secondary' as const,
+                onClick: () => onNavigate?.('expenses', { merchant: topMerchant[0] }),
+              }] : []),
+            ],
+          })
+        }
+      }
     })
 
-    const frequentMerchants = Object.entries(merchantFrequency)
-      .filter(([_, count]) => count >= 5)
-      .sort((a, b) => b[1] - a[1])
+    // 3. Savings achievements
+    Object.entries(categoryTotals).forEach(([category, totals]) => {
+      if (totals.last > 0) {
+        const decrease = ((totals.last - totals.current) / totals.last) * 100
+        if (decrease > 25 && totals.last > lastMonthTotal * 0.1) {
+          recs.push({
+            id: `savings-${category}`,
+            type: 'achievement',
+            title: `${category} down ${decrease.toFixed(0)}%`,
+            description: `Saved ${formatCurrency(totals.last - totals.current, 'VND')} on ${category.toLowerCase()}!`,
+            impact: 'high',
+            amount: totals.last - totals.current,
+            dismissable: true,
+            metadata: { category, percentChange: -decrease },
+            actions: [
+              {
+                label: 'Set goal',
+                icon: Target,
+                variant: 'primary',
+                onClick: () => onNavigate?.('budget'),
+              },
+            ],
+          })
+        }
+      }
+    })
+
+    // 4. Frequent merchant optimization
+    const frequentMerchants = Object.entries(merchantTotals)
+      .filter(([_, data]) => data.count >= 4)
+      .sort((a, b) => b[1].total - a[1].total)
 
     if (frequentMerchants.length > 0) {
-      const [merchant, count] = frequentMerchants[0]!
-      const merchantTotal = currentMonthExpenses
-        .filter((e) => e.merchant === merchant)
-        .reduce((sum, e) => sum + e.amount, 0)
+      const [merchant, data] = frequentMerchants[0]
+      const avgPerVisit = data.total / data.count
+
+      const tips: Record<string, string> = {
+        'Food': 'Try meal prepping to reduce visits.',
+        'Coffee': 'Brew at home 2-3 days/week.',
+        'Transport': 'Consider a monthly pass.',
+        'Shopping': 'Use the 48-hour rule.',
+        'Entertainment': 'Look for free alternatives.',
+      }
 
       recs.push({
         id: `frequent-${merchant}`,
         type: 'optimization',
-        title: `Frequent purchases at ${merchant}`,
-        description: `You've made ${count} transactions totaling ${formatCurrency(merchantTotal, 'VND')} this month. Consider bulk purchasing or finding alternatives to save.`,
+        title: `${data.count}x at ${merchant}`,
+        description: `${formatCurrency(avgPerVisit, 'VND')}/visit avg. ${tips[data.category] || 'Review if needed.'}`,
         impact: 'medium',
-        amount: merchantTotal,
+        amount: data.total,
+        dismissable: true,
+        metadata: { merchant, category: data.category },
+        actions: [
+          {
+            label: 'View details',
+            icon: Eye,
+            variant: 'primary',
+            onClick: () => onNavigate?.('expenses', { merchant }),
+          },
+        ],
       })
     }
 
-    // 5. Daily spending goal
-    const currentMonthTotal = currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0)
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-    const daysElapsed = now.getDate()
-    const daysRemaining = daysInMonth - daysElapsed
-    const avgDailySpent = currentMonthTotal / daysElapsed
-    const projectedMonthTotal = avgDailySpent * daysInMonth
+    // 5. Month-end challenge
+    if (daysRemaining > 0 && daysRemaining <= 10 && lastMonthTotal > 0) {
+      const avgDailySpent = currentMonthTotal / daysElapsed
+      const projectedTotal = avgDailySpent * daysInMonth
+      const projectedIncrease = ((projectedTotal - lastMonthTotal) / lastMonthTotal) * 100
 
-    if (daysRemaining > 0 && lastMonthExpenses.length > 0) {
-      const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0)
-      const projectedIncrease = ((projectedMonthTotal - lastMonthTotal) / lastMonthTotal) * 100
+      if (projectedIncrease > 15) {
+        const targetDaily = (lastMonthTotal - currentMonthTotal) / daysRemaining
+        const challengeSavings = (avgDailySpent - Math.max(0, targetDaily)) * daysRemaining
 
-      if (projectedIncrease > 10) {
-        const suggestedDailyLimit = lastMonthTotal / daysInMonth
+        if (targetDaily > 0) {
+          recs.push({
+            id: 'end-month-challenge',
+            type: 'challenge',
+            title: `${daysRemaining}-day challenge`,
+            description: `Spend max ${formatCurrency(targetDaily, 'VND')}/day to save ${formatCurrency(challengeSavings, 'VND')}.`,
+            impact: 'high',
+            progress: (daysElapsed / daysInMonth) * 100,
+            dismissable: true,
+            metadata: { daysLeft: daysRemaining },
+            actions: [
+              {
+                label: 'Track daily',
+                icon: Target,
+                variant: 'primary',
+                onClick: () => onNavigate?.('expenses'),
+              },
+            ],
+          })
+        }
+      }
+    }
+
+    // 6. Subscription reminder
+    const potentialSubscriptions = Object.entries(merchantTotals)
+      .filter(([merchant, data]) => {
+        const merchantExpenses = currentMonthExpenses.filter(e => e.merchant === merchant)
+        if (merchantExpenses.length < 2) return false
+        const amounts = merchantExpenses.map(e => e.amount)
+        const avgAmount = amounts.reduce((a, b) => a + b, 0) / amounts.length
+        return amounts.every(a => Math.abs(a - avgAmount) / avgAmount < 0.1) && data.count >= 2
+      })
+
+    if (potentialSubscriptions.length > 0) {
+      const totalSubscriptions = potentialSubscriptions.reduce((sum, [_, data]) => sum + data.total, 0)
+      recs.push({
+        id: 'subscription-audit',
+        type: 'opportunity',
+        title: `${potentialSubscriptions.length} recurring payments`,
+        description: `${formatCurrency(totalSubscriptions, 'VND')}/month in subscriptions. Review unused ones.`,
+        impact: 'medium',
+        amount: totalSubscriptions,
+        dismissable: true,
+        actions: [
+          {
+            label: 'Review all',
+            icon: Eye,
+            variant: 'primary',
+            onClick: () => onNavigate?.('expenses'),
+          },
+        ],
+      })
+    }
+
+    // 7. Weekend spending pattern
+    const weekendExpenses = currentMonthExpenses.filter(e => {
+      const day = new Date(e.transaction_date).getDay()
+      return day === 0 || day === 6
+    })
+    const weekdayExpenses = currentMonthExpenses.filter(e => {
+      const day = new Date(e.transaction_date).getDay()
+      return day !== 0 && day !== 6
+    })
+
+    if (weekendExpenses.length > 0 && weekdayExpenses.length > 0) {
+      const weekendTotal = weekendExpenses.reduce((sum, e) => sum + e.amount, 0)
+      const weekdayTotal = weekdayExpenses.reduce((sum, e) => sum + e.amount, 0)
+      const weekendDays = Math.ceil(daysElapsed * 2 / 7)
+      const weekdayDays = daysElapsed - weekendDays
+
+      const weekendAvg = weekendTotal / Math.max(1, weekendDays)
+      const weekdayAvg = weekdayTotal / Math.max(1, weekdayDays)
+
+      if (weekendAvg > weekdayAvg * 1.5 && weekendTotal > currentMonthTotal * 0.3) {
         recs.push({
-          id: 'daily-goal',
-          type: 'goal',
-          title: 'Set a daily spending limit',
-          description: `At your current pace, you'll spend ${formatCurrency(projectedMonthTotal, 'VND')} this month (${projectedIncrease.toFixed(0)}% more than last month). Try limiting daily spending to ${formatCurrency(suggestedDailyLimit, 'VND')}.`,
-          impact: 'high',
-          action: 'Set daily goal',
+          id: 'weekend-pattern',
+          type: 'pattern',
+          title: 'High weekend spending',
+          description: `${formatCurrency(weekendAvg, 'VND')}/day vs ${formatCurrency(weekdayAvg, 'VND')} on weekdays.`,
+          impact: 'medium',
+          dismissable: true,
+          metadata: { percentChange: ((weekendAvg - weekdayAvg) / weekdayAvg) * 100 },
+          actions: [
+            {
+              label: 'View weekends',
+              icon: Eye,
+              variant: 'primary',
+              onClick: () => onNavigate?.('expenses'),
+            },
+          ],
         })
       }
     }
 
     // Sort by impact
     const impactOrder = { high: 0, medium: 1, low: 2 }
-    return recs.sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact]).slice(0, 6)
-  }, [expenses, budgets])
+    return recs.sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact])
+  }, [expenses, budgets, onNavigate])
 
   // Merge rule-based and AI recommendations
   const allRecommendations = useMemo(() => {
-    const aiRecs = aiInsights?.insights || []
-    // Combine: AI insights first (they're special), then rule-based
+    const aiRecs: Recommendation[] = (aiInsights?.insights || []).map(rec => ({
+      id: rec.id,
+      type: rec.type as Recommendation['type'],
+      title: rec.title,
+      description: rec.description,
+      impact: rec.impact,
+      isAI: true,
+      dismissable: true,
+      actions: rec.action ? [{
+        label: 'Take action',
+        icon: ArrowRight,
+        variant: 'primary' as const,
+        onClick: () => onNavigate?.('expenses'),
+      }] : undefined,
+    }))
     const combined = [...aiRecs, ...recommendations]
-    // Limit to 6 total
-    return combined.slice(0, 6)
-  }, [recommendations, aiInsights])
+    return combined.filter(rec => !dismissedIds.has(rec.id)).slice(0, 5)
+  }, [recommendations, aiInsights, dismissedIds, onNavigate])
+
+  const handleDismiss = useCallback((id: string) => {
+    hapticFeedback('light')
+    setDismissedIds(prev => new Set(prev).add(id))
+  }, [])
 
   if (allRecommendations.length === 0 && !aiLoading) {
     return (
-      <Card className="frosted-card">
-        <CardContent className="p-8 text-center">
-          <Sparkles className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-          <h3 className="font-semibold mb-2">No recommendations yet</h3>
+      <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-6 text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={springs.bouncy}
+          >
+            <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-green-500" />
+          </motion.div>
+          <h3 className="font-semibold mb-1">Looking good!</h3>
           <p className="text-sm text-muted-foreground">
-            Keep tracking your expenses to get personalized insights and recommendations.
+            No issues found. Keep up the great spending habits!
           </p>
         </CardContent>
       </Card>
     )
   }
 
-  const getIcon = (rec: Recommendation) => {
-    // AI insights get special icon
-    if (rec.isAI) return Zap
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          <h2 className="font-semibold">Smart Recommendations</h2>
+        </div>
+        {aiLoading && (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          >
+            <RefreshCcw className="w-4 h-4 text-muted-foreground" />
+          </motion.div>
+        )}
+      </div>
 
-    switch (rec.type) {
-      case 'savings':
-        return TrendingUp
-      case 'warning':
-        return AlertTriangle
-      case 'optimization':
-      case 'opportunity':
-        return Lightbulb
-      case 'goal':
-      case 'pattern':
-        return Target
-      default:
-        return Lightbulb
-    }
-  }
+      <AnimatePresence mode="popLayout">
+        {allRecommendations.map((rec, index) => (
+          <RecommendationCard
+            key={rec.id}
+            recommendation={rec}
+            index={index}
+            onDismiss={handleDismiss}
+          />
+        ))}
+      </AnimatePresence>
+    </div>
+  )
+}
 
-  const getColor = (type: Recommendation['type']) => {
-    switch (type) {
-      case 'savings':
-        return {
-          bg: 'bg-green-50 dark:bg-green-950/20',
-          border: 'border-l-green-500',
-          text: 'text-green-600 dark:text-green-400',
-          badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-        }
-      case 'warning':
-        return {
-          bg: 'bg-red-50 dark:bg-red-950/20',
-          border: 'border-l-red-500',
-          text: 'text-red-600 dark:text-red-400',
-          badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-        }
-      case 'optimization':
-        return {
-          bg: 'bg-blue-50 dark:bg-blue-950/20',
-          border: 'border-l-blue-500',
-          text: 'text-blue-600 dark:text-blue-400',
-          badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-        }
-      case 'goal':
-        return {
-          bg: 'bg-purple-50 dark:bg-purple-950/20',
-          border: 'border-l-purple-500',
-          text: 'text-purple-600 dark:text-purple-400',
-          badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-        }
-      case 'opportunity':
-        return {
-          bg: 'bg-amber-50 dark:bg-amber-950/20',
-          border: 'border-l-amber-500',
-          text: 'text-amber-600 dark:text-amber-400',
-          badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-        }
-      case 'pattern':
-        return {
-          bg: 'bg-indigo-50 dark:bg-indigo-950/20',
-          border: 'border-l-indigo-500',
-          text: 'text-indigo-600 dark:text-indigo-400',
-          badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
-        }
-      default:
-        return {
-          bg: 'bg-gray-50 dark:bg-gray-950/20',
-          border: 'border-l-gray-500',
-          text: 'text-gray-600 dark:text-gray-400',
-          badge: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300'
-        }
+interface RecommendationCardProps {
+  recommendation: Recommendation
+  index: number
+  onDismiss: (id: string) => void
+}
+
+function RecommendationCard({ recommendation: rec, index, onDismiss }: RecommendationCardProps) {
+  const config = getRecommendationConfig(rec.type)
+  const Icon = config.icon
+  const x = useMotionValue(0)
+  const opacity = useTransform(x, [-100, 0, 100], [0.5, 1, 0.5])
+
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (rec.dismissable && Math.abs(info.offset.x) > 80) {
+      onDismiss(rec.id)
     }
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 px-1">
-        <Sparkles className="w-5 h-5 text-primary" />
-        <h2 className="ios-headline">Recommendations</h2>
-      </div>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: -200, transition: { duration: 0.2 } }}
+      transition={{ delay: index * stagger.fast, ...springs.default }}
+      style={{ opacity }}
+      drag={rec.dismissable ? 'x' : false}
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.15}
+      onDragEnd={handleDragEnd}
+    >
+      <Card className={`relative overflow-hidden border-0 shadow-sm ${rec.dismissable ? 'active:cursor-grabbing' : ''}`}>
+        {/* Top accent bar */}
+        <motion.div
+          className={`absolute top-0 left-0 right-0 h-1 ${config.accent}`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: index * stagger.fast + 0.1, duration: 0.4 }}
+          style={{ transformOrigin: 'left' }}
+        />
 
-      <div className="ios-list-group">
-        {allRecommendations.map((rec, index) => {
-          const Icon = getIcon(rec)
-          const colors = getColor(rec.type)
-          const isExpanded = expandedId === rec.id
+        {/* Background gradient */}
+        <div className={`absolute inset-0 ${config.bg} opacity-40`} />
 
-          return (
-            <motion.div
-              key={rec.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                delay: index * 0.03,
-                duration: 0.2,
-              }}
-              className="ios-list-item cursor-pointer"
-              onClick={() => setExpandedId(isExpanded ? null : rec.id)}
-            >
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0`}>
-                  <Icon className={`w-5 h-5 ${colors.text}`} />
-                </div>
+        {/* AI badge */}
+        {rec.isAI && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute top-3 right-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-medium"
+          >
+            <Zap className="w-3 h-3" />
+            AI
+          </motion.div>
+        )}
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="ios-headline">
-                      {rec.title}
-                    </h3>
-                    <ChevronRight
-                      className={`w-4 h-4 text-muted-foreground transition-transform flex-shrink-0 ${
-                        isExpanded ? 'rotate-90' : ''
-                      }`}
+        {/* Dismiss button */}
+        {rec.dismissable && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: index * stagger.fast + 0.2 }}
+            onClick={() => onDismiss(rec.id)}
+            className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors z-10"
+          >
+            <X className="w-3.5 h-3.5 text-muted-foreground" />
+          </motion.button>
+        )}
+
+        <CardContent className="relative p-4">
+          <div className="flex items-start gap-3">
+            {/* Icon with impact indicator */}
+            <div className="relative flex-shrink-0">
+              <motion.div
+                className={`w-11 h-11 rounded-xl ${config.iconBg} flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10`}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Icon className={`w-5 h-5 ${config.iconColor}`} />
+              </motion.div>
+              {/* Impact dot */}
+              <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
+                rec.impact === 'high' ? 'bg-red-500' : rec.impact === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
+              }`} />
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <h4 className={`font-semibold text-sm ${config.titleColor} mb-0.5 pr-8`}>
+                {rec.title}
+              </h4>
+
+              {/* Amount display */}
+              {rec.amount !== undefined && rec.amount > 0 && (
+                <p className="text-base font-bold mb-1">
+                  {rec.type === 'achievement' || rec.type === 'savings' ? '+' : ''}
+                  {formatCurrency(rec.amount, 'VND')}
+                </p>
+              )}
+
+              {/* Progress bar */}
+              {rec.progress !== undefined && (
+                <div className="mb-2">
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <motion.div
+                      className={`h-full rounded-full ${config.accent}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(rec.progress, 100)}%` }}
+                      transition={{ delay: index * stagger.fast + 0.3, duration: 0.5 }}
                     />
                   </div>
-
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <p className="ios-caption text-muted-foreground mb-3">
-                          {rec.description}
-                        </p>
-                        {rec.action && onNavigate && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onNavigate('budget')
-                            }}
-                          >
-                            {rec.action}
-                          </Button>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {!isExpanded && (
-                    <p className="ios-caption text-muted-foreground line-clamp-2">
-                      {rec.description}
-                    </p>
-                  )}
                 </div>
-              </div>
-            </motion.div>
-          )
-        })}
-      </div>
-    </div>
+              )}
+
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                {rec.description}
+              </p>
+
+              {/* Action buttons - always visible, mobile-friendly */}
+              {rec.actions && rec.actions.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {rec.actions.map((action, i) => {
+                    const ActionIcon = action.icon
+                    return (
+                      <Button
+                        key={i}
+                        size="sm"
+                        variant={action.variant === 'primary' ? 'default' : 'outline'}
+                        className={`h-9 px-3 text-xs font-medium ${
+                          action.variant === 'primary'
+                            ? `${config.accent} text-white border-0 shadow-sm`
+                            : ''
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          hapticFeedback('light')
+                          action.onClick()
+                        }}
+                      >
+                        <ActionIcon className="w-3.5 h-3.5 mr-1.5" />
+                        {action.label}
+                      </Button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
+}
+
+function getRecommendationConfig(type: Recommendation['type']) {
+  const configs = {
+    warning: {
+      icon: AlertTriangle,
+      bg: 'bg-red-50 dark:bg-red-950/30',
+      iconBg: 'bg-red-100 dark:bg-red-900/40',
+      iconColor: 'text-red-600 dark:text-red-400',
+      titleColor: 'text-red-700 dark:text-red-300',
+      accent: 'bg-gradient-to-r from-red-500 to-rose-500',
+    },
+    savings: {
+      icon: PiggyBank,
+      bg: 'bg-green-50 dark:bg-green-950/30',
+      iconBg: 'bg-green-100 dark:bg-green-900/40',
+      iconColor: 'text-green-600 dark:text-green-400',
+      titleColor: 'text-green-700 dark:text-green-300',
+      accent: 'bg-gradient-to-r from-green-500 to-emerald-500',
+    },
+    achievement: {
+      icon: Award,
+      bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+      iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      titleColor: 'text-emerald-700 dark:text-emerald-300',
+      accent: 'bg-gradient-to-r from-emerald-500 to-teal-500',
+    },
+    optimization: {
+      icon: Lightbulb,
+      bg: 'bg-blue-50 dark:bg-blue-950/30',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/40',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      titleColor: 'text-blue-700 dark:text-blue-300',
+      accent: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+    },
+    goal: {
+      icon: Target,
+      bg: 'bg-purple-50 dark:bg-purple-950/30',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/40',
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      titleColor: 'text-purple-700 dark:text-purple-300',
+      accent: 'bg-gradient-to-r from-purple-500 to-violet-500',
+    },
+    opportunity: {
+      icon: Gift,
+      bg: 'bg-amber-50 dark:bg-amber-950/30',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      titleColor: 'text-amber-700 dark:text-amber-300',
+      accent: 'bg-gradient-to-r from-amber-500 to-yellow-500',
+    },
+    pattern: {
+      icon: TrendingUp,
+      bg: 'bg-indigo-50 dark:bg-indigo-950/30',
+      iconBg: 'bg-indigo-100 dark:bg-indigo-900/40',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      titleColor: 'text-indigo-700 dark:text-indigo-300',
+      accent: 'bg-gradient-to-r from-indigo-500 to-blue-500',
+    },
+    challenge: {
+      icon: Flame,
+      bg: 'bg-orange-50 dark:bg-orange-950/30',
+      iconBg: 'bg-orange-100 dark:bg-orange-900/40',
+      iconColor: 'text-orange-600 dark:text-orange-400',
+      titleColor: 'text-orange-700 dark:text-orange-300',
+      accent: 'bg-gradient-to-r from-orange-500 to-red-500',
+    },
+  }
+
+  return configs[type] || configs.optimization
 }

@@ -168,7 +168,7 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
                 className="w-24 h-24 rounded-full object-cover ring-4 ring-primary/10"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-3xl font-bold ring-4 ring-primary/10">
+              <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-white text-3xl font-bold ring-4 ring-primary/10">
                 {initials}
               </div>
             )}
@@ -277,8 +277,8 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
             }}
             className="w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-              <DollarSign className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
+              <DollarSign className="h-5 w-5 text-warning" />
             </div>
             <div className="flex-1 text-left">
               <p className="ios-body font-medium">Currency</p>
@@ -326,11 +326,11 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
             }}
             className="w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
               {formData.theme === 'dark' ? (
-                <Moon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <Moon className="h-5 w-5 text-accent" />
               ) : (
-                <Sun className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <Sun className="h-5 w-5 text-accent" />
               )}
             </div>
             <div className="flex-1 text-left">
@@ -377,8 +377,8 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
 
           {/* Notifications */}
           <div className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-              <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Bell className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 text-left">
               <p className="ios-body font-medium">Notifications</p>
@@ -419,8 +419,8 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
             }}
             className="w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-              <Mail className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+              <Mail className="h-5 w-5 text-success" />
             </div>
             <div className="flex-1 text-left">
               <p className="ios-body font-medium">Email Sync</p>

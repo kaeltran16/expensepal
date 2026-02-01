@@ -61,8 +61,8 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
         className="ios-card overflow-hidden relative group will-animate-all"
         data-testid="expense-card"
       >
-        {/* Gradient background overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+        {/* Category background overlay */}
+        <div className={`absolute inset-0 ${categoryConfig.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
 
         {/* Header */}
         <ExpenseCardHeader

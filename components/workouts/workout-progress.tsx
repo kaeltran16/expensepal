@@ -43,7 +43,7 @@ export function WorkoutProgress({
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          className="h-full bg-gradient-to-r from-primary via-primary to-primary/80 rounded-full relative overflow-hidden"
+          className="h-full bg-primary rounded-full relative overflow-hidden"
           transition={{
             type: "spring",
             stiffness: 100,

@@ -94,7 +94,7 @@ export function WeightTracker() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <div className="w-10 h-10 rounded-2xl bg-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
               <Scale className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -110,7 +110,7 @@ export function WeightTracker() {
               setShowLogModal(true)
               hapticFeedback('light')
             }}
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/25"
+            className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/25"
           >
             <Plus className="h-5 w-5 text-white" />
           </motion.button>
@@ -245,7 +245,7 @@ export function WeightTracker() {
                 <div className="relative px-6 pb-4 border-b">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                      <div className="w-12 h-12 rounded-2xl bg-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
                         <Scale className="w-6 h-6 text-white" />
                       </div>
                       <div>
@@ -312,7 +312,7 @@ export function WeightTracker() {
                       whileTap={{ scale: 0.95 }}
                       onClick={handleLogWeight}
                       disabled={!weight || logWeight.isPending}
-                      className="flex-1 h-12 sm:h-14 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold text-base shadow-lg shadow-purple-500/25 disabled:opacity-50"
+                      className="flex-1 h-12 sm:h-14 rounded-xl bg-purple-500 text-white font-semibold text-base shadow-lg shadow-purple-500/25 disabled:opacity-50"
                     >
                       {logWeight.isPending ? (
                         <div className="flex items-center justify-center gap-2">

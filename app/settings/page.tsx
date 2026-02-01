@@ -335,7 +335,7 @@ export default function SettingsPage() {
                 <Card className="ios-card overflow-hidden">
                   <CardContent className="p-0">
                     {/* Header with gradient accent */}
-                    <div className={`px-4 py-4 ${account.is_enabled ? 'bg-gradient-to-r from-primary/5 to-transparent' : 'bg-muted/30'}`}>
+                    <div className={`px-4 py-4 ${account.is_enabled ? 'bg-primary/5' : 'bg-muted/30'}`}>
                       <div className="flex items-center gap-3">
                         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${account.is_enabled ? 'bg-primary/10' : 'bg-muted'}`}>
                           <Mail className={`h-5 w-5 ${account.is_enabled ? 'text-primary' : 'text-muted-foreground'}`} />

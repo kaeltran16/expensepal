@@ -14,40 +14,40 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 
-export const CATEGORY_CONFIG: Record<string, { emoji: string; gradient: string; color: string }> = {
+export const CATEGORY_CONFIG: Record<string, { emoji: string; bg: string; color: string }> = {
   Food: {
     emoji: '🍔',
-    gradient: 'from-orange-500/20 to-red-500/20',
+    bg: 'bg-orange-500/20',
     color: 'text-orange-600 dark:text-orange-400'
   },
   Transport: {
     emoji: '🚗',
-    gradient: 'from-blue-500/20 to-cyan-500/20',
+    bg: 'bg-blue-500/20',
     color: 'text-blue-600 dark:text-blue-400'
   },
   Shopping: {
     emoji: '🛍️',
-    gradient: 'from-pink-500/20 to-purple-500/20',
+    bg: 'bg-pink-500/20',
     color: 'text-pink-600 dark:text-pink-400'
   },
   Entertainment: {
     emoji: '🎬',
-    gradient: 'from-purple-500/20 to-indigo-500/20',
+    bg: 'bg-purple-500/20',
     color: 'text-purple-600 dark:text-purple-400'
   },
   Bills: {
     emoji: '💡',
-    gradient: 'from-yellow-500/20 to-orange-500/20',
+    bg: 'bg-yellow-500/20',
     color: 'text-yellow-600 dark:text-yellow-400'
   },
   Health: {
     emoji: '🏥',
-    gradient: 'from-green-500/20 to-emerald-500/20',
+    bg: 'bg-green-500/20',
     color: 'text-green-600 dark:text-green-400'
   },
   Other: {
     emoji: '📦',
-    gradient: 'from-gray-500/20 to-slate-500/20',
+    bg: 'bg-gray-500/20',
     color: 'text-gray-600 dark:text-gray-400'
   },
 };
@@ -113,7 +113,7 @@ export function ExpenseCardHeader({ expense, isExpanded, onClick }: ExpenseCardH
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
-            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${categoryConfig.gradient} border border-border/50 flex items-center justify-center text-2xl shadow-sm relative overflow-hidden`}>
+            <div className={`w-12 h-12 rounded-2xl ${categoryConfig.bg} border border-border/50 flex items-center justify-center text-2xl shadow-sm relative overflow-hidden`}>
               {/* Shimmer effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               <span className="relative z-10">{categoryConfig.emoji}</span>

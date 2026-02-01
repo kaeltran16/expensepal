@@ -161,7 +161,7 @@ export function UserMenu({ onSyncEmails, isSyncing = false, onOpenProfile }: Use
               className="h-9 w-9 rounded-full object-cover ring-2 ring-primary/10"
             />
           ) : (
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+            <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-sm">
               {initials}
             </div>
           )}
@@ -177,7 +177,7 @@ export function UserMenu({ onSyncEmails, isSyncing = false, onOpenProfile }: Use
                 className="h-10 w-10 rounded-full object-cover"
               />
             ) : (
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-semibold">
+              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
                 {initials}
               </div>
             )}

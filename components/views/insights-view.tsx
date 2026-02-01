@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils'
 interface InsightsViewProps {
   expenses: Expense[]
   loading: boolean
-  onNavigate?: (view: 'budget' | 'analytics' | 'expenses') => void
+  onNavigate?: (view: 'budget' | 'insights' | 'expenses') => void
 }
 
 type TabType = 'weekly' | 'insights'
@@ -126,7 +126,7 @@ export function InsightsView({ expenses, loading, onNavigate }: InsightsViewProp
             className="space-y-4"
           >
             {/* Quick Insights Cards */}
-            <InsightsCards expenses={expenses} />
+            <InsightsCards expenses={expenses} onNavigate={onNavigate} />
 
             {/* Spending Patterns */}
             {patterns.length > 0 && (

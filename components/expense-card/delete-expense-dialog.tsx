@@ -34,7 +34,7 @@ export function DeleteExpenseDialog({
         className="ios-card"
       >
         <AlertDialogHeader>
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/30 border-4 border-destructive/10">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/20 border-4 border-destructive/10">
             <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
           <AlertDialogTitle className="text-center ios-title text-xl">

@@ -28,8 +28,8 @@ export function StatsCard({ title, value, icon: Icon, description, index = 0 }: 
       }}
     >
       <div className="p-5 relative">
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+        {/* Subtle overlay */}
+        <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
 
         {/* Content */}
         <div className="relative">

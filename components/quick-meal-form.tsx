@@ -60,7 +60,7 @@ export function QuickMealForm() {
     >
       {/* Header with gradient icon */}
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+        <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
           <Utensils className="h-5 w-5 text-white" />
         </div>
         <div>
@@ -170,7 +170,7 @@ export function QuickMealForm() {
               font-semibold text-base transition-all duration-200
               ${createMealMutation.isPending || !name.trim()
                 ? 'bg-orange-400/50 text-white/70 cursor-not-allowed'
-                : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white active:scale-[0.98] shadow-lg shadow-orange-500/25'
+                : 'bg-orange-500 hover:bg-orange-600 text-white active:scale-[0.98] shadow-lg shadow-orange-500/25'
               }
             `}
           >

@@ -324,7 +324,7 @@ export function WorkoutLogger({
                   bounce: 0.6,
                   duration: 0.8
                 }}
-                className="absolute top-3 right-3 flex items-center gap-1.5 bg-gradient-to-r from-green-500 to-green-600 text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-lg"
+                className="absolute top-3 right-3 flex items-center gap-1.5 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-lg"
               >
                 <motion.div
                   animate={{ rotate: [0, 360] }}

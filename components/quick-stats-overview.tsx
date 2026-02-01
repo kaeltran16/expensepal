@@ -50,7 +50,7 @@ export function QuickStatsOverview({
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="flex items-center gap-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                    className="flex items-center gap-1 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                   >
                     <Sparkles className="h-2 w-2" />
                     Active

@@ -35,7 +35,7 @@ export function ExpenseNotesEditor({ expense, onUpdate }: ExpenseNotesEditorProp
   }
 
   return (
-    <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/10">
+    <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">

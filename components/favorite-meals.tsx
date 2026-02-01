@@ -46,7 +46,7 @@ export function FavoriteMeals() {
       >
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
+          <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
             <Heart className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -56,8 +56,8 @@ export function FavoriteMeals() {
         </div>
 
         {/* Empty state */}
-        <div className="text-center py-6 px-4 rounded-2xl bg-pink-50/50 dark:bg-pink-900/10 border border-pink-100 dark:border-pink-900/20">
-          <Heart className="h-8 w-8 text-pink-400 mx-auto mb-2" />
+        <div className="text-center py-6 px-4 rounded-2xl bg-accent/5 dark:bg-accent/10 border border-accent/20">
+          <Heart className="h-8 w-8 text-accent mx-auto mb-2" />
           <p className="text-sm text-muted-foreground mb-1">No favorites yet</p>
           <p className="text-xs text-muted-foreground">
             Swipe right on a meal to save it here
@@ -75,7 +75,7 @@ export function FavoriteMeals() {
     >
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
+        <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
           <Heart className="h-5 w-5 text-white" />
         </div>
         <div>
@@ -98,10 +98,10 @@ export function FavoriteMeals() {
               whileTap={{ scale: 0.98 }}
               onClick={() => handleQuickAdd(food)}
               disabled={quickAddMeal.isPending}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 border border-pink-100 dark:border-pink-800/30 text-left transition-all hover:shadow-sm active:bg-pink-100 dark:active:bg-pink-900/30"
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-accent/5 dark:bg-accent/10 border border-accent/20 text-left transition-all hover:shadow-sm active:bg-accent/10 dark:active:bg-accent/20"
             >
               {/* Icon */}
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center flex-shrink-0 shadow-sm">
                 <Utensils className="h-5 w-5 text-white" />
               </div>
 
@@ -109,7 +109,7 @@ export function FavoriteMeals() {
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-sm truncate">{food.name}</h4>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-medium text-pink-600 dark:text-pink-400">{food.calories} cal</span>
+                  <span className="font-medium text-accent">{food.calories} cal</span>
                   {(food.protein > 0 || food.carbs > 0 || food.fat > 0) && (
                     <>
                       <span>•</span>
@@ -120,7 +120,7 @@ export function FavoriteMeals() {
               </div>
 
               {/* Add button */}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-md shadow-pink-500/30">
+              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0 shadow-md shadow-accent/30">
                 <Plus className="h-4 w-4 text-white" />
               </div>
             </motion.button>

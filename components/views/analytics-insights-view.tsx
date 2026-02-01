@@ -45,7 +45,7 @@ const AnalyticsCharts = lazy(() =>
 interface AnalyticsInsightsViewProps {
   expenses: Expense[]
   loading: boolean
-  onNavigate?: (view: 'budget' | 'expenses') => void
+  onNavigate?: (view: 'budget' | 'expenses' | 'insights') => void
 }
 
 type TabType = 'summary' | 'charts' | 'insights'
@@ -130,7 +130,7 @@ export function AnalyticsInsightsView({
           ) : (
             <div className="space-y-5">
               {/* Quick Insights Cards */}
-              <InsightsCards expenses={expenses} />
+              <InsightsCards expenses={expenses} onNavigate={onNavigate} />
 
               {/* Spending Patterns */}
               {patterns.length > 0 && (

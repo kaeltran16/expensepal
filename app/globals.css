@@ -17,7 +17,7 @@
     --secondary-foreground: 0 0% 0%;
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 46%; /* iOS secondary label */
-    --accent: 211 100% 50%;
+    --accent: 280 85% 60%; /* Purple for secondary highlights */
     --accent-foreground: 0 0% 100%;
     --destructive: 4 90% 58%; /* iOS Red #FF3B30 */
     --destructive-foreground: 0 0% 100%;
@@ -31,6 +31,14 @@
     --ios-tertiary: 240 5% 58%; /* Tertiary label */
     --ios-success: 145 73% 49%; /* iOS Green #34C759 */
     --ios-warning: 35 91% 62%; /* iOS Orange #FF9500 */
+
+    /* Semantic colors */
+    --success: 145 73% 49%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 91% 62%;
+    --warning-foreground: 0 0% 0%;
+    --info: 211 100% 50%;
+    --info-foreground: 0 0% 100%;
 
     /* RGB values for transparency */
     --card-rgb: 255, 255, 255;
@@ -59,7 +67,7 @@
     --secondary-foreground: 0 0% 100%;
     --muted: 240 3% 18%;
     --muted-foreground: 240 5% 64%; /* iOS dark secondary label */
-    --accent: 211 100% 50%;
+    --accent: 280 85% 65%; /* Purple (slightly brighter for dark mode) */
     --accent-foreground: 0 0% 100%;
     --destructive: 4 90% 58%; /* iOS Red (same in dark) */
     --destructive-foreground: 0 0% 100%;
@@ -72,6 +80,14 @@
     --ios-tertiary: 240 5% 58%; /* Tertiary label */
     --ios-success: 145 73% 49%; /* iOS Green */
     --ios-warning: 35 91% 62%; /* iOS Orange */
+
+    /* Semantic colors (dark mode) */
+    --success: 145 73% 49%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 91% 62%;
+    --warning-foreground: 0 0% 100%;
+    --info: 211 100% 50%;
+    --info-foreground: 0 0% 100%;
 
     /* RGB values for transparency */
     --card-rgb: 28, 28, 30;

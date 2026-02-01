@@ -126,7 +126,7 @@ export function WorkoutsView({
           hapticFeedback('medium')
         }}
         variant="outline"
-        className="w-full min-h-touch gap-2 bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20 hover:border-primary/40"
+        className="w-full min-h-touch gap-2 bg-primary/10 border-primary/20 hover:border-primary/40"
       >
         <Sparkles className="h-4 w-4 text-primary" />
         Generate AI Workout
