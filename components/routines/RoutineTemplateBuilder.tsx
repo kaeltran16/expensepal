@@ -26,12 +26,14 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { TimeOfDayPicker } from './TimeOfDayPicker'
+import { FrequencyPicker } from './FrequencyPicker'
 import type {
   RoutineStep,
   CustomRoutineStep,
   RoutineTemplate,
   TemplateStepRef,
   TimeOfDay,
+  RoutineFrequency,
   CreateRoutineTemplateInput,
 } from '@/lib/types/routines'
 
@@ -66,6 +68,7 @@ export function RoutineTemplateBuilder({
   const [description, setDescription] = useState('')
   const [icon, setIcon] = useState('✨')
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay | undefined>()
+  const [frequency, setFrequency] = useState<RoutineFrequency>({ type: 'daily' })
   const [selectedSteps, setSelectedSteps] = useState<SelectedStep[]>([])
   const [stepPickerOpen, setStepPickerOpen] = useState(false)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
@@ -77,6 +80,7 @@ export function RoutineTemplateBuilder({
       setDescription(template.description || '')
       setIcon(template.icon || '✨')
       setTimeOfDay(template.time_of_day || undefined)
+      setFrequency(template.frequency || { type: 'daily' })
 
       // Expand template steps with full data
       const expanded: SelectedStep[] = (template.steps || []).map((stepRef) => {
@@ -98,6 +102,7 @@ export function RoutineTemplateBuilder({
       setDescription('')
       setIcon('✨')
       setTimeOfDay(undefined)
+      setFrequency({ type: 'daily' })
       setSelectedSteps([])
     }
   }, [template, availableSteps, customSteps, open])
@@ -122,6 +127,7 @@ export function RoutineTemplateBuilder({
       time_of_day: timeOfDay,
       estimated_minutes: totalMinutes,
       steps,
+      frequency,
     })
   }
 
@@ -208,6 +214,16 @@ export function RoutineTemplateBuilder({
             <TimeOfDayPicker
               value={timeOfDay}
               onChange={setTimeOfDay}
+              className="mt-2"
+            />
+          </div>
+
+          {/* Frequency */}
+          <div>
+            <label className="text-xs text-muted-foreground">Frequency</label>
+            <FrequencyPicker
+              value={frequency}
+              onChange={setFrequency}
               className="mt-2"
             />
           </div>

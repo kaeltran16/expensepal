@@ -67,6 +67,7 @@ export async function PUT(
         estimated_minutes: body.estimated_minutes,
         steps: body.steps,
         tags: body.tags,
+        frequency: body.frequency,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

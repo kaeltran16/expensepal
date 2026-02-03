@@ -5,6 +5,15 @@
 // Time of day options for routines
 export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night'
 
+// Days of week for frequency scheduling
+export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+
+// Routine frequency configuration
+export type RoutineFrequency =
+  | { type: 'daily' }
+  | { type: 'specific_days'; days: DayOfWeek[] }
+  | { type: 'interval'; every_x_days: number; start_date: string }
+
 // Step categories
 export type StepCategory = 'skincare' | 'hygiene' | 'morning' | 'evening' | 'fitness' | 'mindfulness'
 
@@ -66,6 +75,7 @@ export interface RoutineTemplate {
   steps: TemplateStepRef[]
   is_default: boolean
   tags?: string[] | null
+  frequency?: RoutineFrequency | null
   created_at: string
   updated_at: string
 }
@@ -182,6 +192,7 @@ export interface CreateRoutineTemplateInput {
   estimated_minutes?: number
   steps: TemplateStepRef[]
   tags?: string[]
+  frequency?: RoutineFrequency
 }
 
 export interface UpdateRoutineTemplateInput {
@@ -192,6 +203,7 @@ export interface UpdateRoutineTemplateInput {
   estimated_minutes?: number
   steps?: TemplateStepRef[]
   tags?: string[]
+  frequency?: RoutineFrequency
 }
 
 export interface CompleteRoutineInput {

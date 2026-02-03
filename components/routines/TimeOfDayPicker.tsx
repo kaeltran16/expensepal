@@ -6,7 +6,7 @@ import { Moon, Sun, Sunrise, Sunset } from 'lucide-react'
 
 interface TimeOfDayPickerProps {
   value?: TimeOfDay | null
-  onChange: (value: TimeOfDay) => void
+  onChange: (value: TimeOfDay | undefined) => void
   className?: string
 }
 
@@ -28,7 +28,7 @@ export function TimeOfDayPicker({ value, onChange, className }: TimeOfDayPickerP
           <button
             key={option.value}
             type="button"
-            onClick={() => onChange(option.value)}
+            onClick={() => onChange(isSelected ? undefined : option.value)}
             className={cn(
               'flex flex-1 flex-col items-center gap-1 rounded-xl p-3 transition-all',
               isSelected
