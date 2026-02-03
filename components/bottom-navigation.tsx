@@ -32,7 +32,7 @@ const RIGHT_NAV_ITEMS: NavItem[] = [
 ]
 
 // Views that are accessible from the "More" menu
-const MORE_VIEWS: ViewType[] = ['calories', 'budget', 'recurring', 'profile']
+const MORE_VIEWS: ViewType[] = ['routines', 'calories', 'budget', 'recurring', 'profile']
 
 export function BottomNavigation({ activeView, onViewChange, onAddExpense, onOpenMore, isMoreOpen }: BottomNavProps) {
   const handleNavClick = (viewId: ViewType | 'more') => {

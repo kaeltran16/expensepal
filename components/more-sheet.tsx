@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { Flame, Target, Repeat, User, ChevronRight, X } from 'lucide-react'
+import { Flame, Target, Repeat, User, ChevronRight, X, Sparkles } from 'lucide-react'
 import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
 
@@ -13,6 +13,7 @@ interface MoreSheetProps {
 }
 
 const MORE_ITEMS = [
+  { id: 'routines' as const, label: 'Routines', description: 'Daily habits & XP rewards', icon: Sparkles, color: 'text-teal-500' },
   { id: 'calories' as const, label: 'Calories', description: 'Track meals & nutrition', icon: Flame, color: 'text-orange-500' },
   { id: 'budget' as const, label: 'Budget', description: 'Manage spending limits', icon: Target, color: 'text-blue-500' },
   { id: 'recurring' as const, label: 'Recurring', description: 'Subscriptions & bills', icon: Repeat, color: 'text-green-500' },

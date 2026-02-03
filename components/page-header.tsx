@@ -18,6 +18,7 @@ const VIEW_TITLES: Record<ViewType, string> = {
   insights: 'Insights',
   workouts: 'Workouts',
   profile: 'Profile',
+  routines: 'Routines',
 };
 
 export function PageHeader({ activeView, scrolled }: PageHeaderProps) {

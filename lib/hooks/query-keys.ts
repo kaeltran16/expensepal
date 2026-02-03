@@ -159,6 +159,59 @@ export const queryKeys = {
     list: (favoritesOnly?: boolean) => [...queryKeys.savedFoods.lists(), { favoritesOnly }] as const,
     favorites: () => [...queryKeys.savedFoods.all, 'favorites'] as const,
   },
+
+  // Routines
+  routines: {
+    all: ['routines'] as const,
+    lists: () => [...queryKeys.routines.all, 'list'] as const,
+    list: (filters?: RoutineFilters) => [...queryKeys.routines.lists(), filters] as const,
+    details: () => [...queryKeys.routines.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.routines.details(), id] as const,
+  },
+
+  // Routine Steps
+  routineSteps: {
+    all: ['routineSteps'] as const,
+    lists: () => [...queryKeys.routineSteps.all, 'list'] as const,
+    list: (category?: string) => [...queryKeys.routineSteps.lists(), category] as const,
+  },
+
+  // Routine Templates
+  routineTemplates: {
+    all: ['routineTemplates'] as const,
+    lists: () => [...queryKeys.routineTemplates.all, 'list'] as const,
+    list: (timeOfDay?: string) => [...queryKeys.routineTemplates.lists(), timeOfDay] as const,
+    details: () => [...queryKeys.routineTemplates.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.routineTemplates.details(), id] as const,
+  },
+
+  // Routine Streaks
+  routineStreaks: {
+    all: ['routineStreaks'] as const,
+    current: () => [...queryKeys.routineStreaks.all, 'current'] as const,
+  },
+
+  // Routine Stats (XP, Level)
+  routineStats: {
+    all: ['routineStats'] as const,
+    current: () => [...queryKeys.routineStats.all, 'current'] as const,
+  },
+
+  // Routine Challenges
+  routineChallenges: {
+    all: ['routineChallenges'] as const,
+    lists: () => [...queryKeys.routineChallenges.all, 'list'] as const,
+    list: (type?: string) => [...queryKeys.routineChallenges.lists(), type] as const,
+  },
+
+  // Routine Journal
+  routineJournal: {
+    all: ['routineJournal'] as const,
+    lists: () => [...queryKeys.routineJournal.all, 'list'] as const,
+    list: (filters?: RoutineJournalFilters) => [...queryKeys.routineJournal.lists(), filters] as const,
+    details: () => [...queryKeys.routineJournal.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.routineJournal.details(), id] as const,
+  },
 } as const
 
 // Filter types
@@ -213,4 +266,16 @@ export interface WeightLogFilters {
   startDate?: string
   endDate?: string
   limit?: number
+}
+
+export interface RoutineFilters {
+  limit?: number
+  startDate?: string
+  endDate?: string
+}
+
+export interface RoutineJournalFilters {
+  limit?: number
+  startDate?: string
+  endDate?: string
 }

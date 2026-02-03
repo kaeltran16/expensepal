@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       budget_recommendations_cache: {
@@ -228,6 +203,45 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           video_url?: string | null
+        }
+        Relationships: []
+      }
+      custom_routine_steps: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          gif_url: string | null
+          id: string
+          image_url: string | null
+          name: string
+          tips: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          gif_url?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          tips?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          gif_url?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          tips?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -742,6 +756,235 @@ export type Database = {
         }
         Relationships: []
       }
+      routine_challenges: {
+        Row: {
+          challenge_type: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          requirement_metadata: Json | null
+          requirement_type: string
+          requirement_value: number
+          start_date: string | null
+          xp_reward: number
+        }
+        Insert: {
+          challenge_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          requirement_metadata?: Json | null
+          requirement_type: string
+          requirement_value: number
+          start_date?: string | null
+          xp_reward: number
+        }
+        Update: {
+          challenge_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          requirement_metadata?: Json | null
+          requirement_type?: string
+          requirement_value?: number
+          start_date?: string | null
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      routine_completions: {
+        Row: {
+          bonus_xp: number | null
+          completed_at: string | null
+          created_at: string | null
+          duration_minutes: number | null
+          id: string
+          routine_date: string
+          started_at: string | null
+          steps_completed: Json | null
+          template_id: string | null
+          time_of_day: string | null
+          user_id: string
+          xp_earned: number | null
+        }
+        Insert: {
+          bonus_xp?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          routine_date?: string
+          started_at?: string | null
+          steps_completed?: Json | null
+          template_id?: string | null
+          time_of_day?: string | null
+          user_id: string
+          xp_earned?: number | null
+        }
+        Update: {
+          bonus_xp?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          routine_date?: string
+          started_at?: string | null
+          steps_completed?: Json | null
+          template_id?: string | null
+          time_of_day?: string | null
+          user_id?: string
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_completions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "routine_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routine_journal_entries: {
+        Row: {
+          created_at: string | null
+          energy_level: number | null
+          entry_date: string
+          id: string
+          mood: string | null
+          notes: string | null
+          routine_completion_id: string | null
+          tags: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          energy_level?: number | null
+          entry_date?: string
+          id?: string
+          mood?: string | null
+          notes?: string | null
+          routine_completion_id?: string | null
+          tags?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          energy_level?: number | null
+          entry_date?: string
+          id?: string
+          mood?: string | null
+          notes?: string | null
+          routine_completion_id?: string | null
+          tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_journal_entries_routine_completion_id_fkey"
+            columns: ["routine_completion_id"]
+            isOneToOne: false
+            referencedRelation: "routine_completions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routine_steps: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          gif_url: string | null
+          id: string
+          image_url: string | null
+          is_default: boolean | null
+          name: string
+          tips: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          gif_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_default?: boolean | null
+          name: string
+          tips?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          gif_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_default?: boolean | null
+          name?: string
+          tips?: string | null
+        }
+        Relationships: []
+      }
+      routine_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          estimated_minutes: number | null
+          icon: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          steps: Json
+          tags: string[] | null
+          time_of_day: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          estimated_minutes?: number | null
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          steps?: Json
+          tags?: string[] | null
+          time_of_day?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          estimated_minutes?: number | null
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          steps?: Json
+          tags?: string[] | null
+          time_of_day?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       saved_foods: {
         Row: {
           calories: number
@@ -914,6 +1157,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_challenge_progress: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          created_at: string | null
+          current_progress: number | null
+          id: string
+          is_completed: boolean | null
+          user_id: string
+          xp_claimed: boolean | null
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_progress?: number | null
+          id?: string
+          is_completed?: boolean | null
+          user_id: string
+          xp_claimed?: boolean | null
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_progress?: number | null
+          id?: string
+          is_completed?: boolean | null
+          user_id?: string
+          xp_claimed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenge_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "routine_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_email_settings: {
         Row: {
           app_password: string
@@ -1005,6 +1289,72 @@ export type Database = {
           notification_enabled?: boolean | null
           target_weight?: number | null
           theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_routine_stats: {
+        Row: {
+          created_at: string | null
+          current_level: number | null
+          id: string
+          lifetime_routines: number | null
+          perfect_weeks: number | null
+          total_xp: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_level?: number | null
+          id?: string
+          lifetime_routines?: number | null
+          perfect_weeks?: number | null
+          total_xp?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_level?: number | null
+          id?: string
+          lifetime_routines?: number | null
+          perfect_weeks?: number | null
+          total_xp?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_routine_streaks: {
+        Row: {
+          created_at: string | null
+          current_streak: number | null
+          id: string
+          last_routine_date: string | null
+          longest_streak: number | null
+          total_completions: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_streak?: number | null
+          id?: string
+          last_routine_date?: string | null
+          longest_streak?: number | null
+          total_completions?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_streak?: number | null
+          id?: string
+          last_routine_date?: string | null
+          longest_streak?: number | null
+          total_completions?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1514,9 +1864,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

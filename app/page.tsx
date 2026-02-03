@@ -89,6 +89,7 @@ const CaloriesView = lazy(() => import('@/components/views').then(mod => ({ defa
 const RecurringView = lazy(() => import('@/components/views').then(mod => ({ default: mod.RecurringView })));
 const WorkoutsView = lazy(() => import('@/components/views').then(mod => ({ default: mod.WorkoutsView })));
 const ProfileView = lazy(() => import('@/components/views').then(mod => ({ default: mod.ProfileView })));
+const RoutinesView = lazy(() => import('@/components/views').then(mod => ({ default: mod.RoutinesView })));
 
 function HomeContent() {
   // Client-side UI state (needs to be before hooks that depend on it)
@@ -440,7 +441,7 @@ function HomeContent() {
 
       <PullToRefreshWrapper
         onRefresh={handleRefresh}
-        enabled={['expenses', 'budget', 'insights', 'calories'].includes(activeView)}
+        enabled={['expenses', 'budget', 'insights', 'calories', 'routines'].includes(activeView)}
       >
         <div
           ref={contentRef}
@@ -653,6 +654,12 @@ function HomeContent() {
                   loading={profileLoading}
                   onUpdate={updateProfile}
                 />
+              </ErrorBoundary>
+            </Suspense>
+          ) : activeView === 'routines' ? (
+            <Suspense fallback={<ViewSkeleton />}>
+              <ErrorBoundary errorTitle="Failed to load routines" errorDescription="Unable to load your routines">
+                <RoutinesView />
               </ErrorBoundary>
             </Suspense>
           ) : null}

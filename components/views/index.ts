@@ -7,6 +7,7 @@ export { GoalsView } from './goals-view';
 export { InsightsView } from './insights-view';
 export { ProfileView } from './profile-view';
 export { RecurringView } from './recurring-view';
+export { RoutinesView } from '../routines/RoutinesView';
 export { SummaryView } from './summary-view';
 export { WorkoutsView } from './workouts-view';
 

@@ -59,6 +59,30 @@ export const coreColors = {
     light: 'bg-green-50 dark:bg-green-900/20',
     text: 'text-green-600 dark:text-green-400',
   },
+
+  // Routines (Teal tones)
+  routines: {
+    solid: 'bg-teal-500',
+    light: 'bg-teal-100 dark:bg-teal-900/30',
+    text: 'text-teal-600 dark:text-teal-400',
+    ring: 'ring-teal-500/20',
+  },
+
+  // Streak (Orange tones for fire/streak theme)
+  streak: {
+    solid: 'bg-orange-500',
+    light: 'bg-orange-100 dark:bg-orange-900/30',
+    text: 'text-orange-600 dark:text-orange-400',
+    ring: 'ring-orange-500/20',
+  },
+
+  // XP/Level (Emerald/green for growth)
+  xp: {
+    solid: 'bg-emerald-500',
+    light: 'bg-emerald-100 dark:bg-emerald-900/30',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    ring: 'ring-emerald-500/20',
+  },
 } as const;
 
 // Progress bar solid colors (replacing gradients)
@@ -79,4 +103,8 @@ export const iconBgColors = {
   workout: 'bg-primary',
   success: 'bg-emerald-500',
   target: 'bg-orange-500',
+  routine: 'bg-teal-500',
+  streak: 'bg-orange-500',
+  xp: 'bg-emerald-500',
+  challenge: 'bg-purple-500',
 } as const;
