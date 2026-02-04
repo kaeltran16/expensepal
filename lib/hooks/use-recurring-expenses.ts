@@ -157,6 +157,66 @@ export function useCreateRecurringExpense() {
 }
 
 /**
+ * Hook with optimistic create for recurring expenses
+ */
+export function useCreateRecurringExpenseOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createRecurringExpense,
+    onMutate: async (newExpense) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.recurringExpenses.all })
+
+      const previousData = queryClient.getQueryData(queryKeys.recurringExpenses.lists())
+
+      const optimisticExpense = {
+        id: `temp-${Date.now()}`,
+        user_id: '',
+        merchant: newExpense.merchant,
+        category: newExpense.category || '',
+        amount: newExpense.amount,
+        currency: 'VND',
+        frequency: newExpense.frequency,
+        next_due_date: newExpense.next_due_date,
+        is_active: true as boolean | null,
+        source: newExpense.source || 'manual',
+        skipped_dates: [] as string[] | null,
+        auto_create: null,
+        confidence_score: null,
+        end_date: null,
+        interval_days: null,
+        last_occurrence: null,
+        notes: null,
+        original_amount: null,
+        reminder_days: null,
+        start_date: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as unknown as RecurringExpense
+
+      queryClient.setQueriesData({ queryKey: queryKeys.recurringExpenses.lists() }, (old: RecurringExpense[] | undefined) => {
+        if (!old) return [optimisticExpense]
+        return [optimisticExpense, ...old]
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKeys.recurringExpenses.lists(), context.previousData)
+      }
+      toast.error(error.message || 'Failed to create recurring expense')
+    },
+    onSuccess: () => {
+      toast.success('Recurring expense created')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recurringExpenses.all })
+    },
+  })
+}
+
+/**
  * Update recurring expense mutation
  */
 async function updateRecurringExpense({
@@ -199,6 +259,43 @@ export function useUpdateRecurringExpense() {
 }
 
 /**
+ * Hook with optimistic update for recurring expenses
+ */
+export function useUpdateRecurringExpenseOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: updateRecurringExpense,
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.recurringExpenses.all })
+
+      const previousData = queryClient.getQueryData(queryKeys.recurringExpenses.lists())
+
+      queryClient.setQueriesData({ queryKey: queryKeys.recurringExpenses.lists() }, (old: RecurringExpense[] | undefined) => {
+        if (!old) return []
+        return old.map((expense) =>
+          expense.id === id ? { ...expense, ...updates, updated_at: new Date().toISOString() } : expense
+        )
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKeys.recurringExpenses.lists(), context.previousData)
+      }
+      toast.error(error.message || 'Failed to update recurring expense')
+    },
+    onSuccess: () => {
+      toast.success('Recurring expense updated')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recurringExpenses.all })
+    },
+  })
+}
+
+/**
  * Delete recurring expense mutation
  */
 async function deleteRecurringExpense(id: string): Promise<void> {
@@ -226,6 +323,41 @@ export function useDeleteRecurringExpense() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete recurring expense')
+    },
+  })
+}
+
+/**
+ * Hook with optimistic delete for recurring expenses
+ */
+export function useDeleteRecurringExpenseOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteRecurringExpense,
+    onMutate: async (expenseId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.recurringExpenses.all })
+
+      const previousData = queryClient.getQueryData(queryKeys.recurringExpenses.lists())
+
+      queryClient.setQueriesData({ queryKey: queryKeys.recurringExpenses.lists() }, (old: RecurringExpense[] | undefined) => {
+        if (!old) return []
+        return old.filter((expense) => expense.id !== expenseId)
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKeys.recurringExpenses.lists(), context.previousData)
+      }
+      toast.error('Failed to delete recurring expense')
+    },
+    onSuccess: () => {
+      toast.success('Recurring expense deleted')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recurringExpenses.all })
     },
   })
 }
@@ -268,6 +400,45 @@ export function useSkipRecurringExpenseDate() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to skip date')
+    },
+  })
+}
+
+/**
+ * Hook with optimistic skip date for recurring expenses
+ */
+export function useSkipRecurringExpenseDateOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: skipRecurringExpenseDate,
+    onMutate: async ({ id, date }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.recurringExpenses.all })
+
+      const previousData = queryClient.getQueryData(queryKeys.recurringExpenses.lists())
+
+      queryClient.setQueriesData({ queryKey: queryKeys.recurringExpenses.lists() }, (old: RecurringExpense[] | undefined) => {
+        if (!old) return []
+        return old.map((expense) => {
+          if (expense.id !== id) return expense
+          const skippedDates = expense.skipped_dates || []
+          return { ...expense, skipped_dates: [...skippedDates, date] }
+        })
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKeys.recurringExpenses.lists(), context.previousData)
+      }
+      toast.error(error.message || 'Failed to skip date')
+    },
+    onSuccess: () => {
+      toast.success('Date skipped')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recurringExpenses.all })
     },
   })
 }

@@ -163,6 +163,82 @@ export function useCreateTemplate() {
   })
 }
 
+/**
+ * Hook with optimistic create for workout templates
+ */
+export function useCreateTemplateOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (templateData: {
+      name: string
+      description?: string
+      difficulty?: 'beginner' | 'intermediate' | 'advanced'
+      duration_minutes?: number
+      tags?: string[]
+      target_goal?: 'strength' | 'hypertrophy' | 'endurance' | 'general_fitness'
+      exercises?: Array<{
+        exercise_id: string
+        sets: number
+        reps: string | number
+        rest: number
+        notes?: string
+        order?: number
+      }>
+    }) => {
+      const res = await fetch('/api/workout-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templateData),
+      })
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || 'failed to create template')
+      }
+      return res.json()
+    },
+    onMutate: async (newTemplate) => {
+      await queryClient.cancelQueries({ queryKey: workoutKeys.templates })
+
+      const previousTemplates = queryClient.getQueryData<WorkoutTemplate[]>(workoutKeys.templates)
+
+      const optimisticTemplate = {
+        id: `temp-${Date.now()}`,
+        user_id: null,
+        name: newTemplate.name,
+        description: newTemplate.description || null,
+        difficulty: newTemplate.difficulty || null,
+        duration_minutes: newTemplate.duration_minutes || null,
+        tags: newTemplate.tags || [],
+        target_goal: newTemplate.target_goal || null,
+        exercises: [] as unknown,
+        is_default: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as WorkoutTemplate
+
+      queryClient.setQueryData<WorkoutTemplate[]>(workoutKeys.templates, (old) => {
+        if (!old) return [optimisticTemplate]
+        return [optimisticTemplate, ...old]
+      })
+
+      return { previousTemplates }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousTemplates) {
+        queryClient.setQueryData(workoutKeys.templates, context.previousTemplates)
+      }
+      toast.error(error.message || 'failed to create template')
+    },
+    onSuccess: () => {
+      toast.success('template created!')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: workoutKeys.templates })
+    },
+  })
+}
+
 // useUpdateTemplate - update existing workout template
 export function useUpdateTemplate() {
   const queryClient = useQueryClient()
@@ -209,6 +285,52 @@ export function useUpdateTemplate() {
   })
 }
 
+/**
+ * Hook with optimistic update for workout templates
+ */
+export function useUpdateTemplateOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (params: { id: string; [key: string]: unknown }) => {
+      const { id, ...templateData } = params
+      const res = await fetch(`/api/workout-templates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templateData),
+      })
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || 'failed to update template')
+      }
+      return res.json()
+    },
+    onMutate: async ({ id, ...updates }) => {
+      await queryClient.cancelQueries({ queryKey: workoutKeys.templates })
+
+      const previousTemplates = queryClient.getQueryData<WorkoutTemplate[]>(workoutKeys.templates)
+
+      queryClient.setQueryData<WorkoutTemplate[]>(workoutKeys.templates, (old) => {
+        if (!old) return []
+        return old.map((template) =>
+          template.id === id ? { ...template, ...updates, updated_at: new Date().toISOString() } : template
+        )
+      })
+
+      return { previousTemplates }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousTemplates) {
+        queryClient.setQueryData(workoutKeys.templates, context.previousTemplates)
+      }
+      toast.error(error.message || 'failed to update template')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: workoutKeys.templates })
+    },
+  })
+}
+
 // useDeleteTemplate - delete workout template
 export function useDeleteTemplate() {
   const queryClient = useQueryClient()
@@ -232,6 +354,50 @@ export function useDeleteTemplate() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'failed to delete template')
+    },
+  })
+}
+
+/**
+ * Hook with optimistic delete for workout templates
+ */
+export function useDeleteTemplateOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      const res = await fetch(`/api/workout-templates/${templateId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || 'failed to delete template')
+      }
+      return res.json()
+    },
+    onMutate: async (templateId) => {
+      await queryClient.cancelQueries({ queryKey: workoutKeys.templates })
+
+      const previousTemplates = queryClient.getQueryData<WorkoutTemplate[]>(workoutKeys.templates)
+
+      queryClient.setQueryData<WorkoutTemplate[]>(workoutKeys.templates, (old) => {
+        if (!old) return []
+        return old.filter((template) => template.id !== templateId)
+      })
+
+      return { previousTemplates }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousTemplates) {
+        queryClient.setQueryData(workoutKeys.templates, context.previousTemplates)
+      }
+      toast.error(error.message || 'failed to delete template')
+    },
+    onSuccess: () => {
+      toast.success('template deleted!')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: workoutKeys.templates })
     },
   })
 }

@@ -118,6 +118,56 @@ export function useLogWeight() {
   })
 }
 
+/**
+ * Hook with optimistic update for logging weight
+ */
+export function useLogWeightOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: logWeight,
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.weightLogs.all })
+
+      const previousData = queryClient.getQueryData<WeightLog[]>(queryKeys.weightLogs.lists())
+
+      const optimisticLog: WeightLog = {
+        id: `temp-${Date.now()}`,
+        user_id: '',
+        weight: data.weight,
+        date: data.date,
+        notes: data.notes || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      queryClient.setQueriesData({ queryKey: queryKeys.weightLogs.lists() }, (old: WeightLog[] | undefined) => {
+        if (!old) return [optimisticLog]
+        return [optimisticLog, ...old]
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKeys.weightLogs.lists(), context.previousData)
+      }
+      toast.error(error.message || 'Failed to log weight')
+    },
+    onSuccess: (data) => {
+      toast.success('Weight logged!', {
+        description: `${data.weight} kg on ${data.date}`,
+      })
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.weightLogs.all,
+        refetchType: 'all',
+      })
+    },
+  })
+}
+
 async function deleteWeightLog(id: string): Promise<void> {
   const response = await fetch(`/api/weight/${id}`, {
     method: 'DELETE',
@@ -138,6 +188,44 @@ export function useDeleteWeightLog() {
     },
     onError: () => {
       toast.error('Failed to delete weight entry')
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.weightLogs.all,
+        refetchType: 'all',
+      })
+    },
+  })
+}
+
+/**
+ * Hook with optimistic delete for weight logs
+ */
+export function useDeleteWeightLogOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteWeightLog,
+    onMutate: async (logId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.weightLogs.all })
+
+      const previousData = queryClient.getQueryData<WeightLog[]>(queryKeys.weightLogs.lists())
+
+      queryClient.setQueriesData({ queryKey: queryKeys.weightLogs.lists() }, (old: WeightLog[] | undefined) => {
+        if (!old) return []
+        return old.filter((log) => log.id !== logId)
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKeys.weightLogs.lists(), context.previousData)
+      }
+      toast.error('Failed to delete weight entry')
+    },
+    onSuccess: () => {
+      toast.success('Weight entry deleted')
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({
@@ -282,6 +370,55 @@ export function useSetWater() {
   })
 }
 
+/**
+ * Hook with optimistic set for water log
+ */
+export function useSetWaterOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: setWater,
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.waterLogs.all })
+
+      const todayDate = data.date || new Date().toISOString().split('T')[0]
+      const previousData = queryClient.getQueryData<WaterLogResponse>(
+        queryKeys.waterLogs.today(todayDate)
+      )
+
+      if (previousData) {
+        queryClient.setQueryData<WaterLogResponse>(
+          queryKeys.waterLogs.today(todayDate),
+          {
+            ...previousData,
+            waterLog: {
+              ...previousData.waterLog,
+              amount_ml: data.amount_ml,
+            },
+          }
+        )
+      }
+
+      return { previousData, todayDate }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          queryKeys.waterLogs.today(context.todayDate),
+          context.previousData
+        )
+      }
+      toast.error('Failed to set water')
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.waterLogs.all,
+        refetchType: 'all',
+      })
+    },
+  })
+}
+
 // ============================================================================
 // Meal Streaks
 // ============================================================================
@@ -366,6 +503,46 @@ export function useToggleFavorite() {
     },
     onError: () => {
       toast.error('Failed to update favorite')
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.savedFoods.all,
+        refetchType: 'all',
+      })
+    },
+  })
+}
+
+/**
+ * Hook with optimistic toggle for favorites
+ */
+export function useToggleFavoriteOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: toggleFavorite,
+    onMutate: async ({ id, is_favorite }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.savedFoods.all })
+
+      const previousData = queryClient.getQueryData<SavedFood[]>(queryKeys.savedFoods.lists())
+
+      queryClient.setQueriesData({ queryKey: queryKeys.savedFoods.lists() }, (old: SavedFood[] | undefined) => {
+        if (!old) return []
+        return old.map((food) =>
+          food.id === id ? { ...food, is_favorite } : food
+        )
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKeys.savedFoods.lists(), context.previousData)
+      }
+      toast.error('Failed to update favorite')
+    },
+    onSuccess: (data) => {
+      toast.success(data.is_favorite ? 'Added to favorites' : 'Removed from favorites')
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({

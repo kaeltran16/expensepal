@@ -342,6 +342,59 @@ export function useCreateRoutineTemplate() {
 }
 
 /**
+ * Hook with optimistic create for routine templates
+ */
+export function useCreateRoutineTemplateOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createRoutineTemplate,
+    onMutate: async (newTemplate) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.routineTemplates.all })
+
+      const previousTemplates = queryClient.getQueryData<{ templates: RoutineTemplate[] }>(
+        queryKeys.routineTemplates.lists()
+      )
+
+      const optimisticTemplate: RoutineTemplate = {
+        id: `temp-${Date.now()}`,
+        user_id: null,
+        name: newTemplate.name,
+        description: newTemplate.description || null,
+        time_of_day: newTemplate.time_of_day,
+        estimated_minutes: newTemplate.estimated_minutes || null,
+        icon: newTemplate.icon || null,
+        is_default: false,
+        steps: newTemplate.steps || [],
+        tags: newTemplate.tags || null,
+        frequency: newTemplate.frequency || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      queryClient.setQueriesData({ queryKey: queryKeys.routineTemplates.lists() }, (old: { templates: RoutineTemplate[] } | undefined) => {
+        if (!old) return { templates: [optimisticTemplate] }
+        return { templates: [optimisticTemplate, ...old.templates] }
+      })
+
+      return { previousTemplates }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousTemplates) {
+        queryClient.setQueryData(queryKeys.routineTemplates.lists(), context.previousTemplates)
+      }
+      toast.error(error.message || 'Failed to create routine')
+    },
+    onSuccess: () => {
+      toast.success('Routine created')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.routineTemplates.all })
+    },
+  })
+}
+
+/**
  * Update a routine template
  */
 export function useUpdateRoutineTemplate() {
@@ -357,6 +410,49 @@ export function useUpdateRoutineTemplate() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update routine')
+    },
+  })
+}
+
+/**
+ * Hook with optimistic update for routine templates
+ */
+export function useUpdateRoutineTemplateOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateRoutineTemplateInput }) =>
+      updateRoutineTemplate(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.routineTemplates.all })
+
+      const previousTemplates = queryClient.getQueryData<{ templates: RoutineTemplate[] }>(
+        queryKeys.routineTemplates.lists()
+      )
+
+      queryClient.setQueriesData({ queryKey: queryKeys.routineTemplates.lists() }, (old: { templates: RoutineTemplate[] } | undefined) => {
+        if (!old) return { templates: [] }
+        return {
+          templates: old.templates.map((template) =>
+            template.id === id ? { ...template, ...data, updated_at: new Date().toISOString() } : template
+          )
+        }
+      })
+
+      return { previousTemplates }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousTemplates) {
+        queryClient.setQueryData(queryKeys.routineTemplates.lists(), context.previousTemplates)
+      }
+      toast.error(error.message || 'Failed to update routine')
+    },
+    onSuccess: () => {
+      toast.success('Routine updated')
+    },
+    onSettled: (_, __, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.routineTemplates.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.routineTemplates.detail(variables.id) })
     },
   })
 }
@@ -380,6 +476,43 @@ export function useDeleteRoutineTemplate() {
 }
 
 /**
+ * Hook with optimistic delete for routine templates
+ */
+export function useDeleteRoutineTemplateOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteRoutineTemplate,
+    onMutate: async (templateId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.routineTemplates.all })
+
+      const previousTemplates = queryClient.getQueryData<{ templates: RoutineTemplate[] }>(
+        queryKeys.routineTemplates.lists()
+      )
+
+      queryClient.setQueriesData({ queryKey: queryKeys.routineTemplates.lists() }, (old: { templates: RoutineTemplate[] } | undefined) => {
+        if (!old) return { templates: [] }
+        return { templates: old.templates.filter((template) => template.id !== templateId) }
+      })
+
+      return { previousTemplates }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousTemplates) {
+        queryClient.setQueryData(queryKeys.routineTemplates.lists(), context.previousTemplates)
+      }
+      toast.error(error.message || 'Failed to delete routine')
+    },
+    onSuccess: () => {
+      toast.success('Routine deleted')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.routineTemplates.all })
+    },
+  })
+}
+
+/**
  * Complete a routine (main action)
  */
 export function useCompleteRoutine() {
@@ -389,7 +522,8 @@ export function useCompleteRoutine() {
     mutationFn: completeRoutine,
     onSuccess: () => {
       // Invalidate only specific queries that need refreshing
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines.list() })
+      // Use lists() to match all routine queries regardless of filters (e.g., today's date filter)
+      queryClient.invalidateQueries({ queryKey: queryKeys.routines.lists() })
       queryClient.invalidateQueries({ queryKey: queryKeys.routineStreaks.current() })
       queryClient.invalidateQueries({ queryKey: queryKeys.routineStats.current() })
       // Challenges are updated less frequently - only invalidate current list
@@ -398,6 +532,95 @@ export function useCompleteRoutine() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to complete routine')
+    },
+  })
+}
+
+/**
+ * Hook with optimistic complete for routines
+ */
+export function useCompleteRoutineOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: completeRoutine,
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.routines.all })
+      await queryClient.cancelQueries({ queryKey: queryKeys.routineStreaks.all })
+      await queryClient.cancelQueries({ queryKey: queryKeys.routineStats.all })
+
+      const previousRoutines = queryClient.getQueryData<{ completions: RoutineCompletion[] }>(
+        queryKeys.routines.lists()
+      )
+      const previousStreak = queryClient.getQueryData<{ streak: UserRoutineStreak }>(
+        queryKeys.routineStreaks.current()
+      )
+      const previousStats = queryClient.getQueryData<{ stats: UserRoutineStats }>(
+        queryKeys.routineStats.current()
+      )
+
+      // Optimistically add completion
+      const today = new Date().toISOString().split('T')[0]!
+      const optimisticCompletion: RoutineCompletion = {
+        id: `temp-${Date.now()}`,
+        user_id: '',
+        template_id: data.template_id,
+        routine_date: today,
+        time_of_day: data.time_of_day || null,
+        started_at: data.started_at,
+        completed_at: data.completed_at,
+        duration_minutes: data.duration_minutes || null,
+        steps_completed: data.steps_completed,
+        xp_earned: data.xp_earned,
+        bonus_xp: data.bonus_xp || 0,
+        created_at: new Date().toISOString(),
+      }
+
+      queryClient.setQueriesData({ queryKey: queryKeys.routines.lists() }, (old: { completions: RoutineCompletion[] } | undefined) => {
+        if (!old) return { completions: [optimisticCompletion] }
+        return { completions: [optimisticCompletion, ...old.completions] }
+      })
+
+      // Optimistically update streak
+      if (previousStreak?.streak) {
+        queryClient.setQueryData(queryKeys.routineStreaks.current(), {
+          streak: {
+            ...previousStreak.streak,
+            current_streak: previousStreak.streak.current_streak + 1,
+          }
+        })
+      }
+
+      // Optimistically update stats
+      if (previousStats?.stats) {
+        queryClient.setQueryData(queryKeys.routineStats.current(), {
+          stats: {
+            ...previousStats.stats,
+            total_xp: previousStats.stats.total_xp + data.xp_earned,
+            lifetime_routines: previousStats.stats.lifetime_routines + 1,
+          }
+        })
+      }
+
+      return { previousRoutines, previousStreak, previousStats }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousRoutines) {
+        queryClient.setQueryData(queryKeys.routines.lists(), context.previousRoutines)
+      }
+      if (context?.previousStreak) {
+        queryClient.setQueryData(queryKeys.routineStreaks.current(), context.previousStreak)
+      }
+      if (context?.previousStats) {
+        queryClient.setQueryData(queryKeys.routineStats.current(), context.previousStats)
+      }
+      toast.error(error.message || 'Failed to complete routine')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.routines.lists() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.routineStreaks.current() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.routineStats.current() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.routineChallenges.list() })
     },
   })
 }

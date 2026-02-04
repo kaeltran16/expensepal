@@ -66,9 +66,20 @@ export class EmailService {
 
           // IMAP search criteria: ALL emails (not UNSEEN), from trusted senders, since 7 days ago
           // Database UID tracking handles duplicate detection, not read/unread status
+          // Build nested OR structure for multiple senders (IMAP OR takes exactly 2 arguments)
+          const buildOrCriteria = (senders: string[]): unknown[] => {
+            if (senders.length === 0) return []
+            if (senders.length === 1) return [['FROM', senders[0]]]
+            if (senders.length === 2) return [['OR', ['FROM', senders[0]], ['FROM', senders[1]]]]
+            // For 3+ senders, nest OR: OR(sender1, OR(sender2, OR(sender3, ...)))
+            const [first, ...rest] = senders
+            return [['OR', ['FROM', first], buildOrCriteria(rest)[0]]]
+          }
+
+          const senderCriteria = buildOrCriteria(TRUSTED_SENDERS)
           const searchCriteria = [
             ['SINCE', sinceDate],
-            ['OR', ...TRUSTED_SENDERS.map(sender => ['FROM', sender])]
+            ...senderCriteria
           ]
 
           console.log(`Searching for emails since: ${sinceDate} (last 7 days)`)

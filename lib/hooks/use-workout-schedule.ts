@@ -94,6 +94,69 @@ export function useCreateScheduledWorkout() {
   })
 }
 
+/**
+ * Hook with optimistic create for scheduled workouts
+ */
+export function useCreateScheduledWorkoutOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: {
+      template_id: string | null
+      scheduled_date: string
+      notes?: string
+    }) => {
+      const response = await fetch('/api/scheduled-workouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to schedule workout')
+      }
+      const result = await response.json()
+      return result.scheduledWorkout as ScheduledWorkout
+    },
+    onMutate: async (newSchedule) => {
+      await queryClient.cancelQueries({ queryKey: ['scheduled-workouts'] })
+      await queryClient.cancelQueries({ queryKey: ['scheduled-workout'] })
+
+      const previousData = queryClient.getQueriesData({ queryKey: ['scheduled-workouts'] })
+
+      const optimisticSchedule: ScheduledWorkout = {
+        id: `temp-${Date.now()}`,
+        user_id: '',
+        template_id: newSchedule.template_id,
+        scheduled_date: newSchedule.scheduled_date,
+        status: 'scheduled',
+        completed_workout_id: null,
+        notes: newSchedule.notes || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      queryClient.setQueriesData({ queryKey: ['scheduled-workouts'] }, (old: ScheduledWorkout[] | undefined) => {
+        if (!old) return [optimisticSchedule]
+        return [...old, optimisticSchedule]
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
+        })
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['scheduled-workouts'] })
+      queryClient.invalidateQueries({ queryKey: ['scheduled-workout'] })
+    },
+  })
+}
+
 // Update scheduled workout
 export function useUpdateScheduledWorkout() {
   const queryClient = useQueryClient()
@@ -131,6 +194,62 @@ export function useUpdateScheduledWorkout() {
   })
 }
 
+/**
+ * Hook with optimistic update for scheduled workouts
+ */
+export function useUpdateScheduledWorkoutOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: {
+      id: string
+      template_id?: string | null
+      scheduled_date?: string
+      status?: 'scheduled' | 'completed' | 'skipped'
+      notes?: string
+      completed_workout_id?: string | null
+    }) => {
+      const response = await fetch(`/api/scheduled-workouts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update scheduled workout')
+      }
+      const result = await response.json()
+      return result.scheduledWorkout as ScheduledWorkout
+    },
+    onMutate: async ({ id, ...updates }) => {
+      await queryClient.cancelQueries({ queryKey: ['scheduled-workouts'] })
+      await queryClient.cancelQueries({ queryKey: ['scheduled-workout'] })
+
+      const previousData = queryClient.getQueriesData({ queryKey: ['scheduled-workouts'] })
+
+      queryClient.setQueriesData({ queryKey: ['scheduled-workouts'] }, (old: ScheduledWorkout[] | undefined) => {
+        if (!old) return []
+        return old.map((workout) =>
+          workout.id === id ? { ...workout, ...updates, updated_at: new Date().toISOString() } : workout
+        )
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
+        })
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['scheduled-workouts'] })
+      queryClient.invalidateQueries({ queryKey: ['scheduled-workout'] })
+    },
+  })
+}
+
 // Delete scheduled workout
 export function useDeleteScheduledWorkout() {
   const queryClient = useQueryClient()
@@ -149,6 +268,50 @@ export function useDeleteScheduledWorkout() {
       return { id }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scheduled-workouts'] })
+      queryClient.invalidateQueries({ queryKey: ['scheduled-workout'] })
+    },
+  })
+}
+
+/**
+ * Hook with optimistic delete for scheduled workouts
+ */
+export function useDeleteScheduledWorkoutOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/scheduled-workouts/${id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete scheduled workout')
+      }
+      return { id }
+    },
+    onMutate: async (workoutId) => {
+      await queryClient.cancelQueries({ queryKey: ['scheduled-workouts'] })
+      await queryClient.cancelQueries({ queryKey: ['scheduled-workout'] })
+
+      const previousData = queryClient.getQueriesData({ queryKey: ['scheduled-workouts'] })
+
+      queryClient.setQueriesData({ queryKey: ['scheduled-workouts'] }, (old: ScheduledWorkout[] | undefined) => {
+        if (!old) return []
+        return old.filter((workout) => workout.id !== workoutId)
+      })
+
+      return { previousData }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
+        })
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduled-workouts'] })
       queryClient.invalidateQueries({ queryKey: ['scheduled-workout'] })
     },

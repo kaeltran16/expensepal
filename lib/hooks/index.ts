@@ -14,6 +14,7 @@ export {
   useCreateExpense,
   useCreateExpenseOptimistic,
   useUpdateExpense,
+  useUpdateExpenseOptimistic,
   useDeleteExpense,
   useDeleteExpenseOptimistic,
 } from './use-expenses'
@@ -22,18 +23,21 @@ export {
 export {
   useBudgets,
   useCreateBudget,
+  useCreateBudgetOptimistic,
   useUpdateBudget,
-  useDeleteBudget,
   useUpdateBudgetOptimistic,
+  useDeleteBudget,
+  useDeleteBudgetOptimistic,
 } from './use-budgets'
 
 // Goals
 export {
   useGoals,
   useCreateGoal,
+  useCreateGoalOptimistic,
   useUpdateGoal,
-  useDeleteGoal,
   useUpdateGoalOptimistic,
+  useDeleteGoal,
   useDeleteGoalOptimistic,
 } from './use-goals'
 
@@ -58,6 +62,7 @@ export {
   useCalorieStats,
   useCalorieGoal,
   useUpdateCalorieGoal,
+  useUpdateCalorieGoalOptimistic,
   useCreateMealOptimistic,
   useDeleteMealOptimistic,
   type Meal,
@@ -108,8 +113,11 @@ export {
   useExercises,
   useCreateWorkout,
   useCreateTemplate,
+  useCreateTemplateOptimistic,
   useUpdateTemplate,
+  useUpdateTemplateOptimistic,
   useDeleteTemplate,
+  useDeleteTemplateOptimistic,
   useExerciseHistory,
   usePersonalRecords,
   useCreatePersonalRecord,
@@ -132,15 +140,78 @@ export type { UserStreak, UserAchievement } from './use-achievements'
 export {
   useWeightLogs,
   useLogWeight,
+  useLogWeightOptimistic,
   useDeleteWeightLog,
+  useDeleteWeightLogOptimistic,
   useWaterLog,
   useAddWater,
   useSetWater,
+  useSetWaterOptimistic,
   useMealStreak,
   useSavedFoods,
   useFavoriteMeals,
   useToggleFavorite,
+  useToggleFavoriteOptimistic,
   useQuickAddMeal,
   useSaveFoodAsFavorite,
 } from './use-health-tracking'
 export type { WeightLog, WaterLog, MealStreak, SavedFood } from './use-health-tracking'
+
+// Recurring Expenses
+export {
+  useRecurringExpenses,
+  useDueRecurringExpenses,
+  useUpcomingRecurringExpenses,
+  useDetectedRecurringExpenses,
+  useCreateRecurringExpense,
+  useCreateRecurringExpenseOptimistic,
+  useUpdateRecurringExpense,
+  useUpdateRecurringExpenseOptimistic,
+  useDeleteRecurringExpense,
+  useDeleteRecurringExpenseOptimistic,
+  useSkipRecurringExpenseDate,
+  useSkipRecurringExpenseDateOptimistic,
+  useAdvanceNextDueDate,
+  useSaveDetectedExpenses,
+} from './use-recurring-expenses'
+
+// Workout Schedule
+export {
+  useScheduledWorkouts,
+  useTodayScheduledWorkout,
+  useThisWeekScheduledWorkouts,
+  useCreateScheduledWorkout,
+  useCreateScheduledWorkoutOptimistic,
+  useUpdateScheduledWorkout,
+  useUpdateScheduledWorkoutOptimistic,
+  useDeleteScheduledWorkout,
+  useDeleteScheduledWorkoutOptimistic,
+  getWeekDates,
+} from './use-workout-schedule'
+export type { ScheduledWorkout } from './use-workout-schedule'
+
+// Routines
+export {
+  useRoutineSteps,
+  useRoutineTemplates,
+  useRoutineTemplate,
+  useRoutines,
+  useRoutineStreak,
+  useRoutineStats,
+  useRoutineChallenges,
+  useRoutineJournal,
+  useCreateCustomStep,
+  useCreateRoutineTemplate,
+  useCreateRoutineTemplateOptimistic,
+  useUpdateRoutineTemplate,
+  useUpdateRoutineTemplateOptimistic,
+  useDeleteRoutineTemplate,
+  useDeleteRoutineTemplateOptimistic,
+  useCompleteRoutine,
+  useCompleteRoutineOptimistic,
+  useClaimChallengeReward,
+  useUpdateChallengeProgress,
+  useCreateJournalEntry,
+  useUpdateJournalEntry,
+  useDeleteJournalEntry,
+} from './use-routines'

@@ -388,3 +388,55 @@ export function useUpdateCalorieGoal() {
     },
   })
 }
+
+/**
+ * Hook with optimistic update for calorie goal
+ */
+export function useUpdateCalorieGoalOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: updateCalorieGoal,
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.calorieGoal.all })
+
+      const previousGoal = queryClient.getQueryData<CalorieGoal | null>(
+        queryKeys.calorieGoal.detail()
+      )
+
+      if (previousGoal) {
+        queryClient.setQueryData<CalorieGoal>(
+          queryKeys.calorieGoal.detail(),
+          { ...previousGoal, ...updates }
+        )
+      } else {
+        queryClient.setQueryData<CalorieGoal>(
+          queryKeys.calorieGoal.detail(),
+          {
+            daily_calories: updates.daily_calories || 2000,
+            protein_target: updates.protein_target,
+            carbs_target: updates.carbs_target,
+            fat_target: updates.fat_target,
+          }
+        )
+      }
+
+      return { previousGoal }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousGoal !== undefined) {
+        queryClient.setQueryData(queryKeys.calorieGoal.detail(), context.previousGoal)
+      }
+      toast.error(error.message || 'Failed to update goals')
+    },
+    onSuccess: () => {
+      toast.success('Goals updated successfully!')
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.calorieGoal.all,
+        refetchType: 'all',
+      })
+    },
+  })
+}

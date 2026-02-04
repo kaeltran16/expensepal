@@ -104,6 +104,51 @@ export function useCreateBudget() {
 }
 
 /**
+ * Hook with optimistic update for creating budgets
+ */
+export function useCreateBudgetOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createBudget,
+    onMutate: async (newBudget) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.budgets.all })
+
+      const previousBudgets = queryClient.getQueryData(queryKeys.budgets.lists())
+
+      const optimisticBudget: Budget = {
+        id: `temp-${Date.now()}`,
+        user_id: null,
+        category: newBudget.category,
+        amount: newBudget.amount,
+        month: newBudget.month,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      queryClient.setQueriesData({ queryKey: queryKeys.budgets.lists() }, (old: Budget[] | undefined) => {
+        if (!old) return [optimisticBudget]
+        return [optimisticBudget, ...old]
+      })
+
+      return { previousBudgets }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousBudgets) {
+        queryClient.setQueryData(queryKeys.budgets.lists(), context.previousBudgets)
+      }
+      toast.error(error.message || 'Failed to create budget')
+    },
+    onSuccess: () => {
+      toast.success('Budget created!')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.budgets.all })
+    },
+  })
+}
+
+/**
  * Update budget mutation
  */
 async function updateBudget({
@@ -318,5 +363,40 @@ export function useAIBudgetRecommendations(
     queryFn: () => fetchAIBudgetRecommendations(options),
     staleTime: queryOptions?.staleTime || 1000 * 60 * 60 * 24, // 24 hours default
     ...queryOptions,
+  })
+}
+
+/**
+ * Hook with optimistic delete for budgets
+ */
+export function useDeleteBudgetOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteBudget,
+    onMutate: async (budgetId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.budgets.all })
+
+      const previousBudgets = queryClient.getQueryData(queryKeys.budgets.lists())
+
+      queryClient.setQueriesData({ queryKey: queryKeys.budgets.lists() }, (old: Budget[] | undefined) => {
+        if (!old) return []
+        return old.filter((budget) => budget.id !== budgetId)
+      })
+
+      return { previousBudgets }
+    },
+    onError: (error, _, context) => {
+      if (context?.previousBudgets) {
+        queryClient.setQueryData(queryKeys.budgets.lists(), context.previousBudgets)
+      }
+      toast.error('Failed to delete budget')
+    },
+    onSuccess: () => {
+      toast.success('Budget deleted')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.budgets.all })
+    },
   })
 }

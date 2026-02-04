@@ -104,6 +104,60 @@ export function useCreateGoal() {
 }
 
 /**
+ * Hook with optimistic update for creating goals
+ * Provides better UX by immediately updating the UI
+ */
+export function useCreateGoalOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createGoal,
+    onMutate: async (newGoal) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.goals.all })
+
+      // Snapshot previous value
+      const previousGoals = queryClient.getQueryData(queryKeys.goals.lists())
+
+      // Create optimistic goal with temporary ID
+      const optimisticGoal: Goal = {
+        id: `temp-${Date.now()}`,
+        user_id: null,
+        name: newGoal.name,
+        target_amount: newGoal.target_amount,
+        current_amount: newGoal.current_amount || 0,
+        deadline: newGoal.deadline || null,
+        icon: newGoal.icon || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      // Optimistically update all goal lists
+      queryClient.setQueriesData({ queryKey: queryKeys.goals.lists() }, (old: Goal[] | undefined) => {
+        if (!old) return [optimisticGoal]
+        return [optimisticGoal, ...old]
+      })
+
+      return { previousGoals }
+    },
+    onError: (error, _, context) => {
+      // Rollback on error
+      if (context?.previousGoals) {
+        queryClient.setQueryData(queryKeys.goals.lists(), context.previousGoals)
+      }
+      toast.error(error.message || 'Failed to create goal')
+    },
+    onSuccess: () => {
+      toast.success('Goal created!')
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+    },
+  })
+}
+
+/**
  * Update goal mutation
  */
 async function updateGoal({

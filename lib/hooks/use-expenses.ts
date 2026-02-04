@@ -240,6 +240,50 @@ export function useUpdateExpense() {
 }
 
 /**
+ * Hook with optimistic update for updating expenses
+ * Provides better UX by immediately updating the UI
+ */
+export function useUpdateExpenseOptimistic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: updateExpense,
+    onMutate: async ({ id, updates }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.expenses.all })
+
+      // Snapshot previous value
+      const previousExpenses = queryClient.getQueryData(queryKeys.expenses.lists())
+
+      // Optimistically update all expense lists
+      queryClient.setQueriesData({ queryKey: queryKeys.expenses.lists() }, (old: Expense[] | undefined) => {
+        if (!old) return []
+        return old.map((expense) =>
+          expense.id === id ? { ...expense, ...updates, updated_at: new Date().toISOString() } : expense
+        )
+      })
+
+      return { previousExpenses }
+    },
+    onError: (error, _, context) => {
+      // Rollback on error
+      if (context?.previousExpenses) {
+        queryClient.setQueryData(queryKeys.expenses.lists(), context.previousExpenses)
+      }
+      toast.error('Failed to update expense')
+    },
+    onSuccess: () => {
+      toast.success('Expense updated')
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all })
+    },
+  })
+}
+
+/**
  * Delete expense mutation
  */
 async function deleteExpense(id: string): Promise<void> {
