@@ -5,6 +5,7 @@ import { calorieEstimator } from '@/lib/calorie-estimator'
 import { withAuth, safeParseJSON } from '@/lib/api/middleware'
 import { createExpenseQuery } from '@/lib/api/query-builder'
 import { createListResponse } from '@/lib/api/types'
+import { sendPushNotification } from '@/lib/push-notifications'
 import type { GetExpensesResponse } from '@/lib/api/types'
 
 export const dynamic = 'force-dynamic'
@@ -133,6 +134,52 @@ export const POST = withAuth(async (request, user) => {
       console.error('❌ Error in meal auto-creation:', mealCreationError)
       // Don't fail the expense creation if meal creation fails
     }
+  }
+
+  // Budget threshold check - send push notification if nearing/exceeding budget
+  try {
+    const expenseCategory = body.category || 'Other'
+    const currentMonth = (body.transaction_date || new Date().toISOString()).slice(0, 7)
+
+    const { data: budget } = await supabase
+      .from('budgets')
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('category', expenseCategory)
+      .eq('month', currentMonth)
+      .single()
+
+    if (budget) {
+      const { data: monthExpenses } = await supabase
+        .from('expenses')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('category', expenseCategory)
+        .gte('transaction_date', `${currentMonth}-01`)
+        .lt('transaction_date', `${currentMonth}-32`)
+
+      const totalSpent = (monthExpenses || []).reduce((sum, e) => sum + e.amount, 0)
+      const percentUsed = (totalSpent / budget.amount) * 100
+
+      if (percentUsed >= 100) {
+        const overagePercent = Math.round(percentUsed - 100)
+        sendPushNotification(user.id, {
+          title: 'Budget Exceeded!',
+          body: `You've exceeded your ${expenseCategory} budget by ${overagePercent}%`,
+          tag: `budget-alert-${expenseCategory}`,
+          url: '/',
+        }).catch(() => {})
+      } else if (percentUsed >= 80) {
+        sendPushNotification(user.id, {
+          title: 'Budget Warning',
+          body: `You've used ${Math.round(percentUsed)}% of your ${expenseCategory} budget`,
+          tag: `budget-warning-${expenseCategory}`,
+          url: '/',
+        }).catch(() => {})
+      }
+    }
+  } catch (budgetCheckError) {
+    console.error('Error in budget threshold check:', budgetCheckError)
   }
 
   return NextResponse.json({ expense: createdExpense }, { status: 201 })

@@ -256,9 +256,11 @@ IMPORTANT RULES:
    - category: Choose the MOST appropriate from the list above
 4. Remove all formatting from amount (no commas, dots, or currency symbols)
 5. For Grab emails, look for "Đặt từ" or "From" to find the merchant name
-6. Skip pending orders, order confirmations, or "booking received" emails - only parse COMPLETED transactions (receipts).
-   - If the email says "We've received your order", "Booking Confirmed", "Order Received", "Đơn hàng đã được nhận", or similar, return {"skip": true}.
-   - Only process emails that are actual receipts or payment confirmations.
+6. Skip emails that are NOT actual receipts or payment confirmations. Return {"skip": true} for:
+   - Pending orders / order confirmations: "Order Received", "Booking Confirmed", "Đơn hàng đã được nhận", etc.
+   - Delivery/shipping status updates: "đã giao hàng thành công", "giao hàng thành công", "has been delivered", "delivery completed", etc.
+   - Tracking updates, refund notifications, review requests, or any non-payment email.
+   - Only process emails that contain an actual payment/charge — a receipt showing money was taken from the customer.
 7. Ignore placeholder values like [EMAIL], [PHONE], [CARD], [LINK]
 8. Category mapping examples:
    - GrabFood, restaurants, cafes → "Food"

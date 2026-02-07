@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/routine-reminders?timeSlot=morning", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/routine-reminders?timeSlot=evening", "schedule": "0 11 * * *" },
+    { "path": "/api/cron/budget-alerts", "schedule": "0 14 * * *" }
+  ]
+}

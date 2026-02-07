@@ -1,6 +1,9 @@
 import { withAuth } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { checkNewAchievements } from '@/lib/routine-achievements'
+import { checkLevelUp, getLevelForXP } from '@/lib/routine-gamification'
+import { sendPushNotification } from '@/lib/push-notifications'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +47,14 @@ export const POST = withAuth(async (request, user) => {
   const supabase = createClient()
   const body = await request.json()
 
+  // Snapshot previous state before insert (DB triggers update after insert)
+  const [prevStatsResult, prevStreakResult] = await Promise.all([
+    supabase.from('user_routine_stats').select('*').eq('user_id', user.id).single(),
+    supabase.from('user_routine_streaks').select('*').eq('user_id', user.id).single(),
+  ])
+  const prevStats = prevStatsResult.data
+  const prevStreak = prevStreakResult.data
+
   const { data, error } = await supabase
     .from('routine_completions')
     .insert({
@@ -67,6 +78,53 @@ export const POST = withAuth(async (request, user) => {
   }
 
   // Streaks and stats are updated automatically via database triggers
+  // Read new state after triggers have fired
+  const [newStatsResult, newStreakResult] = await Promise.all([
+    supabase.from('user_routine_stats').select('*').eq('user_id', user.id).single(),
+    supabase.from('user_routine_streaks').select('*').eq('user_id', user.id).single(),
+  ])
+  const newStats = newStatsResult.data
+  const newStreak = newStreakResult.data
 
-  return NextResponse.json({ completion: data }, { status: 201 })
+  // Check for new achievements and level-ups
+  const newAchievements = checkNewAchievements(prevStats, prevStreak, newStats, newStreak)
+  const previousXp = prevStats?.total_xp ?? 0
+  const newXp = newStats?.total_xp ?? 0
+  const levelUp = checkLevelUp(previousXp, newXp)
+
+  // Fire push notifications without blocking the response
+  const notifications: Promise<any>[] = []
+
+  for (const achievement of newAchievements) {
+    notifications.push(
+      sendPushNotification(user.id, {
+        title: `${achievement.icon} Achievement Unlocked!`,
+        body: `${achievement.name} - ${achievement.description}`,
+        tag: `achievement-${achievement.id}`,
+        url: '/',
+      })
+    )
+  }
+
+  if (levelUp.didLevelUp) {
+    const newLevelInfo = getLevelForXP(newXp)
+    notifications.push(
+      sendPushNotification(user.id, {
+        title: 'Level Up!',
+        body: `Level ${levelUp.newLevel} - ${newLevelInfo.title}!`,
+        tag: `level-up-${levelUp.newLevel}`,
+        url: '/',
+      })
+    )
+  }
+
+  if (notifications.length > 0) {
+    Promise.allSettled(notifications).catch(() => {})
+  }
+
+  return NextResponse.json({
+    completion: data,
+    newAchievements,
+    levelUp: levelUp.didLevelUp ? levelUp : null,
+  }, { status: 201 })
 })
