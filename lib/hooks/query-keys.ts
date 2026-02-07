@@ -212,6 +212,13 @@ export const queryKeys = {
     details: () => [...queryKeys.routineJournal.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.routineJournal.details(), id] as const,
   },
+  // AI Layer
+  ai: {
+    all: ['ai'] as const,
+    parseInput: () => [...queryKeys.ai.all, 'parse-input'] as const,
+    habitCoach: () => [...queryKeys.ai.all, 'habit-coach'] as const,
+    weeklyDigest: () => [...queryKeys.ai.all, 'weekly-digest'] as const,
+  },
 } as const
 
 // Filter types

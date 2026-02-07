@@ -13,6 +13,7 @@ import { RoutineTemplateBuilder } from './RoutineTemplateBuilder'
 import { RoutineLogger } from './RoutineLogger'
 import { RoutineCompletionSummary } from './RoutineCompletionSummary'
 import { ChallengesCard } from './ChallengesCard'
+import { HabitCoachCard } from '@/components/habit-coach-card'
 import { JournalEntrySheet } from './JournalEntrySheet'
 import {
   useRoutineSteps,
@@ -241,7 +242,7 @@ export function RoutinesView() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="routines" className="mt-4 px-4">
+        <TabsContent value="routines" className="mt-4 px-4 space-y-4">
           <RoutineTemplatesList
             templates={templates}
             onStartRoutine={handleStartRoutine}
@@ -250,6 +251,9 @@ export function RoutinesView() {
             onCreateTemplate={handleCreateTemplate}
             loading={templatesLoading || stepsLoading}
           />
+
+          {/* AI Coach - below routines so it doesn't push main content down */}
+          <HabitCoachCard />
         </TabsContent>
 
         <TabsContent value="challenges" className="mt-4 px-4">

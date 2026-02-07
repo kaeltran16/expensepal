@@ -11,10 +11,18 @@ import {
   TrendingDown,
   Minus,
   Calendar,
+  Sparkles,
 } from 'lucide-react'
 import { useCalorieStats, useCalorieGoal } from '@/lib/hooks/use-meals'
 
-export function WeeklyNutritionSummary() {
+interface AISectionInsight {
+  emoji: string
+  title: string
+  summary: string
+  highlight: string | null
+}
+
+export function WeeklyNutritionSummary({ aiInsight }: { aiInsight?: AISectionInsight | null }) {
   // Get stats for the last 7 days
   const today = new Date()
   const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -288,6 +296,23 @@ export function WeeklyNutritionSummary() {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* AI Insight inline */}
+      {aiInsight && (
+        <div className="flex items-start gap-2.5 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 px-3 py-2.5 mt-4">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+          <div className="min-w-0">
+            {aiInsight.highlight && (
+              <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-0.5">
+                {aiInsight.highlight}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+              {aiInsight.summary}
+            </p>
+          </div>
         </div>
       )}
     </motion.div>

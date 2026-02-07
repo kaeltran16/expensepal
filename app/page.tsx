@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/page-header';
 import { ProgressIndicator } from '@/components/progress-indicator';
 import { PullToRefreshWrapper } from '@/components/pull-to-refresh-wrapper';
 import { PushNotificationManager } from '@/components/push-notification-manager';
+import { NLInputSheet } from '@/components/nl-input-sheet';
 import { QuickExpenseForm } from '@/components/quick-expense-form';
 import { QuickStatsOverview } from '@/components/quick-stats-overview';
 import { QuickStatsSkeleton } from '@/components/quick-stats-skeleton';
@@ -137,6 +138,7 @@ function HomeContent() {
 
   // Client-side UI state
   const [showForm, setShowForm] = useState(false);
+  const [showNLInput, setShowNLInput] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [showAllExpenses, setShowAllExpenses] = useState(false);
   const [showAllMeals, setShowAllMeals] = useState(false);
@@ -671,7 +673,7 @@ function HomeContent() {
           onViewChange={setActiveView}
           onAddExpense={() => {
             setEditingExpense(undefined);
-            setShowForm(true);
+            setShowNLInput(true);
             hapticFeedback('medium');
           }}
           onOpenMore={() => setShowMoreSheet(true)}
@@ -688,6 +690,13 @@ function HomeContent() {
 
         {/* Network Status */}
         <NetworkStatus syncing={isSyncing} lastSynced={lastSynced} />
+
+        {/* NL Input Sheet */}
+        <NLInputSheet
+          open={showNLInput}
+          onOpenChange={setShowNLInput}
+          onFallbackToForm={() => setShowForm(true)}
+        />
 
         {/* Expense Form Modal */}
         <AnimatePresence>

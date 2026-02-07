@@ -92,48 +92,43 @@ export function analyzeCategoryTrends(data: PreprocessedData): CategoryTrend[] {
 }
 
 /**
- * Detect spending streaks (no spending in a category)
- * Uses preprocessed period expenses
+ * Detect actual no-spend streaks (consecutive days with zero expenses)
+ * Counts backwards from today to find the current streak
  */
 export function detectSpendingStreaks(data: PreprocessedData): SpendingPattern[] {
-  const categories = ['Shopping', 'Entertainment', 'Food', 'Transport']
-  const patterns: SpendingPattern[] = []
-
-  // Group last 30 days expenses by category with latest date
-  const categoryLastDate = new Map<string, Date>()
-
+  // Build a set of dates (YYYY-MM-DD) that have any expense
+  const datesWithSpending = new Set<string>()
   for (const expense of data.byPeriod.last30Days) {
-    const cat = expense.category || 'Other'
     const date = new Date(expense.transaction_date)
-
-    if (!categoryLastDate.has(cat) || date > categoryLastDate.get(cat)!) {
-      categoryLastDate.set(cat, date)
-    }
+    datesWithSpending.add(date.toISOString().split('T')[0])
   }
 
-  for (const category of categories) {
-    const lastExpenseDate = categoryLastDate.get(category)
+  // Count consecutive no-spend days backwards from yesterday
+  // (today is excluded since it's still in progress)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  let streakDays = 0
 
-    if (!lastExpenseDate) continue
+  for (let i = 1; i <= 30; i++) {
+    const checkDate = new Date(today)
+    checkDate.setDate(checkDate.getDate() - i)
+    const dateStr = checkDate.toISOString().split('T')[0]
 
-    const daysSince = Math.floor(
-      (Date.now() - lastExpenseDate.getTime()) / (1000 * 60 * 60 * 24)
-    )
-
-    if (daysSince >= INSIGHT_THRESHOLDS.MIN_STREAK_DAYS) {
-      patterns.push({
-        type: 'streak',
-        title: `${daysSince} days without ${category} expenses`,
-        description: `Great job! You haven't spent on ${category.toLowerCase()} since ${lastExpenseDate.toLocaleDateString()}`,
-        impact: 'positive',
-        data: { category, daysSince, lastExpense: lastExpenseDate },
-      })
-    }
+    if (datesWithSpending.has(dateStr)) break
+    streakDays++
   }
 
-  return patterns.sort(
-    (a, b) => ((b.data?.daysSince as number) || 0) - ((a.data?.daysSince as number) || 0)
-  )
+  if (streakDays < INSIGHT_THRESHOLDS.MIN_STREAK_DAYS) return []
+
+  return [
+    {
+      type: 'streak',
+      title: `${streakDays}-day no-spend streak!`,
+      description: `You haven't spent anything in the last ${streakDays} days. Keep it up!`,
+      impact: 'positive',
+      data: { daysSince: streakDays },
+    },
+  ]
 }
 
 /**

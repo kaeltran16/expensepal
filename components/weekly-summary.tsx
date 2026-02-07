@@ -41,11 +41,19 @@ const CATEGORY_COLORS: Record<string, { bg: string; ring: string }> = {
   Other: { bg: 'bg-gray-100 dark:bg-gray-900/30', ring: 'stroke-gray-500' },
 }
 
-interface WeeklySummaryProps {
-  expenses: Expense[]
+export interface AISectionInsight {
+  emoji: string
+  title: string
+  summary: string
+  highlight: string | null
 }
 
-export function WeeklySummary({ expenses }: WeeklySummaryProps) {
+interface WeeklySummaryProps {
+  expenses: Expense[]
+  aiInsight?: AISectionInsight | null
+}
+
+export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
   const summary = useMemo(() => {
     const now = new Date()
 
@@ -521,6 +529,28 @@ export function WeeklySummary({ expenses }: WeeklySummaryProps) {
           </div>
         </Card>
       </motion.div>
+
+      {/* AI Insight inline */}
+      {aiInsight && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="flex items-start gap-2.5 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 px-3 py-2.5"
+        >
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+          <div className="min-w-0">
+            {aiInsight.highlight && (
+              <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 mb-0.5">
+                {aiInsight.highlight}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+              {aiInsight.summary}
+            </p>
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }

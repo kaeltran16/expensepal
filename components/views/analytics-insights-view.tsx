@@ -24,6 +24,8 @@ import { InsightsCards } from '@/components/insights-cards'
 import { SpendingAdvisor } from '@/components/spending-advisor'
 import { WeeklySummary } from '@/components/weekly-summary'
 import { WeeklyNutritionSummary } from '@/components/weekly-nutrition-summary'
+import { WeeklyDigest } from '@/components/weekly-digest'
+import { useWeeklyDigest } from '@/lib/hooks/use-weekly-digest'
 import { ChartSkeleton, InsightCardSkeleton } from '@/components/skeleton-loader'
 import { hapticFeedback, formatCurrency } from '@/lib/utils'
 import { springs, stagger } from '@/lib/animation-config'
@@ -76,6 +78,11 @@ export function AnalyticsInsightsView({
     [preprocessed]
   )
 
+  // AI digest — extract sections for inline use
+  const { data: digest } = useWeeklyDigest({ enabled: activeTab === 'summary' })
+  const spendingInsight = digest?.sections.find((s) => s.domain === 'spending') || null
+  const nutritionInsight = digest?.sections.find((s) => s.domain === 'nutrition') || null
+
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab)
     hapticFeedback('light')
@@ -117,8 +124,9 @@ export function AnalyticsInsightsView({
         >
           {activeTab === 'summary' ? (
             <div className="space-y-4">
-              <WeeklySummary expenses={expenses} />
-              <WeeklyNutritionSummary />
+              <WeeklySummary expenses={expenses} aiInsight={spendingInsight} />
+              <WeeklyNutritionSummary aiInsight={nutritionInsight} />
+              <WeeklyDigest />
             </div>
           ) : activeTab === 'charts' ? (
             <div className="space-y-4">

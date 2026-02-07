@@ -215,3 +215,9 @@ export {
   useUpdateJournalEntry,
   useDeleteJournalEntry,
 } from './use-routines'
+
+// AI Layer
+export { useParseInput, useExecuteParsedInput } from './use-nl-input'
+export { useHabitCoach } from './use-habit-coach'
+export { useWeeklyDigest } from './use-weekly-digest'
+export { useQuickSuggestions } from './use-quick-suggestions'

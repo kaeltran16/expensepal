@@ -15,6 +15,10 @@ export interface LLMOptions {
   temperature?: number
   maxTokens?: number
   messages: LLMMessage[]
+  /** Cache TTL in milliseconds. If set, results are cached in memory. */
+  cacheTTL?: number
+  /** Explicit cache key. If not set, a hash of messages is used. */
+  cacheKey?: string
 }
 
 export interface LLMResponse {
@@ -26,15 +30,40 @@ export interface LLMResponse {
   }
 }
 
+interface CacheEntry {
+  response: LLMResponse
+  expiresAt: number
+}
+
 export class LLMService {
   private apiKey: string
   private baseUrl = 'https://openrouter.ai/api/v1/chat/completions'
-  private defaultModel = 'google/gemini-2.5-flash' 
+  private defaultModel = 'google/gemini-2.5-flash'
   private appUrl: string
+  private cache = new Map<string, CacheEntry>()
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.OPENROUTER_API_KEY || ''
     this.appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  }
+
+  /** Simple string hash for cache keys */
+  private hashKey(str: string): string {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash |= 0
+    }
+    return `llm_${hash}`
+  }
+
+  /** Evict expired entries (runs lazily) */
+  private evictExpired() {
+    const now = Date.now()
+    for (const [key, entry] of this.cache) {
+      if (entry.expiresAt <= now) this.cache.delete(key)
+    }
   }
 
   /**
@@ -51,6 +80,18 @@ export class LLMService {
     if (!this.isConfigured()) {
       console.warn('LLM service not configured (missing OPENROUTER_API_KEY)')
       return null
+    }
+
+    // Check cache
+    if (options.cacheTTL) {
+      this.evictExpired()
+      const cacheKey = options.cacheKey
+        ? `llm_explicit_${options.cacheKey}`
+        : this.hashKey(JSON.stringify(options.messages))
+      const cached = this.cache.get(cacheKey)
+      if (cached && cached.expiresAt > Date.now()) {
+        return cached.response
+      }
     }
 
     const startTime = Date.now()
@@ -104,10 +145,20 @@ export class LLMService {
       
       status = 'success'
 
-      return {
-        content,
-        usage,
+      const result: LLMResponse = { content, usage }
+
+      // Store in cache
+      if (options.cacheTTL) {
+        const cacheKey = options.cacheKey
+          ? `llm_explicit_${options.cacheKey}`
+          : this.hashKey(JSON.stringify(options.messages))
+        this.cache.set(cacheKey, {
+          response: result,
+          expiresAt: Date.now() + options.cacheTTL,
+        })
       }
+
+      return result
     } catch (error) {
       console.error('LLM service error:', error)
       responseContent = error instanceof Error ? error.message : String(error)
