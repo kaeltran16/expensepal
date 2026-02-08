@@ -56,13 +56,11 @@ export function useQuickSuggestions(maxItems = 5) {
   }, [])
 
   const { data: expenses } = useExpenses(
-    { startDate: thirtyDaysAgo, limit: 200 },
-    { staleTime: 12 * 60 * 60 * 1000 }
+    { startDate: thirtyDaysAgo, limit: 200 }
   )
 
   const { data: meals } = useMeals(
-    { startDate: thirtyDaysAgo, limit: 200 },
-    { staleTime: 12 * 60 * 60 * 1000 }
+    { startDate: thirtyDaysAgo, limit: 200 }
   )
 
   const suggestions = useMemo<QuickSuggestion[]>(() => {

@@ -10,6 +10,7 @@ interface AnimatedCounterProps {
   prefix?: string
   suffix?: string
   className?: string
+  locale?: string
 }
 
 export function AnimatedCounter({
@@ -19,6 +20,7 @@ export function AnimatedCounter({
   prefix = '',
   suffix = '',
   className = '',
+  locale = 'vi-VN',
 }: AnimatedCounterProps) {
   const [count, setCount] = useState(0)
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 })
@@ -57,7 +59,7 @@ export function AnimatedCounter({
   return (
     <span ref={ref} className={className}>
       {prefix}
-      {count.toLocaleString('vi-VN', {
+      {count.toLocaleString(locale, {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
       })}

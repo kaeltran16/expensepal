@@ -409,21 +409,32 @@ function HomeContent() {
   });
   const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-  // Calculate last month total for comparison
-  const lastMonthStart = new Date();
-  lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
-  lastMonthStart.setDate(1);
-  lastMonthStart.setHours(0, 0, 0, 0);
-
-  const lastMonthEnd = new Date();
-  lastMonthEnd.setDate(0);
-  lastMonthEnd.setHours(23, 59, 59, 999);
+  // Calculate last month's spending through the same day for fair comparison
+  const now = new Date();
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+  const lastMonthSameDay = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate(), 23, 59, 59, 999);
 
   const lastMonthExpenses = expenses.filter((e) => {
     const expenseDate = new Date(e.transaction_date);
-    return expenseDate >= lastMonthStart && expenseDate <= lastMonthEnd;
+    return expenseDate >= lastMonthStart && expenseDate <= lastMonthSameDay;
   });
   const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  // Compute last 7 days spending for sparkline (oldest first)
+  const sparklineData = useMemo(() => {
+    const days: number[] = []
+    const now = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toDateString()
+      const dayTotal = expenses
+        .filter((e) => new Date(e.transaction_date).toDateString() === dateStr)
+        .reduce((sum, e) => sum + e.amount, 0)
+      days.push(dayTotal)
+    }
+    return days
+  }, [expenses])
 
   return (
     <>
@@ -486,6 +497,10 @@ function HomeContent() {
                   weekTotal={weekTotal}
                   monthTotal={monthTotal}
                   lastMonthTotal={lastMonthTotal}
+                  sparklineData={sparklineData}
+                  currency={profile?.currency || 'VND'}
+                  budgets={budgets}
+                  monthSpentSoFar={monthTotal}
                 />
               )}
 

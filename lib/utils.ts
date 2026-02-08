@@ -5,13 +5,29 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+const CURRENCY_CONFIG: Record<string, { locale: string; symbol: string; decimals: number }> = {
+  VND: { locale: 'vi-VN', symbol: '₫', decimals: 0 },
+  USD: { locale: 'en-US', symbol: '$', decimals: 2 },
+  EUR: { locale: 'de-DE', symbol: '€', decimals: 2 },
+  GBP: { locale: 'en-GB', symbol: '£', decimals: 2 },
+  JPY: { locale: 'ja-JP', symbol: '¥', decimals: 0 },
+}
+
 export function formatCurrency(amount: number, currency: string = 'VND'): string {
-  // Format number with thousands separator, no currency symbol
-  return new Intl.NumberFormat('vi-VN', {
+  const config = CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.VND
+  return new Intl.NumberFormat(config.locale, {
     style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: config.decimals,
+    maximumFractionDigits: config.decimals,
   }).format(amount)
+}
+
+export function getCurrencySymbol(currency: string = 'VND'): string {
+  return (CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.VND).symbol
+}
+
+export function getCurrencyLocale(currency: string = 'VND'): string {
+  return (CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.VND).locale
 }
 
 export function formatDate(date: string | Date): string {

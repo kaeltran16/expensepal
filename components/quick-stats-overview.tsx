@@ -1,6 +1,8 @@
 'use client'
 
 import { AnimatedCounter } from '@/components/animated-counter';
+import type { Budget } from '@/lib/supabase';
+import { formatCurrency, getCurrencyLocale, getCurrencySymbol } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Activity, ArrowDown, Calendar, Sparkles, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { useMemo } from 'react';
@@ -11,6 +13,10 @@ interface QuickStatsOverviewProps {
   weekTotal: number;
   monthTotal: number;
   lastMonthTotal?: number;
+  sparklineData?: number[];
+  currency?: string;
+  budgets?: Budget[];
+  monthSpentSoFar?: number;
 }
 
 export function QuickStatsOverview({
@@ -19,7 +25,14 @@ export function QuickStatsOverview({
   weekTotal,
   monthTotal,
   lastMonthTotal = 0,
+  sparklineData,
+  currency = 'VND',
+  budgets = [],
+  monthSpentSoFar = 0,
 }: QuickStatsOverviewProps) {
+  const symbol = getCurrencySymbol(currency);
+  const locale = getCurrencyLocale(currency);
+
   const monthChange = useMemo(() => {
     if (!lastMonthTotal) return 0;
     return ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100;
@@ -27,6 +40,24 @@ export function QuickStatsOverview({
 
   const isIncreasing = monthChange > 0;
   const hasSpentToday = todayTotal > 0;
+
+  // Budget pace calculation
+  const budgetPace = useMemo(() => {
+    if (budgets.length === 0) return null;
+    const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
+    if (totalBudget <= 0) return null;
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dayOfMonth = now.getDate();
+    const remainingDays = daysInMonth - dayOfMonth + 1; // include today
+
+    const remaining = totalBudget - monthSpentSoFar;
+    const dailyAllowance = remaining / remainingDays;
+    const overBudget = remaining < 0;
+
+    return { totalBudget, dailyAllowance, overBudget, remaining, remainingDays };
+  }, [budgets, monthSpentSoFar]);
 
   return (
     <div className="space-y-3" data-testid="quick-stats">
@@ -82,7 +113,8 @@ export function QuickStatsOverview({
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <p className="text-6xl font-black tracking-tighter leading-none mb-1" data-testid="today-total">
-                <AnimatedCounter value={todayTotal} duration={1200} />
+                <span className="text-2xl font-bold text-muted-foreground mr-1">{symbol}</span>
+                <AnimatedCounter value={todayTotal} duration={1200} locale={locale} />
               </p>
               {hasSpentToday && (
                 <motion.p
@@ -115,7 +147,7 @@ export function QuickStatsOverview({
                   </p>
                 </div>
                 <p className="text-xl font-bold tracking-tight">
-                  ₫ {weekTotal.toLocaleString()}
+                  {symbol} {formatCurrency(weekTotal, currency)}
                 </p>
               </div>
             </motion.div>
@@ -136,12 +168,36 @@ export function QuickStatsOverview({
                   </p>
                 </div>
                 <p className="text-xl font-bold tracking-tight">
-                  ₫ {monthTotal.toLocaleString()}
+                  {symbol} {formatCurrency(monthTotal, currency)}
                 </p>
               </div>
             </motion.div>
           </div>
         </div>
+
+        {/* Budget Pace Footer */}
+        {budgetPace && (
+          <div className="px-6 py-3 border-t border-border/30">
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
+                  budgetPace.overBudget
+                    ? 'bg-red-500'
+                    : budgetPace.dailyAllowance < (budgetPace.totalBudget / 30) * 0.5
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500'
+                }`}
+              />
+              <p className="text-xs text-muted-foreground">
+                {budgetPace.overBudget ? (
+                  <>Over budget by <span className="font-semibold text-destructive">{symbol}{formatCurrency(Math.abs(budgetPace.remaining), currency)}</span></>
+                ) : (
+                  <><span className="font-semibold">{symbol}{formatCurrency(budgetPace.dailyAllowance, currency)}</span>/day left to stay on budget</>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Enhanced Trend Footer */}
         {lastMonthTotal > 0 && (
