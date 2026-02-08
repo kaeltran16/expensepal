@@ -9,73 +9,6 @@ interface WorkoutStatsProps {
   weekWorkouts: Workout[]
 }
 
-interface StatCardProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-  bgColor: string
-}
-
-function StatCard({ icon, label, value, bgColor, index }: StatCardProps & { index: number }) {
-  return (
-    <motion.div
-      className={`${bgColor} rounded-2xl p-3 text-center`}
-      initial={{ opacity: 0, scale: 0.8, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{
-        delay: 0.15 + index * 0.08,
-        type: "spring",
-        stiffness: 400,
-        damping: 20
-      }}
-      whileHover={{
-        scale: 1.05,
-        y: -4,
-        transition: { type: "spring", stiffness: 500, damping: 15 }
-      }}
-      whileTap={{
-        scale: 0.95,
-        transition: { duration: 0.1 }
-      }}
-    >
-      <motion.div
-        className="flex justify-center mb-2"
-        initial={{ rotate: 0 }}
-        animate={{ rotate: [0, 10, -10, 0] }}
-        transition={{
-          delay: 0.2 + index * 0.08,
-          duration: 0.5,
-          type: "spring",
-          stiffness: 300
-        }}
-      >
-        {icon}
-      </motion.div>
-      <motion.div
-        className="text-xl font-bold mb-0.5"
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{
-          delay: 0.25 + index * 0.08,
-          type: "spring",
-          stiffness: 500,
-          damping: 15
-        }}
-      >
-        {value}
-      </motion.div>
-      <motion.div
-        className="text-xs text-muted-foreground"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 + index * 0.08 }}
-      >
-        {label}
-      </motion.div>
-    </motion.div>
-  )
-}
-
 export function WorkoutStats({ weekWorkouts }: WorkoutStatsProps) {
   if (weekWorkouts.length === 0) {
     return null
@@ -84,66 +17,62 @@ export function WorkoutStats({ weekWorkouts }: WorkoutStatsProps) {
   const totalTime = weekWorkouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0)
   const avgTime = Math.round(totalTime / weekWorkouts.length)
 
+  const stats = [
+    {
+      icon: <Target className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />,
+      iconBg: 'bg-blue-500/10',
+      label: 'Workouts',
+      value: weekWorkouts.length.toString(),
+      cardBg: 'bg-muted/40 dark:bg-muted/20'
+    },
+    {
+      icon: <Clock className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />,
+      iconBg: 'bg-orange-500/10',
+      label: 'Total Time',
+      value: `${totalTime}m`,
+      cardBg: 'bg-muted/40 dark:bg-muted/20'
+    },
+    {
+      icon: <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />,
+      iconBg: 'bg-green-500/10',
+      label: 'Avg Time',
+      value: `${avgTime}m`,
+      cardBg: 'bg-muted/40 dark:bg-muted/20'
+    }
+  ]
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        delay: 0.1,
-        type: "spring",
-        stiffness: 300,
-        damping: 25
-      }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.175, 0.885, 0.32, 1.275] }}
       className="ios-card p-5"
     >
-      <motion.div
-        className="flex items-center justify-between mb-4"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
-      >
+      <div className="flex items-center justify-between mb-4">
         <h3 className="ios-headline">This Week</h3>
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{
-            delay: 0.2,
-            type: "spring",
-            stiffness: 500,
-            damping: 15
-          }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Badge variant="secondary" className="gap-1">
-            <Activity className="h-3 w-3" />
-            {weekWorkouts.length} workouts
-          </Badge>
-        </motion.div>
-      </motion.div>
+        <Badge variant="secondary" className="gap-1">
+          <Activity className="h-3 w-3" />
+          {weekWorkouts.length} workouts
+        </Badge>
+      </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <StatCard
-          icon={<Target className="h-4 w-4 text-blue-500" />}
-          label="Workouts"
-          value={weekWorkouts.length.toString()}
-          bgColor="bg-blue-50 dark:bg-blue-950/30"
-          index={0}
-        />
-        <StatCard
-          icon={<Clock className="h-4 w-4 text-orange-500" />}
-          label="Total Time"
-          value={`${totalTime}m`}
-          bgColor="bg-orange-50 dark:bg-orange-950/30"
-          index={1}
-        />
-        <StatCard
-          icon={<TrendingUp className="h-4 w-4 text-green-500" />}
-          label="Avg Time"
-          value={`${avgTime}m`}
-          bgColor="bg-green-50 dark:bg-green-950/30"
-          index={2}
-        />
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className={`${stat.cardBg} rounded-xl p-3 border border-border/50`}
+          >
+            <div className="flex items-center gap-1.5 mb-2">
+              <div className={`w-6 h-6 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
+                {stat.icon}
+              </div>
+            </div>
+            <div className="text-xl font-bold tracking-tight">{stat.value}</div>
+            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              {stat.label}
+            </div>
+          </div>
+        ))}
       </div>
     </motion.div>
   )

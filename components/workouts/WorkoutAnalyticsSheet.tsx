@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, TrendingUp, Calendar, Award, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,9 @@ export function WorkoutAnalyticsSheet({
     hapticFeedback('light')
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -109,7 +112,8 @@ export function WorkoutAnalyticsSheet({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
 

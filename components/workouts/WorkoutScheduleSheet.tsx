@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Calendar, Dumbbell, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -61,7 +62,9 @@ export function WorkoutScheduleSheet({
 
   if (!selectedDate) return null
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -196,6 +199,7 @@ export function WorkoutScheduleSheet({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

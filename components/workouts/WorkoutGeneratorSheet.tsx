@@ -15,6 +15,7 @@ import {
     X,
 } from 'lucide-react'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
 
 interface GeneratedExercise {
@@ -179,7 +180,9 @@ export function WorkoutGeneratorSheet({
 
   if (!isOpen) return null
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -500,6 +503,7 @@ export function WorkoutGeneratorSheet({
       </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

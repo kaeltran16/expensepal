@@ -18,6 +18,7 @@ import {
 import { hapticFeedback } from '@/lib/utils'
 import type { WorkoutTemplate } from '@/lib/supabase'
 import { useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 
 interface WorkoutTemplatesListProps {
   templates: WorkoutTemplate[]
@@ -86,19 +87,16 @@ function TemplateCard({
 
     const deltaX = e.touches[0].clientX - startXRef.current
 
-    // Only allow left swipe (negative values)
     if (deltaX > 0) {
       currentXRef.current = 0
       setTranslateX(0)
       return
     }
 
-    // Clamp to max swipe distance with rubber band effect
     const clampedX = Math.max(deltaX * 0.8, -120)
     currentXRef.current = clampedX
     setTranslateX(clampedX)
 
-    // Haptic feedback at threshold
     if (clampedX <= DELETE_THRESHOLD && !hasTriggeredHapticRef.current) {
       hapticFeedback('medium')
       hasTriggeredHapticRef.current = true
@@ -108,16 +106,13 @@ function TemplateCard({
   const handleTouchEnd = useCallback(() => {
     if (!isDraggingRef.current || !canDelete) return
     isDraggingRef.current = false
-
     setIsAnimating(true)
 
     if (currentXRef.current <= DELETE_THRESHOLD) {
-      // Show delete dialog
       hapticFeedback('medium')
       setShowDeleteDialog(true)
     }
 
-    // Animate back to original position
     setTranslateX(0)
   }, [canDelete])
 
@@ -129,20 +124,14 @@ function TemplateCard({
     }
   }
 
-  // Calculate delete background opacity
   const deleteOpacity = Math.min(Math.abs(translateX) / 50, 1)
 
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{
-          delay: index * 0.05,
-          type: "spring",
-          stiffness: 400,
-          damping: 30
-        }}
+        transition={{ delay: index * 0.05, duration: 0.4, ease: [0.175, 0.885, 0.32, 1.275] }}
         className="relative w-full overflow-hidden rounded-xl"
       >
         {/* Delete background */}
@@ -167,128 +156,86 @@ function TemplateCard({
           }}
           className={`w-full ios-card p-4 border-l-4 ${config.border} group cursor-pointer relative z-10 bg-background`}
         >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <button
-          onClick={() => {
-            if (!isDraggingRef.current) {
-              onClick()
-              hapticFeedback('light')
-            }
-          }}
-          className="flex-1 min-w-0 text-left"
-        >
-          <motion.h4
-            className="ios-headline mb-1 truncate"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.06 + 0.1 }}
-          >
-            {template.name}
-          </motion.h4>
-          <motion.p
-            className="ios-caption text-muted-foreground line-clamp-1"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.06 + 0.15 }}
-          >
-            {template.description}
-          </motion.p>
-        </button>
-        <div className="flex items-center gap-2 shrink-0">
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{
-              delay: index * 0.06 + 0.2,
-              type: "spring",
-              stiffness: 500,
-              damping: 15
-            }}
-          >
-            <Badge className={`${config.color} border-0`}>
-              {template.difficulty}
-            </Badge>
-          </motion.div>
-          {onEdit && !template.is_default && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0 }}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEdit()
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <button
+              onClick={() => {
+                if (!isDraggingRef.current) {
+                  onClick()
                   hapticFeedback('light')
-                }}
-                className="h-8 w-8"
-                aria-label="Edit template"
-              >
-                <Edit className="h-3.5 w-3.5" />
-              </Button>
-            </motion.div>
-          )}
-        </div>
-      </div>
+                }
+              }}
+              className="flex-1 min-w-0 text-left"
+            >
+              <h4 className="text-sm font-semibold mb-1 truncate">{template.name}</h4>
+              <p className="text-xs text-muted-foreground line-clamp-1">{template.description}</p>
+            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Badge className={`${config.color} border-0`}>
+                {template.difficulty}
+              </Badge>
+              {onEdit && !template.is_default && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEdit()
+                    hapticFeedback('light')
+                  }}
+                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Edit template"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
 
-      <button
-        onClick={() => {
-          if (!isDraggingRef.current) {
-            onClick()
-            hapticFeedback('light')
-          }
-        }}
-        className="w-full flex items-center gap-4 text-sm text-muted-foreground"
-      >
-        <motion.div
-          className="flex items-center gap-1.5"
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.06 + 0.25 }}
-        >
-          <Clock className="h-3.5 w-3.5" />
-          <span>{template.duration_minutes}min</span>
-        </motion.div>
-        <motion.div
-          className="flex items-center gap-1.5"
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.06 + 0.3 }}
-        >
-          <Dumbbell className="h-3.5 w-3.5" />
-          <span>{exercises.length} exercises</span>
-        </motion.div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
-      </button>
-      </div>
-    </motion.div>
-
-    {/* Delete Confirmation Dialog */}
-    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            Delete Template?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete <strong>"{template.name}"</strong>? This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleDelete}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          <button
+            onClick={() => {
+              if (!isDraggingRef.current) {
+                onClick()
+                hapticFeedback('light')
+              }
+            }}
+            className="w-full flex items-center gap-4 text-sm text-muted-foreground"
           >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{template.duration_minutes}min</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Dumbbell className="h-3.5 w-3.5" />
+              <span>{exercises.length} exercises</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Template?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>&quot;{template.name}&quot;</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
@@ -325,7 +272,7 @@ export function WorkoutTemplatesList({
 
         {templates.length === 0 ? (
           <EmptyState
-            icon="🏋️"
+            icon="\u{1F3CB}\u{FE0F}"
             title="No templates yet"
             description="Create your first workout template to get started"
             action={{
@@ -348,29 +295,24 @@ export function WorkoutTemplatesList({
             ))}
 
             {templates.length > maxVisible && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: maxVisible * 0.05 }}
+              <Button
+                variant="ghost"
+                className="w-full text-primary"
+                onClick={() => {
+                  setShowAllTemplates(true)
+                  hapticFeedback('light')
+                }}
               >
-                <Button
-                  variant="ghost"
-                  className="w-full text-primary"
-                  onClick={() => {
-                    setShowAllTemplates(true)
-                    hapticFeedback('light')
-                  }}
-                >
-                  View all {templates.length} templates
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </motion.div>
+                View all {templates.length} templates
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             )}
           </div>
         )}
       </div>
 
       {/* All Templates Sheet */}
+      {typeof document !== 'undefined' && createPortal(
       <AnimatePresence>
         {showAllTemplates && (
           <motion.div
@@ -438,7 +380,9 @@ export function WorkoutTemplatesList({
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
     </>
   )
 }

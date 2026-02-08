@@ -55,11 +55,9 @@ export function WorkoutsView({
   const [showGenerator, setShowGenerator] = useState(false)
 
   // Show template sheet when explicitly selected OR when editing active workout exercises
-  // If editing workout exercises, show the active workout template
   const templateToShow = editingWorkoutExercises && activeWorkout
     ? activeWorkout
     : selectedTemplate
-  // isWorkoutActive should be true whenever there's an active workout (including when editing)
   const isWorkoutActive = !!activeWorkout
 
   // If user explicitly wants to edit an active workout's exercises, use fresh template data
@@ -97,19 +95,17 @@ export function WorkoutsView({
   // Handle template click
   const handleTemplateClick = (template: WorkoutTemplate) => {
     setSelectedTemplate(template)
-    // TODO: Show template detail sheet
     hapticFeedback('light')
   }
 
   // Handle edit template
   const handleEditTemplate = (template: WorkoutTemplate) => {
     setEditingTemplate(template)
-    // TODO: Show edit dialog
     hapticFeedback('light')
   }
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-4 pb-24">
       {/* Hero Section */}
       <WorkoutHero
         todayWorkout={todayWorkout}
@@ -119,16 +115,16 @@ export function WorkoutsView({
         hasTemplates={templates.length > 0}
       />
 
-      {/* AI Generator Button */}
+      {/* AI Generator */}
       <Button
         onClick={() => {
           setShowGenerator(true)
           hapticFeedback('medium')
         }}
         variant="outline"
-        className="w-full min-h-touch gap-2 bg-primary/10 border-primary/20 hover:border-primary/40"
+        className="w-full min-h-touch gap-2 rounded-xl border-dashed border-primary/30 text-primary hover:bg-primary/5"
       >
-        <Sparkles className="h-4 w-4 text-primary" />
+        <Sparkles className="h-4 w-4" />
         Generate AI Workout
       </Button>
 
@@ -159,10 +155,8 @@ export function WorkoutsView({
         template={templateToShowWithFreshData}
         onClose={() => {
           if (editingWorkoutExercises && onReturnToWorkout) {
-            // User was editing exercises during active workout - return to workout
             onReturnToWorkout()
           } else {
-            // User was just viewing a template - close the sheet
             setSelectedTemplate(null)
           }
         }}
@@ -175,7 +169,7 @@ export function WorkoutsView({
         onUpdateTemplate={onUpdateTemplate}
         onDeleteTemplate={onDeleteTemplate ? async (id: string) => {
           await onDeleteTemplate(id)
-          setSelectedTemplate(null) // Close the sheet after deletion
+          setSelectedTemplate(null)
         } : undefined}
         isWorkoutActive={isWorkoutActive}
         exerciseLogs={exerciseLogs}
@@ -220,7 +214,6 @@ export function WorkoutsView({
         isOpen={showGenerator}
         onClose={() => setShowGenerator(false)}
         onStartWorkout={(workout) => {
-          // Convert generated workout to template format and start
           const template: WorkoutTemplate = {
             id: `generated-${Date.now()}`,
             user_id: null,
@@ -258,7 +251,7 @@ export function WorkoutsView({
                 exercise_id: ex.exercise_id,
                 name: ex.name,
                 sets: ex.sets || 3,
-                reps: ex.reps || 10, // Can be string like "8-12" or number
+                reps: ex.reps || 10,
                 rest: ex.rest || 60,
                 image_url: ex.image_url,
                 gif_url: ex.gif_url,
@@ -275,16 +268,25 @@ export function WorkoutsView({
 // Loading skeleton
 function WorkoutSkeleton() {
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-4 pb-24">
       {/* Hero skeleton */}
-      <div className="h-40 bg-muted rounded-3xl animate-pulse" />
+      <div className="ios-card p-6">
+        <div className="flex items-start justify-between mb-5">
+          <div className="space-y-2 flex-1">
+            <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="w-14 h-14 bg-muted rounded-2xl animate-pulse" />
+        </div>
+        <div className="h-7 w-40 bg-muted rounded animate-pulse" />
+      </div>
 
       {/* Stats skeleton */}
       <div className="ios-card p-5">
         <div className="h-5 w-24 bg-muted rounded mb-4 animate-pulse" />
         <div className="grid grid-cols-3 gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-muted rounded-2xl animate-pulse" />
+            <div key={i} className="h-20 bg-muted rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -293,7 +295,7 @@ function WorkoutSkeleton() {
       <div className="space-y-3">
         <div className="h-5 w-24 bg-muted rounded animate-pulse" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />
+          <div key={i} className="ios-card h-24 animate-pulse" />
         ))}
       </div>
     </div>

@@ -32,6 +32,7 @@ import {
     Trash2
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 // Extended TemplateExercise with local UI fields
 interface TemplateExercise extends BaseTemplateExercise {
@@ -173,7 +174,9 @@ export function TemplateDetailSheet({
     hapticFeedback('light')
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence mode="wait">
       {template && (
         <>
@@ -572,7 +575,8 @@ export function TemplateDetailSheet({
           />
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
 
