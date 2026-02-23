@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Plus } from 'lucide-react'
 import { hapticFeedback } from '@/lib/utils'
 

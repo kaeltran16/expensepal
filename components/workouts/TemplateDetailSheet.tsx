@@ -11,7 +11,7 @@ import {
 import type { WorkoutTemplate } from '@/lib/supabase'
 import type { TemplateExercise as BaseTemplateExercise, ExerciseLog } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
-import { AnimatePresence, motion, Reorder } from 'framer-motion'
+import { AnimatePresence, motion, Reorder } from 'motion/react'
 import {
     ArrowLeft,
     Calendar,

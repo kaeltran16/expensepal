@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { springs, variants } from '@/lib/animation-config'
 import type { Expense } from '@/lib/supabase'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { Sparkles, X, Plus, StickyNote } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

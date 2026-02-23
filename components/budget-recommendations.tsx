@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { TrendingUp, TrendingDown, Minus, Lightbulb, Check, X, Sparkles, Calendar, User, PiggyBank } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'

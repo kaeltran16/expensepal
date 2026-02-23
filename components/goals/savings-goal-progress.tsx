@@ -1,7 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface SavingsGoalProgressProps {
   progress: number;

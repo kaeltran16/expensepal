@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { getDismissedAlerts, useBudgetPredictions, useDismissAlert } from '@/lib/hooks'
 import { formatCurrency } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import {
   AlertCircle,
   AlertTriangle,

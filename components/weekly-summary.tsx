@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { Card } from '@/components/ui/card'
 import { AnimatedCounter } from '@/components/animated-counter'
 import { formatCurrency } from '@/lib/utils'

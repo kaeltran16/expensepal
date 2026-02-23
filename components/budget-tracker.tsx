@@ -6,7 +6,7 @@ import { AddCategoryDialog } from '@/components/add-category-dialog'
 import { SetBudgetDialog } from '@/components/set-budget-dialog'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { AlertCircle, CheckCircle, Edit2, Target } from 'lucide-react'
 import { useState, useMemo, useEffect, useRef } from 'react'
 

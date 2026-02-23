@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { UserProfile } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/utils'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import {
   Bell,
   ChevronRight,

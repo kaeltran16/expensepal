@@ -11,7 +11,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { hapticFeedback } from '@/lib/utils'
-import { motion, PanInfo, useAnimation, useMotionValue, useTransform, animate } from 'framer-motion'
+import { motion, PanInfo, useAnimation, useMotionValue, useTransform, animate } from 'motion/react'
 import { AlertTriangle, Trash2, Heart } from 'lucide-react'
 import { ReactNode, useRef, useState } from 'react'
 

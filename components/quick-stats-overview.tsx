@@ -3,7 +3,7 @@
 import { AnimatedCounter } from '@/components/animated-counter';
 import type { Budget } from '@/lib/supabase';
 import { formatCurrency, getCurrencyLocale, getCurrencySymbol } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Activity, ArrowDown, Calendar, Sparkles, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { useMemo } from 'react';
 

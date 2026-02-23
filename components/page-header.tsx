@@ -1,7 +1,7 @@
 'use client'
 
 import type { ViewType } from '@/lib/constants/filters';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface PageHeaderProps {
   activeView: ViewType;

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Droplets, Plus, Check, GlassWater, Undo2 } from 'lucide-react'
 import { useWaterLog, useAddWater, useSetWater } from '@/lib/hooks'
 import { hapticFeedback } from '@/lib/utils'

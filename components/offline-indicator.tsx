@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { WifiOff, Wifi, RefreshCw, AlertCircle } from 'lucide-react'
 import { useOfflineQueue } from '@/lib/hooks/use-offline-queue'
 import { Button } from './ui/button'

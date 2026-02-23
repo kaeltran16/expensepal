@@ -2,7 +2,7 @@
 
 import type { Tables } from '@/lib/supabase/database.types';
 import { formatCurrency } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { calculateDaysUntilDeadline, calculateGoalProgress } from '@/lib/hooks/use-goal-operations';
 import { SavingsGoalProgress } from './savings-goal-progress';

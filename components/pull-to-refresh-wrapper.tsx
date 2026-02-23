@@ -1,7 +1,7 @@
 'use client'
 
 import { usePullToRefresh } from '@/lib/hooks';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { RefreshCw } from 'lucide-react';
 import { ReactNode, useRef } from 'react';
 

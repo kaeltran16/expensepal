@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { hapticFeedback } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import {
     ArrowLeft,
     Check,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Sparkles, Lightbulb, Loader2, RefreshCw } from 'lucide-react'
 import { useWeeklyDigest } from '@/lib/hooks/use-weekly-digest'
 

@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import type { Expense } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import {
   Calendar,
   ChevronRight,

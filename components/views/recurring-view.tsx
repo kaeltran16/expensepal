@@ -22,7 +22,7 @@ import type { RecurringExpense } from '@/lib/supabase'
 import type { DetectedRecurringExpense } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase'
 import { cn, formatCurrency } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import {
   AlertCircle,
   Calendar,

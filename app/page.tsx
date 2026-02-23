@@ -56,7 +56,7 @@ import type { WorkoutTemplate } from '@/lib/types';
 import type { ExerciseLog } from '@/lib/types/common';
 import { hapticFeedback } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { Filter } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';

@@ -17,7 +17,7 @@ import { useCreateTemplate, useExercises, useUpdateTemplate } from '@/lib/hooks'
 import type { Exercise, WorkoutTemplate } from '@/lib/supabase'
 import type { TemplateExercise } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import {
   ChevronDown,
   ChevronUp,

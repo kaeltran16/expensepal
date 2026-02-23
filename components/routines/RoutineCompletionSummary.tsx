@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, memo } from 'react'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence, animate } from 'framer-motion'
+import { motion, AnimatePresence, animate } from 'motion/react'
 import { Award, Check, Clock, Flame, Sparkles, Star, TrendingUp, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {

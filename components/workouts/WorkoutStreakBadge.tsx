@@ -1,7 +1,7 @@
 'use client'
 
 import { useWorkoutStreak } from '@/lib/hooks/use-achievements'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Flame, TrendingUp, Trophy } from 'lucide-react'
 
 interface WorkoutStreakBadgeProps {

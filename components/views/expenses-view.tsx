@@ -7,7 +7,7 @@ import { springs, variants, getStaggerDelay } from '@/lib/animation-config';
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { Plus, RefreshCw } from 'lucide-react';
 import { useMemo, useRef } from 'react';
 

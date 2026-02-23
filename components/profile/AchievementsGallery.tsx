@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { ACHIEVEMENTS, type Achievement } from '@/lib/achievements'
 import { useAchievements } from '@/lib/hooks/use-achievements'
 import { hapticFeedback } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { Award, ChevronRight, Lock, X } from 'lucide-react'
 import { useState } from 'react'
 

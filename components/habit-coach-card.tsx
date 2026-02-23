@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { Brain, AlertTriangle, Star, Lightbulb, Loader2, ChevronDown } from 'lucide-react'
 import { useHabitCoach } from '@/lib/hooks/use-habit-coach'
 

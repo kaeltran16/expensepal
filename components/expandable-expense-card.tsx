@@ -3,7 +3,7 @@
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
 import { springs, variants } from '@/lib/animation-config';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { forwardRef, useState } from 'react';
 import { SwipeableCard } from '@/components/ui/swipeable-card';
 import { CATEGORY_CONFIG, ExpenseCardHeader } from '@/components/expense-card/expense-card-header';

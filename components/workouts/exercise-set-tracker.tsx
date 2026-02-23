@@ -5,7 +5,7 @@ import { useExerciseHistory } from '@/lib/hooks'
 import type { ExerciseSet } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
 import { detectPersonalRecords, getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Check, Minus, Plus, TrendingUp, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 

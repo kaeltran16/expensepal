@@ -6,7 +6,7 @@ import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
 import { AnimatedCounter } from '@/components/animated-counter'
 import { springs, stagger } from '@/lib/animation-config'
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'motion/react'
 import {
   AlertTriangle,
   ArrowRight,

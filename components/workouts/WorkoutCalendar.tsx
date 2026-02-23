@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { hapticFeedback } from '@/lib/utils'

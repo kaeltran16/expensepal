@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useExerciseHistory, usePersonalRecords } from '@/lib/hooks/use-workouts'
 import { getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
 import { format, parseISO } from 'date-fns'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { ArrowUp, Calendar, Dumbbell, Flame, Target, TrendingUp, Trophy, Zap } from 'lucide-react'
 import { useMemo } from 'react'
 import {

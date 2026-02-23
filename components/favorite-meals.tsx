@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Heart, Plus, Utensils, X } from 'lucide-react'
 import { useFavoriteMeals, useQuickAddMeal, useToggleFavorite, type SavedFood } from '@/lib/hooks'
 import { hapticFeedback } from '@/lib/utils'

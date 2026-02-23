@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { BudgetRecommendations } from '@/components/budget-recommendations'
 import { useAIBudgetRecommendations, useCreateBudget, useUpdateBudget } from '@/lib/hooks/use-budgets'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { Sparkles, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'

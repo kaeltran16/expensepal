@@ -3,7 +3,7 @@
 import { springs, variants, durations, easings, getFabItemTransition } from '@/lib/animation-config'
 import { hapticFeedback } from '@/lib/utils'
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react'
 import { Plus, X, Pencil, RefreshCw } from 'lucide-react'
 
 interface FloatingActionMenuProps {

@@ -5,7 +5,7 @@ import { springs, variants, durations, easings } from '@/lib/animation-config';
 import { QUICK_FILTERS, CATEGORY_FILTERS, type QuickFilterType } from '@/lib/constants/filters';
 import type { Expense, Budget } from '@/lib/supabase';
 import { formatCurrency, hapticFeedback } from '@/lib/utils';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 
 interface FilterSheetProps {

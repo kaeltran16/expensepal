@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { Sparkles, Send, X, Check, Loader2, ArrowRight, ChevronDown } from 'lucide-react'
 import { useParseInput, useExecuteParsedInput } from '@/lib/hooks/use-nl-input'
 import { useQuickSuggestions } from '@/lib/hooks/use-quick-suggestions'

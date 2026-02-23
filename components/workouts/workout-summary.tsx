@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import type { ExerciseLog } from '@/lib/types/common'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { Check, Dumbbell, Share2, Timer, TrendingUp, Zap } from 'lucide-react'
 
 interface PersonalRecord {

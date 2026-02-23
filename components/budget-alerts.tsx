@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useBudgets } from '@/lib/hooks'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, AlertTriangle, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 

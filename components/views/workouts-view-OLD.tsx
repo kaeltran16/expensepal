@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { Workout, WorkoutTemplate, WorkoutTemplateInsert, WorkoutTemplateUpdate } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/utils'
 import { format, isThisWeek, isToday } from 'date-fns'
-import { AnimatePresence, motion, Reorder } from 'framer-motion'
+import { AnimatePresence, motion, Reorder } from 'motion/react'
 import {
   Activity,
   ArrowLeft,

@@ -3,7 +3,7 @@
 import { springs } from '@/lib/animation-config'
 import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import type { LucideIcon } from 'lucide-react'
 import { Dumbbell, Lightbulb, MoreHorizontal, Plus, Wallet } from 'lucide-react'
 

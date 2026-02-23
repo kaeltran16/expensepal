@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { Check, ChevronDown, ChevronUp, Clock, Lightbulb, SkipForward } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'

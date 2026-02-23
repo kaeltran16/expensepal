@@ -3,7 +3,7 @@
 import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { UserMenu } from '@/components/user-menu'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { LogIn, Mail, Moon, Sun, Wallet } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'

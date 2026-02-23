@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useBudgets, useCreateBudget, useUpdateBudget } from '@/lib/hooks'
 import { formatCurrency } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { AlertTriangle, TrendingUp, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

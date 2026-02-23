@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Card } from '@/components/ui/card'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import type { IconType } from '@/lib/types'

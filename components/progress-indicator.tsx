@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 

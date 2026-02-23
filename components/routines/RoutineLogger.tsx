@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { cn, hapticFeedback } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { ArrowLeft, Check, ChevronRight, Clock, Lightbulb, Pause, Play, SkipForward } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {

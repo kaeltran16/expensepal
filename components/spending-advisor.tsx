@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useBudgets, useAIInsights } from '@/lib/hooks'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
-import { AnimatePresence, motion, useMotionValue, useTransform, PanInfo } from 'framer-motion'
+import { AnimatePresence, motion, useMotionValue, useTransform, PanInfo } from 'motion/react'
 import { springs, stagger } from '@/lib/animation-config'
 import {
   AlertTriangle,

@@ -37,8 +37,8 @@ vi.mock('@/components/recurring-expenses/recurring-expense-form', () => ({
   ),
 }))
 
-// Import the complete framer-motion mock
-import '../../mocks/framer-motion'
+// Import the complete motion/react mock
+import '../../mocks/motion'
 
 describe('RecurringView', () => {
   const mockExpenses: Expense[] = [

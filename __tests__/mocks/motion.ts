@@ -1,7 +1,7 @@
 /**
- * Framer Motion Mock
+ * Motion Mock
  *
- * Mocks Framer Motion components to avoid animation-related issues in tests.
+ * Mocks motion/react components to avoid animation-related issues in tests.
  */
 
 import { vi } from 'vitest'
@@ -11,7 +11,6 @@ import React from 'react'
 const createMockMotionComponent = (element: keyof JSX.IntrinsicElements) => {
   return React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }>(
     (props, ref) => {
-      // Filter out framer-motion specific props
       const {
         initial,
         animate,
@@ -57,33 +56,31 @@ export const motion = {
   li: createMockMotionComponent('li'),
   a: createMockMotionComponent('a'),
   img: createMockMotionComponent('img'),
+  circle: createMockMotionComponent('circle'),
+  path: createMockMotionComponent('path'),
 }
 
 export const AnimatePresence = MockAnimatePresence
 
-// Mock the framer-motion module
-vi.mock('framer-motion', async () => {
-  const actual = await vi.importActual('framer-motion')
+// Mock the motion/react module
+vi.mock('motion/react', async () => {
+  const actual = await vi.importActual('motion/react')
   return {
     ...actual,
     motion,
     AnimatePresence: MockAnimatePresence,
-    // Mock useAnimation hook
     useAnimation: vi.fn(() => ({
       start: vi.fn(),
       stop: vi.fn(),
       set: vi.fn(),
     })),
-    // Mock useInView hook
     useInView: vi.fn(() => true),
-    // Mock useScroll hook
     useScroll: vi.fn(() => ({
       scrollX: { get: () => 0 },
       scrollY: { get: () => 0 },
       scrollXProgress: { get: () => 0 },
       scrollYProgress: { get: () => 0 },
     })),
-    // Mock useTransform hook
     useTransform: vi.fn((value) => value),
   }
 })

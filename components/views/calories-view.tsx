@@ -11,7 +11,7 @@ import { StreakCounter } from '@/components/streak-counter';
 import { WaterIntake } from '@/components/water-intake';
 import { WeightTracker } from '@/components/weight-tracker';
 import { FavoriteMeals } from '@/components/favorite-meals';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { hapticFeedback } from '@/lib/utils';
 import { useMealFilters } from '@/lib/hooks';
 import type { Meal, Expense } from '@/lib/supabase';

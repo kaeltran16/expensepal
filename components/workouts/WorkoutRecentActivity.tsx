@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Calendar, Award } from 'lucide-react'
 import { format } from 'date-fns'
 import type { Workout } from '@/lib/supabase'
