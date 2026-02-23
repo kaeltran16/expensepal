@@ -24,6 +24,7 @@ import {
 } from '@/lib/analytics/spending-insights'
 import { getMerchantInsights, type MerchantInsight } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { cn } from '@/lib/utils'
 
 interface InsightsViewProps {
@@ -201,7 +202,7 @@ function PatternCard({ pattern, index }: { pattern: SpendingPattern; index: numb
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.2 }}
+      transition={{ delay: getStaggerDelay(index), duration: 0.2 }}
       className="ios-list-item"
     >
       <div className="flex items-start gap-3">
@@ -234,7 +235,7 @@ function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: getStaggerDelay(index) }}
       className="ios-list-item"
     >
       <div className="flex items-center justify-between gap-3">
@@ -263,7 +264,7 @@ function CompactMerchantCard({ merchant, index }: { merchant: MerchantInsight; i
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: getStaggerDelay(index) }}
       className="ios-list-item"
     >
       <div className="space-y-2">

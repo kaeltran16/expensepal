@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useExerciseHistory } from '@/lib/hooks'
 import type { ExerciseSet } from '@/lib/types/common'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import { detectPersonalRecords, getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
 import { motion } from 'motion/react'
@@ -91,7 +92,7 @@ export function ExerciseSetTracker({
                 initial={{ opacity: 0, x: -30, scale: 0.9 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 transition={{
-                  delay: index * 0.05,
+                  delay: getStaggerDelay(index),
                   type: "spring",
                   stiffness: 400,
                   damping: 25
@@ -116,7 +117,7 @@ export function ExerciseSetTracker({
                     className="font-medium"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.05 + 0.1 }}
+                    transition={{ delay: getStaggerDelay(index) + 0.1 }}
                   >
                     Set {set.set_number}
                   </motion.span>
@@ -125,7 +126,7 @@ export function ExerciseSetTracker({
                       className="text-muted-foreground"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 + 0.15 }}
+                      transition={{ delay: getStaggerDelay(index) + 0.15 }}
                     >
                       {set.weight}kg × {set.reps} reps
                     </motion.span>
@@ -133,7 +134,7 @@ export function ExerciseSetTracker({
                       initial={{ scale: 0, rotate: -180 }}
                       animate={{ scale: 1, rotate: 0 }}
                       transition={{
-                        delay: index * 0.05 + 0.2,
+                        delay: getStaggerDelay(index) + 0.2,
                         type: "spring",
                         stiffness: 500,
                         damping: 15

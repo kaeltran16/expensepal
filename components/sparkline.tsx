@@ -1,5 +1,6 @@
 'use client'
 
+import { getStaggerDelay } from '@/lib/motion-system';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
@@ -90,7 +91,7 @@ export function Sparkline({
             className={cn('fill-current', COLOR_CLASSES[color])}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: animated ? index * 0.05 : 0, duration: 0.3 }}
+            transition={{ delay: animated ? getStaggerDelay(index) : 0, duration: 0.3 }}
           />
         ))}
     </svg>

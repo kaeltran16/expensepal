@@ -1,6 +1,9 @@
 'use client'
 
+import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { useSheetBackdrop } from '@/components/sheet-backdrop-context'
+import { springs, getStaggerDelay } from '@/lib/motion-system'
 import { Flame, Target, Repeat, User, ChevronRight, X, Sparkles } from 'lucide-react'
 import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
@@ -21,6 +24,12 @@ const MORE_ITEMS = [
 ]
 
 export function MoreSheet({ isOpen, onClose, onNavigate, activeView }: MoreSheetProps) {
+  const { onSheetOpen, onSheetClose } = useSheetBackdrop()
+
+  useEffect(() => {
+    if (isOpen) { onSheetOpen(); return onSheetClose }
+  }, [isOpen, onSheetOpen, onSheetClose])
+
   const handleItemClick = (viewId: ViewType) => {
     hapticFeedback('light')
     onNavigate(viewId)
@@ -46,7 +55,7 @@ export function MoreSheet({ isOpen, onClose, onNavigate, activeView }: MoreSheet
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            transition={springs.sheet}
             className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl shadow-2xl"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
@@ -78,7 +87,7 @@ export function MoreSheet({ isOpen, onClose, onNavigate, activeView }: MoreSheet
                       key={item.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                      transition={{ delay: getStaggerDelay(index) }}
                       onClick={() => handleItemClick(item.id)}
                       className={`w-full flex items-center gap-4 p-4 rounded-xl transition-colors ${
                         isActive ? 'bg-primary/10' : 'hover:bg-muted/50 active:bg-muted'

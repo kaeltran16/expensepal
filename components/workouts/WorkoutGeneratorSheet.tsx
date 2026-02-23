@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -437,7 +438,7 @@ export function WorkoutGeneratorSheet({
                     key={ex.exercise_id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
+                    transition={{ delay: getStaggerDelay(index) }}
                     className="ios-card p-4 flex items-center gap-4"
                   >
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">

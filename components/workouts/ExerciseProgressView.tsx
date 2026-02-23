@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { useExerciseHistory, usePersonalRecords } from '@/lib/hooks/use-workouts'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
 import { format, parseISO } from 'date-fns'
 import { motion } from 'motion/react'
@@ -282,7 +283,7 @@ export function ExerciseProgressView({
               key={entry.id}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 + index * 0.05 }}
+              transition={{ delay: getStaggerDelay(index) }}
               className="ios-card p-4 flex items-center justify-between"
             >
               <div>

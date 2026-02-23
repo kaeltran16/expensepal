@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { springs, getStaggerDelay } from '@/lib/motion-system'
 import { LucideIcon } from 'lucide-react'
 
 interface StatsCardProps {
@@ -14,15 +15,14 @@ interface StatsCardProps {
 export function StatsCard({ title, value, icon: Icon, description, index = 0 }: StatsCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.4,
-        delay: index * 0.05,
-        ease: [0.4, 0, 0.2, 1] // iOS easing
+        ...springs.ios,
+        delay: getStaggerDelay(index),
       }}
-      whileTap={{ scale: 0.98 }}
-      className="ios-card ios-press overflow-hidden"
+      whileTap={{ scale: 0.97 }}
+      className="ios-card overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, rgba(var(--card-rgb), 1) 0%, rgba(var(--card-rgb), 0.95) 100%)',
       }}
@@ -40,8 +40,7 @@ export function StatsCard({ title, value, icon: Icon, description, index = 0 }: 
             </h3>
             <motion.div
               className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97 }}
             >
               <Icon className="h-5 w-5 text-primary" />
             </motion.div>

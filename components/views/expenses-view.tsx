@@ -3,7 +3,7 @@
 import { ExpandableExpenseCard } from '@/components/expandable-expense-card';
 import { ExpenseCardSkeleton } from '@/components/skeleton-loader';
 import { EmptyState } from '@/components/ui/empty-state';
-import { springs, variants, getStaggerDelay } from '@/lib/animation-config';
+import { springs, variants, getStaggerDelay } from '@/lib/motion-system';
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
 import { useVirtualizer } from '@tanstack/react-virtual';

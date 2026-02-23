@@ -1,6 +1,6 @@
 'use client'
 
-import { springs, variants, durations, easings, getFabItemTransition } from '@/lib/animation-config'
+import { springs, variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react'
@@ -88,7 +88,7 @@ export function FloatingActionMenu({
         {isOpen && (
           <motion.div
             {...variants.fade}
-            transition={{ duration: durations.fast, ease: easings.ios }}
+            transition={{ duration: durations.standard }}
             onClick={toggleMenu}
             className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
             style={{ WebkitBackdropFilter: 'blur(8px)' }}
@@ -106,7 +106,7 @@ export function FloatingActionMenu({
           {isOpen && (
             <motion.div
               {...variants.fade}
-              transition={{ duration: durations.fast }}
+              transition={{ duration: durations.micro }}
               className="absolute bottom-16 right-0 flex flex-col gap-2.5 items-end mb-3"
             >
               {actions.map((action, index) => {
@@ -121,7 +121,7 @@ export function FloatingActionMenu({
                       type: 'spring',
                       damping: 15,
                       stiffness: 300,
-                      delay: index * 0.05,
+                      delay: getStaggerDelay(index),
                     }}
                     className="flex items-center gap-3 will-animate-all"
                   >
@@ -131,7 +131,7 @@ export function FloatingActionMenu({
                       animate={{ opacity: 1, x: 0, scale: 1 }}
                       exit={{ opacity: 0, x: 10, scale: 0.9 }}
                       transition={{
-                        delay: index * 0.05 + 0.1,
+                        delay: getStaggerDelay(index),
                         type: 'spring',
                         damping: 20,
                         stiffness: 300,
@@ -157,8 +157,7 @@ export function FloatingActionMenu({
                       data-testid={action.label === 'Add Expense' ? 'add-expense-action' : 'sync-emails-action'}
                       onClick={action.onClick}
                       disabled={action.disabled}
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      whileTap={{ scale: 0.9, rotate: -5 }}
+                      whileTap={{ scale: 0.97 }}
                       className={`
                         relative
                         w-14 h-14 rounded-full
@@ -207,8 +206,7 @@ export function FloatingActionMenu({
           }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
+          whileTap={{ scale: 0.97 }}
           style={{ x, y }}
           className="
             relative

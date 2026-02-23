@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ExerciseProgressView } from '@/components/workouts/ExerciseProgressView'
 import { useExercises } from '@/lib/hooks/use-workouts'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
 import { BarChart3, Dumbbell, Heart, Plus, RefreshCw, Search, Settings2, Trash2, X } from 'lucide-react'
@@ -312,7 +313,7 @@ export function ExerciseDetailSheet({
                         key={set.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
+                        transition={{ delay: getStaggerDelay(index) }}
                         className="flex items-center gap-3 p-4 rounded-2xl bg-muted/40"
                       >
                         {/* Set Number */}

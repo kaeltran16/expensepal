@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import type { ExerciseLog } from '@/lib/types/common'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, Dumbbell, Share2, Timer, TrendingUp, Zap } from 'lucide-react'
 
@@ -178,7 +179,7 @@ export function WorkoutSummary({
                       key={log.exercise_id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + index * 0.05 }}
+                      transition={{ delay: getStaggerDelay(index) }}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                     >
                       <span className="font-medium">{log.exercise_name}</span>

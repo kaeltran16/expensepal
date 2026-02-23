@@ -96,8 +96,7 @@ export function QuickStatsOverview({
 
             {/* Icon */}
             <motion.div
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97 }}
             >
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center border border-border/50 shadow-sm">
                 <Calendar className="h-7 w-7 text-primary" />

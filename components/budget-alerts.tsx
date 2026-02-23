@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useBudgets } from '@/lib/hooks'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, AlertTriangle, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -113,7 +114,7 @@ export function BudgetAlerts({ expenses }: BudgetAlertsProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, x: -100, scale: 0.95 }}
               transition={{
-                delay: index * 0.05,
+                delay: getStaggerDelay(index),
                 duration: 0.3,
                 ease: [0.4, 0, 0.2, 1],
               }}

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { useSheetBackdrop } from '@/components/sheet-backdrop-context'
+import { springs } from '@/lib/motion-system'
 import { Sparkles, Send, X, Check, Loader2, ArrowRight, ChevronDown } from 'lucide-react'
 import { useParseInput, useExecuteParsedInput } from '@/lib/hooks/use-nl-input'
 import { useQuickSuggestions } from '@/lib/hooks/use-quick-suggestions'
@@ -29,6 +31,11 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
   const parseInput = useParseInput()
   const executeInput = useExecuteParsedInput()
   const suggestions = useQuickSuggestions(5)
+  const { onSheetOpen, onSheetClose } = useSheetBackdrop()
+
+  useEffect(() => {
+    if (open) { onSheetOpen(); return onSheetClose }
+  }, [open, onSheetOpen, onSheetClose])
 
   useEffect(() => {
     if (open) {
@@ -100,7 +107,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            transition={springs.sheet}
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             {/* Drag handle */}

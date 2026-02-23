@@ -1,5 +1,6 @@
 'use client'
 
+import { getStaggerDelay } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { TrendingUp, TrendingDown, Minus, Lightbulb, Check, X, Sparkles, Calendar, User, PiggyBank } from 'lucide-react'
 import { Button } from './ui/button'
@@ -79,7 +80,7 @@ export function BudgetRecommendations({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            transition={{ delay: index * 0.05 }}
+            transition={{ delay: getStaggerDelay(index) }}
           >
             <Card className="p-4 space-y-3">
               {/* Header */}

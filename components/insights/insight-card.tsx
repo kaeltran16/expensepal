@@ -1,5 +1,6 @@
 'use client'
 
+import { getStaggerDelay } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Card } from '@/components/ui/card'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
@@ -66,7 +67,7 @@ export function InsightCard({
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.1 }}
+      transition={{ delay: getStaggerDelay(index) }}
     >
       <Card className={`p-4 border-l-4 ${getInsightColor()}`}>
         <div className="flex items-start gap-3">

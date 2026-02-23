@@ -1,5 +1,6 @@
 'use client'
 
+import { getStaggerDelay } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Calendar, Award } from 'lucide-react'
 import { format } from 'date-fns'
@@ -24,7 +25,7 @@ function WorkoutHistoryCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.4, ease: [0.175, 0.885, 0.32, 1.275] }}
+      transition={{ delay: getStaggerDelay(index), duration: 0.4, ease: [0.175, 0.885, 0.32, 1.275] }}
       className="ios-card p-4 flex items-center gap-3"
     >
       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">

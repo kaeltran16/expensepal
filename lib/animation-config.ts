@@ -1,4 +1,7 @@
 /**
+ * @deprecated Use lib/motion-system.ts and hooks/use-motion.ts instead.
+ * This file will be deleted in Phase 4 of the animation revamp.
+ *
  * iOS-Native Animation Configuration
  *
  * Based on Apple's Human Interface Guidelines for motion:

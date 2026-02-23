@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { motion, AnimatePresence } from 'motion/react'
 import { Search, X, History } from 'lucide-react'
 import type { Expense } from '@/lib/supabase'
@@ -111,7 +112,7 @@ export function SearchBar({ expenses, onSearch }: SearchBarProps) {
                 key={index}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.03 }}
+                transition={{ delay: getStaggerDelay(index) }}
                 onClick={() => handleSearch(suggestion)}
                 className="w-full px-4 py-3 text-left hover:bg-muted/50 active:bg-muted transition-colors flex items-center gap-3 text-sm ios-touch border-b last:border-b-0"
                 style={{ borderColor: 'rgba(var(--ios-separator))' }}

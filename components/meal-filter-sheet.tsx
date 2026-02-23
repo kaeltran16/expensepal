@@ -1,6 +1,9 @@
 'use client'
 
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { useSheetBackdrop } from '@/components/sheet-backdrop-context';
+import { springs } from '@/lib/motion-system';
 import { hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'motion/react';
 import { Apple, Coffee, Moon, Sun } from 'lucide-react';
@@ -44,6 +47,12 @@ export function MealFilterSheet({
   onMealTimeFilterChange,
   onReset,
 }: MealFilterSheetProps) {
+  const { onSheetOpen, onSheetClose } = useSheetBackdrop();
+
+  useEffect(() => {
+    if (isOpen) { onSheetOpen(); return onSheetClose }
+  }, [isOpen, onSheetOpen, onSheetClose]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -66,10 +75,7 @@ export function MealFilterSheet({
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{
-              duration: 0.35,
-              ease: [0.32, 0.72, 0, 1],
-            }}
+            transition={springs.sheet}
             className="fixed inset-x-0 bottom-0 z-[70] bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50"
             style={{ maxHeight: '75vh' }}
           >

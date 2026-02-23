@@ -19,6 +19,7 @@ import { QuickStatsOverview } from '@/components/quick-stats-overview';
 import { QuickStatsSkeleton } from '@/components/quick-stats-skeleton';
 import { SearchBar } from '@/components/search-bar';
 import { Button } from '@/components/ui/button';
+import { Pressable } from '@/components/ui/pressable';
 import {
   AnalyticsViewSkeleton,
   BudgetViewSkeleton,
@@ -56,6 +57,8 @@ import type { WorkoutTemplate } from '@/lib/types';
 import type { ExerciseLog } from '@/lib/types/common';
 import { hapticFeedback } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
+import { SheetBackdropProvider } from '@/components/sheet-backdrop-context';
+import { ViewTransition } from '@/components/view-transition';
 import { AnimatePresence, motion } from 'motion/react';
 import { Filter } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -452,6 +455,7 @@ function HomeContent() {
         }}
       />
 
+      <SheetBackdropProvider>
       <PullToRefreshWrapper
         onRefresh={handleRefresh}
         enabled={['expenses', 'budget', 'insights', 'calories', 'routines'].includes(activeView)}
@@ -517,10 +521,10 @@ function HomeContent() {
                 </div>
 
                 {/* Filter Button */}
-                <motion.div whileTap={{ scale: 0.95 }}>
+                <Pressable>
                   <Button
                     variant={hasActiveFilters ? 'default' : 'outline'}
-                    className="ripple-effect min-h-touch gap-2 whitespace-nowrap px-4 rounded-2xl ios-press"
+                    className="ripple-effect min-h-touch gap-2 whitespace-nowrap px-4 rounded-2xl"
                     onClick={() => {
                       setShowFilterSheet(true);
                       hapticFeedback('light');
@@ -535,7 +539,7 @@ function HomeContent() {
                       />
                     )}
                   </Button>
-                </motion.div>
+                </Pressable>
               </div>
 
               {/* Section Header */}
@@ -549,7 +553,7 @@ function HomeContent() {
                   </p>
                 </div>
                 {filteredExpenses.length > 10 && (
-                  <motion.div whileTap={{ scale: 0.95 }}>
+                  <Pressable>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -561,125 +565,124 @@ function HomeContent() {
                     >
                       {showAllExpenses ? 'Less' : 'All'}
                     </Button>
-                  </motion.div>
+                  </Pressable>
                 )}
               </div>
             </>
           )}
 
-          {activeView === 'expenses' ? (
-            <Suspense fallback={<ViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load expenses" errorDescription="Something went wrong while loading your expenses">
-                <ExpensesView
-                  expenses={expenses}
-                  filteredExpenses={filteredExpenses}
-                  loading={loading}
-                  showAllExpenses={showAllExpenses}
-                  isSyncing={isSyncing}
-                  onShowForm={() => setShowForm(true)}
-                  onSync={handleSync}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-                  onUpdate={handleUpdateNotes}
-                  onClearFilters={clearFilters}
-                />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'budget' ? (
-            <Suspense fallback={<BudgetViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load budget" errorDescription="Something went wrong while loading your budget">
-                <BudgetView expenses={expenses} loading={loading} />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'recurring' ? (
-            <Suspense fallback={<RecurringViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load recurring" errorDescription="Unable to load your subscriptions">
-                <RecurringView expenses={expenses} />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'insights' ? (
-            <Suspense fallback={<AnalyticsViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load insights" errorDescription="Unable to generate spending insights">
-                <AnalyticsInsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'goals' ? (
-            <Suspense fallback={<GoalsViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load goals" errorDescription="Unable to load your savings goals">
-                <GoalsView loading={loading} />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'summary' ? (
-            <Suspense fallback={<ViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load summary" errorDescription="Unable to load weekly summary">
-                <SummaryView expenses={expenses} loading={loading} />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'calories' ? (
-            <Suspense fallback={<CaloriesViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load calories" errorDescription="Unable to load your calorie tracking data">
-                <CaloriesView
-                  meals={meals}
-                  calorieStats={calorieStats ?? null}
-                  loading={loadingMeals}
-                  showAllMeals={showAllMeals}
-                  onToggleShowAll={() => setShowAllMeals(!showAllMeals)}
-                />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'workouts' ? (
-            <Suspense fallback={<WorkoutsViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load workouts" errorDescription="Unable to load your workout data">
-                <WorkoutsView
-              templates={workoutTemplates}
-              recentWorkouts={workouts}
-              loading={templatesLoading}
-              onStartWorkout={(template) => {
-                setActiveWorkout(template)
-                setExerciseLogs([]) // Reset logs for new workout
-                setEditingWorkoutExercises(false) // Not editing, starting fresh
-                setActiveView('summary') // Switch away from workouts view so WorkoutLogger can show
-                hapticFeedback('medium')
-              }}
-              onCreateTemplate={async (templateData) => {
-                // The templateData comes as Partial<WorkoutTemplateInsert> with exercises as Json
-                // Cast it appropriately for the API
-                await createTemplate(templateData as any)
-              }}
-              onUpdateTemplate={async (id, templateData) => {
-                await updateTemplate({ id, ...templateData } as any)
-              }}
-              onDeleteTemplate={async (id) => {
-                await deleteTemplate(id)
-              }}
-              activeWorkout={activeWorkout}
-              exerciseLogs={exerciseLogs}
-              editingWorkoutExercises={editingWorkoutExercises}
-              onReturnToWorkout={() => {
-                // Switch back to previous view (or summary) to show workout logger
-                setEditingWorkoutExercises(false)
-                setActiveView('summary')
-              }}
-            />
-            </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'profile' ? (
-            <Suspense fallback={<ViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load profile" errorDescription="Unable to load your profile settings">
-                <ProfileView
-                  profile={profile ?? null}
-                  loading={profileLoading}
-                  onUpdate={updateProfile}
-                />
-              </ErrorBoundary>
-            </Suspense>
-          ) : activeView === 'routines' ? (
-            <Suspense fallback={<ViewSkeleton />}>
-              <ErrorBoundary errorTitle="Failed to load routines" errorDescription="Unable to load your routines">
-                <RoutinesView />
-              </ErrorBoundary>
-            </Suspense>
-          ) : null}
+          <ViewTransition activeView={activeView}>
+            {activeView === 'expenses' ? (
+              <Suspense fallback={<ViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load expenses" errorDescription="Something went wrong while loading your expenses">
+                  <ExpensesView
+                    expenses={expenses}
+                    filteredExpenses={filteredExpenses}
+                    loading={loading}
+                    showAllExpenses={showAllExpenses}
+                    isSyncing={isSyncing}
+                    onShowForm={() => setShowForm(true)}
+                    onSync={handleSync}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                    onUpdate={handleUpdateNotes}
+                    onClearFilters={clearFilters}
+                  />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'budget' ? (
+              <Suspense fallback={<BudgetViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load budget" errorDescription="Something went wrong while loading your budget">
+                  <BudgetView expenses={expenses} loading={loading} />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'recurring' ? (
+              <Suspense fallback={<RecurringViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load recurring" errorDescription="Unable to load your subscriptions">
+                  <RecurringView expenses={expenses} />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'insights' ? (
+              <Suspense fallback={<AnalyticsViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load insights" errorDescription="Unable to generate spending insights">
+                  <AnalyticsInsightsView expenses={expenses} loading={loading} onNavigate={setActiveView} />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'goals' ? (
+              <Suspense fallback={<GoalsViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load goals" errorDescription="Unable to load your savings goals">
+                  <GoalsView loading={loading} />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'summary' ? (
+              <Suspense fallback={<ViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load summary" errorDescription="Unable to load weekly summary">
+                  <SummaryView expenses={expenses} loading={loading} />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'calories' ? (
+              <Suspense fallback={<CaloriesViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load calories" errorDescription="Unable to load your calorie tracking data">
+                  <CaloriesView
+                    meals={meals}
+                    calorieStats={calorieStats ?? null}
+                    loading={loadingMeals}
+                    showAllMeals={showAllMeals}
+                    onToggleShowAll={() => setShowAllMeals(!showAllMeals)}
+                  />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'workouts' ? (
+              <Suspense fallback={<WorkoutsViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load workouts" errorDescription="Unable to load your workout data">
+                  <WorkoutsView
+                    templates={workoutTemplates}
+                    recentWorkouts={workouts}
+                    loading={templatesLoading}
+                    onStartWorkout={(template) => {
+                      setActiveWorkout(template)
+                      setExerciseLogs([])
+                      setEditingWorkoutExercises(false)
+                      setActiveView('summary')
+                      hapticFeedback('medium')
+                    }}
+                    onCreateTemplate={async (templateData) => {
+                      await createTemplate(templateData as any)
+                    }}
+                    onUpdateTemplate={async (id, templateData) => {
+                      await updateTemplate({ id, ...templateData } as any)
+                    }}
+                    onDeleteTemplate={async (id) => {
+                      await deleteTemplate(id)
+                    }}
+                    activeWorkout={activeWorkout}
+                    exerciseLogs={exerciseLogs}
+                    editingWorkoutExercises={editingWorkoutExercises}
+                    onReturnToWorkout={() => {
+                      setEditingWorkoutExercises(false)
+                      setActiveView('summary')
+                    }}
+                  />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'profile' ? (
+              <Suspense fallback={<ViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load profile" errorDescription="Unable to load your profile settings">
+                  <ProfileView
+                    profile={profile ?? null}
+                    loading={profileLoading}
+                    onUpdate={updateProfile}
+                  />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'routines' ? (
+              <Suspense fallback={<ViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load routines" errorDescription="Unable to load your routines">
+                  <RoutinesView />
+                </ErrorBoundary>
+              </Suspense>
+            ) : null}
+          </ViewTransition>
         </div>
 
         {/* Bottom Navigation */}
@@ -814,6 +817,7 @@ function HomeContent() {
         </AnimatePresence>
         </div>
       </PullToRefreshWrapper>
+      </SheetBackdropProvider>
     </>
   );
 }

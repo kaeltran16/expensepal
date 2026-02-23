@@ -1,5 +1,6 @@
 'use client'
 
+import { getStaggerDelay } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Heart, Plus, Utensils, X } from 'lucide-react'
 import { useFavoriteMeals, useQuickAddMeal, useToggleFavorite, type SavedFood } from '@/lib/hooks'
@@ -91,7 +92,7 @@ export function FavoriteMeals() {
             key={food.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
+            transition={{ delay: getStaggerDelay(index) }}
             className="relative"
           >
             <motion.button

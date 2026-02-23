@@ -1,12 +1,13 @@
 'use client'
 
 import { Button } from '@/components/ui/button';
-import { springs, variants, durations, easings } from '@/lib/animation-config';
+import { useSheetBackdrop } from '@/components/sheet-backdrop-context';
+import { springs, variants, durations } from '@/lib/motion-system';
 import { QUICK_FILTERS, CATEGORY_FILTERS, type QuickFilterType } from '@/lib/constants/filters';
 import type { Expense, Budget } from '@/lib/supabase';
 import { formatCurrency, hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface FilterSheetProps {
   isOpen: boolean;
@@ -37,6 +38,11 @@ export function FilterSheet({
   currentMonth,
 }: FilterSheetProps) {
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const { onSheetOpen, onSheetClose } = useSheetBackdrop();
+
+  useEffect(() => {
+    if (isOpen) { onSheetOpen(); return onSheetClose }
+  }, [isOpen, onSheetOpen, onSheetClose]);
 
   // Extract all unique categories from expenses
   const allCategories = ['All', ...Array.from(new Set(expenses.map(e => e.category || 'Other'))).sort()];
@@ -75,7 +81,7 @@ export function FilterSheet({
           {/* Backdrop */}
           <motion.div
             {...variants.fade}
-            transition={{ duration: durations.fast, ease: easings.ios }}
+            transition={{ duration: durations.standard }}
             onClick={() => {
               handleClose();
               hapticFeedback('light');
@@ -85,8 +91,8 @@ export function FilterSheet({
 
           {/* Sheet */}
           <motion.div
-            {...variants.bottomSheet}
-            transition={springs.gentle}
+            {...variants.sheet}
+            transition={springs.sheet}
             className="fixed inset-x-0 bottom-0 z-50 bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50 will-animate"
             style={{ maxHeight: '75vh' }}
           >

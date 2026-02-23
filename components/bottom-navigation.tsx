@@ -1,6 +1,6 @@
 'use client'
 
-import { springs } from '@/lib/animation-config'
+import { springs } from '@/lib/motion-system'
 import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
 import { motion } from 'motion/react'
@@ -96,7 +96,7 @@ export function BottomNavigation({ activeView, onViewChange, onAddExpense, onOpe
     <motion.nav
       initial={{ y: 100 }}
       animate={{ y: 0 }}
-      transition={springs.default}
+      transition={springs.ios}
       className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 will-animate"
       data-testid="bottom-navigation"
     >
@@ -112,7 +112,7 @@ export function BottomNavigation({ activeView, onViewChange, onAddExpense, onOpe
         <div className="relative flex flex-col items-center justify-center flex-1 py-1">
           <motion.button
             onClick={handleAddClick}
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.97 }}
             className="relative -mt-6 w-14 h-14 rounded-full bg-primary shadow-lg flex items-center justify-center ios-touch"
             data-testid="nav-add"
           >

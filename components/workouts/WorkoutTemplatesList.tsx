@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import type { WorkoutTemplate } from '@/lib/supabase'
 import { useState, useRef, useCallback } from 'react'
@@ -131,7 +132,7 @@ function TemplateCard({
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.05, duration: 0.4, ease: [0.175, 0.885, 0.32, 1.275] }}
+        transition={{ delay: getStaggerDelay(index), duration: 0.4, ease: [0.175, 0.885, 0.32, 1.275] }}
         className="relative w-full overflow-hidden rounded-xl"
       >
         {/* Delete background */}

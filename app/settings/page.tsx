@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { hapticFeedback } from '@/lib/utils'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, ChevronDown, ChevronUp, Edit, ExternalLink, Eye, EyeOff, Mail, Plus, Save, Trash2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -330,7 +331,7 @@ export default function SettingsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: getStaggerDelay(index) }}
               >
                 <Card className="ios-card overflow-hidden">
                   <CardContent className="p-0">

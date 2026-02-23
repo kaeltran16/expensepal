@@ -6,6 +6,7 @@ import { AddCategoryDialog } from '@/components/add-category-dialog'
 import { SetBudgetDialog } from '@/components/set-budget-dialog'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
+import { getStaggerDelay } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { AlertCircle, CheckCircle, Edit2, Target } from 'lucide-react'
 import { useState, useMemo, useEffect, useRef } from 'react'
@@ -142,7 +143,7 @@ export function BudgetTracker({ expenses, initialEditCategory, initialEditValue 
               ref={(el) => { categoryRefs.current[category] = el }}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05, duration: 0.2 }}
+              transition={{ delay: getStaggerDelay(index), duration: 0.2 }}
               className="ios-list-item"
               data-testid="budget-card"
             >
