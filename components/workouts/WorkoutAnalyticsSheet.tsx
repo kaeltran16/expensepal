@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
+import { durations, springs, variants } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { X, TrendingUp, Calendar, Award, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -37,19 +38,15 @@ export function WorkoutAnalyticsSheet({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
             onClick={handleClose}
             className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md"
           />
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 40, stiffness: 400, mass: 0.8 }}
+            {...variants.sheet}
+            transition={springs.sheet}
             className="fixed inset-x-0 bottom-0 z-[70] bg-background rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh]"
           >
             {/* Header */}
@@ -101,7 +98,7 @@ export function WorkoutAnalyticsSheet({
                   initial={{ opacity: 0, x: activeTab === 'overview' ? -20 : 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: activeTab === 'overview' ? 20 : -20 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: durations.standard }}
                 >
                   {activeTab === 'overview' && <OverviewTab workouts={workouts} />}
                   {activeTab === 'progress' && <ProgressTab workouts={workouts} />}

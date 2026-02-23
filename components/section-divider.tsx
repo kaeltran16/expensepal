@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react';
+import { durations } from '@/lib/motion-system';
 
 interface SectionDividerProps {
   className?: string;
@@ -11,7 +12,7 @@ export function SectionDivider({ className = '' }: SectionDividerProps) {
     <motion.div
       initial={{ scaleX: 0 }}
       animate={{ scaleX: 1 }}
-      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: durations.slow }}
       className={`h-px bg-gradient-to-r from-transparent via-border to-transparent ${className}`}
       style={{
         transformOrigin: 'center',

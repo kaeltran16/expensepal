@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { variants } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 
 interface PersonalRecord {
@@ -30,9 +31,7 @@ export function PersonalRecordBadge({
     <AnimatePresence>
       {personalRecords.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
+          {...variants.scale}
           className="fixed inset-0 bg-black/80 backdrop-blur-md z-30 flex items-center justify-center"
           onClick={onDismiss}
         >
@@ -54,8 +53,7 @@ export function PersonalRecordBadge({
             {personalRecords.map((pr, idx) => (
               <motion.p
                 key={idx}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                {...variants.slideUp}
                 transition={{ delay: idx * 0.1 }}
                 className="ios-body text-primary"
               >

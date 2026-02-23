@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'motion/react'
+import { variants, springs } from '@/lib/motion-system'
 import { Check, ChevronDown, ChevronUp, Clock, Lightbulb, SkipForward } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -40,8 +41,8 @@ export function RoutineStepCard({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
+      transition={springs.ios}
       className={cn(
         'ios-card overflow-hidden transition-all',
         isActive && 'ring-2 ring-teal-500',

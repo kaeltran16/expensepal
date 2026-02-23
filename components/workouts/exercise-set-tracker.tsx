@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useExerciseHistory } from '@/lib/hooks'
 import type { ExerciseSet } from '@/lib/types/common'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { getStaggerDelay, springs, variants, durations } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import { detectPersonalRecords, getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
 import { motion } from 'motion/react'
@@ -56,19 +56,13 @@ export function ExerciseSetTracker({
       {completedSets.length > 0 && (
         <motion.div
           className="space-y-2"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 25
-          }}
+          {...variants.slideUp}
+          transition={springs.ios}
         >
           <motion.div
             className="flex items-center justify-between px-1"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
+            {...variants.fade}
+            transition={{ delay: durations.micro }}
           >
             <h3 className="ios-headline">Completed Sets</h3>
             <motion.span
@@ -76,11 +70,7 @@ export function ExerciseSetTracker({
               key={completedSets.length}
               initial={{ scale: 1.3 }}
               animate={{ scale: 1 }}
-              transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 15
-              }}
+              transition={springs.touch}
             >
               {completedSets.length} of {targetSets}
             </motion.span>
@@ -93,18 +83,16 @@ export function ExerciseSetTracker({
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 transition={{
                   delay: getStaggerDelay(index),
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 25
+                  ...springs.touch
                 }}
                 whileHover={{
                   scale: 1.02,
                   x: 4,
-                  transition: { type: "spring", stiffness: 500, damping: 20 }
+                  transition: springs.drag
                 }}
                 whileTap={{
-                  scale: 0.98,
-                  transition: { duration: 0.1 }
+                  scale: 0.97,
+                  transition: { duration: durations.micro }
                 }}
                 className="ios-card p-4 cursor-pointer"
                 onClick={() => {
@@ -115,9 +103,8 @@ export function ExerciseSetTracker({
                 <div className="flex items-center justify-between">
                   <motion.span
                     className="font-medium"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: getStaggerDelay(index) + 0.1 }}
+                    {...variants.fade}
+                    transition={{ delay: getStaggerDelay(index) + durations.micro }}
                   >
                     Set {set.set_number}
                   </motion.span>
@@ -135,9 +122,7 @@ export function ExerciseSetTracker({
                       animate={{ scale: 1, rotate: 0 }}
                       transition={{
                         delay: getStaggerDelay(index) + 0.2,
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 15
+                        ...springs.touch
                       }}
                     >
                       <Check className="h-5 w-5 text-green-600" />
@@ -258,8 +243,7 @@ function SetInputForm({
       {/* AI Suggestion Card */}
       {suggestion.type !== 'maintain' && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
+          {...variants.slideDown}
           className="frosted-card p-4 border-l-4 border-l-primary"
         >
           <div className="flex items-start gap-3">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { variants, springs } from '@/lib/motion-system'
 import { motion, AnimatePresence } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import {
@@ -66,9 +67,7 @@ export function NavigationMenu({
           <>
             {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...variants.fade}
               onClick={() => setIsOpen(false)}
               className="fixed inset-0 bg-black/50 z-50"
             />
@@ -78,7 +77,7 @@ export function NavigationMenu({
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              transition={springs.sheet}
               className="fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-background border-r shadow-2xl z-50"
             >
               {/* Header */}

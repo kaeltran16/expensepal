@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { variants } from '@/lib/motion-system'
 import { Button } from '@/components/ui/button'
 import { ReactNode } from 'react'
 
@@ -61,24 +62,24 @@ const iconAnimationVariants = {
   default: {
     initial: { scale: 0.8, opacity: 0 },
     animate: { scale: 1, opacity: 1 },
-    transition: { type: 'spring', bounce: 0.5, duration: 0.8 },
+    transition: { type: 'spring' as const, bounce: 0.5, duration: 0.8 },
   },
   rotate: {
     initial: { scale: 0.8, rotate: -10, opacity: 0 },
     animate: { scale: 1, rotate: 0, opacity: 1 },
-    transition: { type: 'spring', bounce: 0.5 },
+    transition: { type: 'spring' as const, bounce: 0.5 },
   },
   bounce: {
     initial: { y: -20, opacity: 0 },
     animate: { y: 0, opacity: 1 },
-    transition: { type: 'spring', bounce: 0.6, duration: 0.8 },
+    transition: { type: 'spring' as const, bounce: 0.6, duration: 0.8 },
   },
   pulse: {
     initial: { scale: 0.9, opacity: 0 },
     animate: { scale: 1, opacity: 1 },
     transition: {
       scale: {
-        type: 'spring',
+        type: 'spring' as const,
         bounce: 0.5,
         duration: 0.8,
       },
@@ -152,8 +153,7 @@ export function EmptyState({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      {...variants.fade}
       className={`text-center ${sizes.container}`}
       data-testid={testId}
     >

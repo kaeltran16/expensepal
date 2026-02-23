@@ -2,7 +2,7 @@
 
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
-import { springs, variants } from '@/lib/animation-config';
+import { springs, variants } from '@/lib/motion-system';
 import { AnimatePresence, motion } from 'motion/react';
 import { forwardRef, useState } from 'react';
 import { SwipeableCard } from '@/components/ui/swipeable-card';
@@ -81,8 +81,8 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
           <AnimatePresence initial={false}>
             {isExpanded && (
               <motion.div
-                {...variants.cardExpandContent}
-                transition={springs.default}
+                {...variants.slideDown}
+                transition={springs.ios}
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 space-y-4">

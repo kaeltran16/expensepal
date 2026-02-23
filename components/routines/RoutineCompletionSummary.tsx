@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback, memo } from 'react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence, animate } from 'motion/react'
+import { springs, durations, variants } from '@/lib/motion-system'
 import { Award, Check, Clock, Flame, Sparkles, Star, TrendingUp, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -95,7 +96,7 @@ export function RoutineCompletionSummary({
 
       // Use Framer Motion's animate for smooth XP counting
       animationControls = animate(previousXP, newXP, {
-        duration: 1.5,
+        duration: durations.slow,
         ease: 'easeOut',
         onUpdate: (value) => setDisplayedXP(Math.floor(value)),
         onComplete: () => {
@@ -138,7 +139,7 @@ export function RoutineCompletionSummary({
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 30, delay: 0.2 }}
+              transition={{ ...springs.ios, delay: 0.2 }}
               className={cn(
                 'flex h-20 w-20 items-center justify-center rounded-full',
                 isPerfect ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-teal-500'
@@ -152,18 +153,16 @@ export function RoutineCompletionSummary({
             </motion.div>
 
             <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              {...variants.slideUp}
+              transition={{ ...springs.ios, delay: 0.3 }}
               className="mt-4 text-2xl font-bold"
             >
               {isPerfect ? 'Perfect!' : 'Well Done!'}
             </motion.h2>
 
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
+              {...variants.fade}
+              transition={{ ...springs.ios, delay: 0.4 }}
               className="text-muted-foreground"
             >
               {routineName} completed
@@ -172,9 +171,8 @@ export function RoutineCompletionSummary({
 
           {/* Stats grid */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            {...variants.slideUp}
+            transition={{ ...springs.ios, delay: 0.5 }}
             className="mt-6 grid grid-cols-3 gap-3"
           >
             <div className="rounded-xl bg-muted p-3 text-center">
@@ -200,8 +198,7 @@ export function RoutineCompletionSummary({
           <AnimatePresence>
             {showXPAnimation && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
+                {...variants.scale}
                 className="mt-6 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-900/30"
               >
                 <div className="flex items-center justify-between">
@@ -247,10 +244,8 @@ export function RoutineCompletionSummary({
           <AnimatePresence>
             {levelUpInfo.didLevelUp && showXPAnimation && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: 1.5 }}
+                {...variants.slideUp}
+                transition={{ ...springs.ios, delay: 1.5 }}
                 className="mt-4 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 p-4 text-center"
               >
                 <TrendingUp className="mx-auto h-6 w-6 text-primary" />
@@ -265,9 +260,8 @@ export function RoutineCompletionSummary({
           {/* New achievements */}
           {newAchievements.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
+              {...variants.slideUp}
+              transition={{ ...springs.ios, delay: 0.8 }}
               className="mt-4 space-y-2"
             >
               <h3 className="text-sm font-medium">Achievements Unlocked</h3>
@@ -279,9 +273,8 @@ export function RoutineCompletionSummary({
 
           {/* XP Progress */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
+            {...variants.fade}
+            transition={{ ...springs.ios, delay: 1 }}
             className="mt-6"
           >
             <XPProgressBar totalXp={displayedXP} showDetails />

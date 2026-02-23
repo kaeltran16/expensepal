@@ -1,6 +1,6 @@
 'use client'
 
-import { getStaggerDelay } from '@/lib/motion-system'
+import { variants, getStaggerDelay } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Heart, Plus, Utensils, X } from 'lucide-react'
 import { useFavoriteMeals, useQuickAddMeal, useToggleFavorite, type SavedFood } from '@/lib/hooks'
@@ -41,8 +41,7 @@ export function FavoriteMeals() {
   if (!favorites || favorites.length === 0) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        {...variants.slideUp}
         className="ios-card p-5"
       >
         {/* Header */}
@@ -70,8 +69,7 @@ export function FavoriteMeals() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
       className="ios-card p-5"
     >
       {/* Header */}
@@ -90,13 +88,12 @@ export function FavoriteMeals() {
         {favorites.map((food, index) => (
           <motion.div
             key={food.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            {...variants.slideUp}
             transition={{ delay: getStaggerDelay(index) }}
             className="relative"
           >
             <motion.button
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => handleQuickAdd(food)}
               disabled={quickAddMeal.isPending}
               className="w-full flex items-center gap-3 p-3 rounded-xl bg-accent/5 dark:bg-accent/10 border border-accent/20 text-left transition-all hover:shadow-sm active:bg-accent/10 dark:active:bg-accent/20"

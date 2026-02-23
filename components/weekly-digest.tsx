@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'motion/react'
+import { variants } from '@/lib/motion-system'
 import { Sparkles, Lightbulb, Loader2, RefreshCw } from 'lucide-react'
 import { useWeeklyDigest } from '@/lib/hooks/use-weekly-digest'
 
@@ -28,8 +29,7 @@ export function WeeklyDigest() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
       className="space-y-3"
     >
       {/* Extra domain insights (routines, fitness, goals) as compact chips */}

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSheetBackdrop } from '@/components/sheet-backdrop-context'
-import { springs } from '@/lib/motion-system'
+import { springs, variants, durations } from '@/lib/motion-system'
 import { Sparkles, Send, X, Check, Loader2, ArrowRight, ChevronDown } from 'lucide-react'
 import { useParseInput, useExecuteParsedInput } from '@/lib/hooks/use-nl-input'
 import { useQuickSuggestions } from '@/lib/hooks/use-quick-suggestions'
@@ -95,18 +95,15 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
           {/* Backdrop */}
           <motion.div
             className="fixed inset-0 z-50 bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
+            transition={{ duration: durations.standard }}
             onClick={() => onOpenChange(false)}
           />
 
           {/* Bottom panel */}
           <motion.div
             className="fixed inset-x-0 bottom-0 z-50 bg-background rounded-t-2xl"
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            {...variants.sheet}
             transition={springs.sheet}
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
@@ -135,9 +132,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
                 {step === 'input' && (
                   <motion.div
                     key="input"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    {...variants.slideUp}
                   >
                     <div className="relative">
                       <input
@@ -194,9 +189,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
                 {step === 'confirm' && parsed && intentMeta && (
                   <motion.div
                     key="confirm"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    {...variants.slideUp}
                     className="space-y-4"
                   >
                     <div className="rounded-xl border bg-muted/30 p-4">
@@ -237,8 +230,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
                 {step === 'done' && (
                   <motion.div
                     key="done"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                    {...variants.scale}
                     className="flex flex-col items-center py-8"
                   >
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">

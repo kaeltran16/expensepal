@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { hapticFeedback } from '@/lib/utils'
 import { motion, PanInfo, useAnimation, useMotionValue, useTransform, animate } from 'motion/react'
+import { springs, durations } from '@/lib/motion-system'
 import { AlertTriangle, Trash2, Heart } from 'lucide-react'
 import { ReactNode, useRef, useState } from 'react'
 
@@ -90,7 +91,7 @@ export function SwipeableCard({
       hasTriggeredDeleteHaptic.current = true
       deleteIconControls.start({
         scale: [1, 1.3, 1],
-        transition: { duration: 0.3, ease: 'easeOut' }
+        transition: { duration: durations.standard, ease: 'easeOut' }
       })
     }
 
@@ -100,7 +101,7 @@ export function SwipeableCard({
       hasTriggeredFavoriteHaptic.current = true
       favoriteIconControls.start({
         scale: [1, 1.3, 1],
-        transition: { duration: 0.3, ease: 'easeOut' }
+        transition: { duration: durations.standard, ease: 'easeOut' }
       })
     }
 
@@ -115,7 +116,7 @@ export function SwipeableCard({
 
   const snapBack = () => {
     // Animate the x motion value back to 0 with spring physics
-    animate(x, 0, { type: 'spring', stiffness: 500, damping: 30 })
+    animate(x, 0, springs.drag)
   }
 
   const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -135,7 +136,7 @@ export function SwipeableCard({
       // Heart pulse animation
       favoriteIconControls.start({
         scale: [1, 1.5, 1],
-        transition: { duration: 0.4, ease: 'easeOut' }
+        transition: { duration: durations.slow, ease: 'easeOut' }
       })
 
       onFavorite()
@@ -154,8 +155,7 @@ export function SwipeableCard({
       rotate: [0, -15, 15, -10, 10, 0],
       scale: [1, 1.3, 1.3, 1.2, 1.1, 1],
       transition: {
-        duration: 0.5,
-        ease: [0.34, 1.56, 0.64, 1]
+        duration: durations.slow,
       }
     })
 
@@ -163,8 +163,7 @@ export function SwipeableCard({
       opacity: 0,
       scale: 0.95,
       transition: {
-        duration: 0.3,
-        ease: [0.4, 0, 0.2, 1]
+        duration: durations.standard,
       }
     })
 
@@ -231,7 +230,7 @@ export function SwipeableCard({
         style={{ x }}
         animate={cardControls}
         className="relative z-10 bg-background"
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.97 }}
       >
         {children}
       </motion.div>

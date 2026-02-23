@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { getStaggerDelay, springs, variants } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import type { WorkoutTemplate } from '@/lib/supabase'
 import { useState, useRef, useCallback } from 'react'
@@ -130,9 +130,8 @@ function TemplateCard({
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: getStaggerDelay(index), duration: 0.4, ease: [0.175, 0.885, 0.32, 1.275] }}
+        {...variants.slideUp}
+        transition={{ delay: getStaggerDelay(index), ...springs.ios }}
         className="relative w-full overflow-hidden rounded-xl"
       >
         {/* Delete background */}
@@ -320,7 +319,7 @@ export function WorkoutTemplatesList({
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 40, stiffness: 400, mass: 0.8 }}
+            transition={springs.sheet}
             className="fixed inset-0 z-[60] bg-background flex flex-col !mt-0"
           >
             {/* Header */}

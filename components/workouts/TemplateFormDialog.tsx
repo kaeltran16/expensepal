@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { springs, variants } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -79,9 +80,7 @@ export function TemplateFormDialog({
           {/* Backdrop */}
           <motion.div
             key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
             onClick={onClose}
             className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md"
           />
@@ -97,7 +96,7 @@ export function TemplateFormDialog({
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              transition={springs.sheet}
               className="bg-background w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[calc(100vh-80px)] sm:max-h-[85vh] flex flex-col pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >

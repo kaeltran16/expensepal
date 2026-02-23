@@ -3,6 +3,7 @@
 import { memo, useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { cn, hapticFeedback } from '@/lib/utils'
 import { motion, AnimatePresence } from 'motion/react'
+import { springs, durations, variants, getStaggerDelay } from '@/lib/motion-system'
 import { Check, ChevronLeft, ChevronRight, Clock, MoreVertical, Play, Plus, Sparkles, Sun, Moon, Sunset, CloudMoon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -136,10 +137,9 @@ const JourneyCard = memo(function JourneyCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-      whileTap={{ scale: 0.995 }}
+      {...variants.slideUp}
+      transition={{ ...springs.ios }}
+      whileTap={{ scale: 0.97 }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       className="ios-card ios-press relative overflow-hidden"
@@ -157,6 +157,7 @@ const JourneyCard = memo(function JourneyCard({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
+                transition={springs.ios}
                 className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-500"
               >
                 <Check className="h-3 w-3 text-white" />
@@ -212,9 +213,8 @@ const JourneyCard = memo(function JourneyCard({
           {/* Icon */}
           <motion.div
             key={`${currentTemplate.id}-${isCurrentCompleted}`}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            {...variants.scale}
+            transition={{ duration: durations.standard }}
             className={cn(
               'flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl transition-all duration-300',
               isCurrentCompleted
@@ -229,7 +229,7 @@ const JourneyCard = memo(function JourneyCard({
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   exit={{ scale: 0, rotate: 180 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  transition={{ duration: durations.standard }}
                 >
                   <Check className="h-7 w-7 text-teal-500" />
                 </motion.div>
@@ -239,7 +239,7 @@ const JourneyCard = memo(function JourneyCard({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: durations.micro }}
                 >
                   {currentTemplate.icon || '✨'}
                 </motion.span>
@@ -257,7 +257,7 @@ const JourneyCard = memo(function JourneyCard({
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: durations.micro }}
                     className={cn(
                       'truncate ios-headline',
                       isCurrentCompleted && 'text-muted-foreground line-through decoration-teal-500/50'
@@ -320,9 +320,7 @@ const JourneyCard = memo(function JourneyCard({
             {isCurrentCompleted ? (
               <motion.div
                 key="completed"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                {...variants.scale}
                 className="flex items-center gap-1.5 rounded-full bg-teal-500/10 px-4 py-2"
               >
                 <Check className="h-4 w-4 text-teal-500" />
@@ -331,9 +329,7 @@ const JourneyCard = memo(function JourneyCard({
             ) : (
               <motion.div
                 key="start"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                {...variants.scale}
               >
                 <Button
                   onClick={handleStart}
@@ -453,39 +449,35 @@ export function RoutineTemplatesList({
   if (templates.length === 0) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        {...variants.slideUp}
+        transition={springs.ios}
         className="ios-card flex flex-col items-center justify-center px-6 py-10 text-center"
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ delay: 0.1, type: 'spring', bounce: 0.5 }}
+          transition={{ ...springs.touch, delay: getStaggerDelay(1) }}
           className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 shadow-lg shadow-teal-500/25"
         >
           <Sparkles className="h-10 w-10 text-white" />
         </motion.div>
         <motion.h3
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          {...variants.fade}
+          transition={{ ...springs.ios, delay: getStaggerDelay(2) }}
           className="mt-5 ios-headline"
         >
           Start your first routine
         </motion.h3>
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          {...variants.fade}
+          transition={{ ...springs.ios, delay: getStaggerDelay(3) }}
           className="mt-2 max-w-[240px] text-sm text-muted-foreground"
         >
           Build healthy habits with personalized daily routines
         </motion.p>
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          {...variants.slideUp}
+          transition={{ ...springs.ios, delay: getStaggerDelay(4) }}
         >
           <Button
             onClick={onCreateTemplate}
@@ -507,9 +499,8 @@ export function RoutineTemplatesList({
           return (
             <motion.div
               key={groupName}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: groupIndex * 0.05, duration: 0.4 }}
+              {...variants.slideUp}
+              transition={{ ...springs.ios, delay: getStaggerDelay(groupIndex) }}
             >
               <JourneyCard
                 templates={groupTemplates}
@@ -528,9 +519,8 @@ export function RoutineTemplatesList({
         return groupTemplates.map((template, templateIndex) => (
           <motion.div
             key={template.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: (groupIndex + templateIndex) * 0.05, duration: 0.4 }}
+            {...variants.slideUp}
+            transition={{ ...springs.ios, delay: getStaggerDelay(groupIndex + templateIndex) }}
           >
             <JourneyCard
               templates={[template]}
@@ -545,9 +535,8 @@ export function RoutineTemplatesList({
 
       {/* Add button */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
+        {...variants.fade}
+        transition={{ ...springs.ios, delay: getStaggerDelay(3) }}
       >
         <Button
           variant="ghost"

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { motion, AnimatePresence } from 'motion/react'
 import { Brain, AlertTriangle, Star, Lightbulb, Loader2, ChevronDown } from 'lucide-react'
 import { useHabitCoach } from '@/lib/hooks/use-habit-coach'
@@ -28,8 +29,7 @@ export function HabitCoachCard() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
     >
       {/* Compact header - always visible, tap to expand */}
       <button
@@ -52,7 +52,7 @@ export function HabitCoachCard() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: durations.standard }}
             className="overflow-hidden"
           >
             <div className="mt-2 space-y-2">
@@ -65,7 +65,7 @@ export function HabitCoachCard() {
                     key={i}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.08 }}
+                    transition={{ delay: getStaggerDelay(i) }}
                     className="rounded-xl border p-3"
                   >
                     <div className="flex items-start gap-3">

@@ -240,9 +240,9 @@ export function ExpensesView({
             ) : (
               <motion.div
                 key={item.expense.id}
-                {...variants.listItem}
+                {...variants.slideUp}
                 transition={{
-                  ...springs.default,
+                  ...springs.ios,
                   delay: getStaggerDelay(index),
                 }}
                 className="will-animate-all"

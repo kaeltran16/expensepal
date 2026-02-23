@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import type { WorkoutTemplate } from '@/lib/supabase'
 import type { TemplateExercise as BaseTemplateExercise, ExerciseLog } from '@/lib/types/common'
+import { springs, variants } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion, Reorder } from 'motion/react'
 import {
@@ -185,7 +186,7 @@ export function TemplateDetailSheet({
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 40, stiffness: 400, mass: 0.8 }}
+            transition={springs.sheet}
             className="fixed inset-0 z-[70] bg-background flex flex-col !mt-0"
           >
             {/* Header */}
@@ -402,8 +403,7 @@ export function TemplateDetailSheet({
               <div className="flex-1 flex flex-col py-4">
                 {exercises.length === 0 ? (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    {...variants.scale}
                     className="text-center flex-1 flex flex-col items-center justify-center"
                   >
                     <motion.div

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { springs, variants } from '@/lib/animation-config'
+import { springs, variants } from '@/lib/motion-system'
 import type { Expense } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'motion/react'
 import { Sparkles, X, Plus, StickyNote } from 'lucide-react'
@@ -118,8 +118,8 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
       onClick={onCancel}
     >
       <motion.div
-        {...variants.bottomSheet}
-        transition={springs.gentle}
+        {...variants.sheet}
+        transition={springs.sheet}
         className="bg-background w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto will-animate"
         onClick={(e) => e.stopPropagation()}
         data-testid="expense-form"
@@ -267,7 +267,7 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
               <motion.div
                 key="notes-button"
                 {...variants.fade}
-                transition={springs.default}
+                transition={springs.ios}
               >
                 <Button
                   type="button"
@@ -284,7 +284,7 @@ export function QuickExpenseForm({ expense, onSubmit, onCancel }: QuickExpenseFo
               <motion.div
                 key="notes-field"
                 {...variants.slideUp}
-                transition={springs.default}
+                transition={springs.ios}
                 className="space-y-2"
               >
                 <div className="flex items-center justify-between">

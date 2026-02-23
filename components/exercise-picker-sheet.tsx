@@ -6,6 +6,7 @@ import { useExercises } from '@/lib/hooks/use-workouts'
 import { useExerciseFavorites } from '@/lib/hooks/use-exercise-favorites'
 import { useRecentExercises } from '@/lib/hooks/use-recent-exercises'
 import { hapticFeedback } from '@/lib/utils'
+import { springs, variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { Dumbbell, Heart, Search, X } from 'lucide-react'
 import Image from 'next/image'
@@ -196,19 +197,16 @@ export function ExercisePickerSheet({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
+            transition={{ duration: durations.standard }}
             onClick={handleClose}
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md"
           />
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            {...variants.sheet}
+            transition={springs.sheet}
             className="fixed inset-x-0 bottom-0 z-[100] bg-background rounded-t-3xl max-h-[90vh] flex flex-col"
           >
             {/* Header */}
@@ -278,9 +276,8 @@ export function ExercisePickerSheet({
                 {AREA_FILTERS.map((filter, idx) => (
                   <motion.button
                     key={filter.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: idx * 0.02 }}
+                    {...variants.scale}
+                    transition={{ delay: getStaggerDelay(idx) }}
                     onClick={() => {
                       setSelectedArea(filter.id)
                       hapticFeedback('light')
@@ -290,7 +287,7 @@ export function ExercisePickerSheet({
                         ? 'bg-foreground text-background'
                         : 'bg-muted/60 text-muted-foreground hover:bg-muted'
                     }`}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.97 }}
                   >
                     {filter.label}
                   </motion.button>
@@ -302,9 +299,8 @@ export function ExercisePickerSheet({
                 {EQUIPMENT_FILTERS.map((filter, idx) => (
                   <motion.button
                     key={filter.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.15 + idx * 0.02 }}
+                    {...variants.scale}
+                    transition={{ delay: getStaggerDelay(idx) }}
                     onClick={() => {
                       setSelectedEquipment(filter.id)
                       hapticFeedback('light')
@@ -314,7 +310,7 @@ export function ExercisePickerSheet({
                         ? 'bg-foreground text-background'
                         : 'bg-muted/60 text-muted-foreground hover:bg-muted'
                     }`}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.97 }}
                   >
                     {filter.label}
                   </motion.button>
@@ -333,11 +329,10 @@ export function ExercisePickerSheet({
               {isLoading ? (
                 <div className="space-y-4">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <motion.div 
-                      key={i} 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.1 }}
+                    <motion.div
+                      key={i}
+                      {...variants.fade}
+                      transition={{ delay: getStaggerDelay(i) }}
                       className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 animate-pulse"
                     >
                       <div className="w-20 h-20 rounded-xl bg-muted" />
@@ -350,8 +345,7 @@ export function ExercisePickerSheet({
                 </div>
               ) : filteredExercises.length === 0 ? (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  {...variants.slideUp}
                   className="text-center py-16 px-4"
                 >
                   {activeTab === 'favorites' ? (
@@ -447,12 +441,11 @@ const ExerciseListItem = memo(function ExerciseListItem({
   return (
     <motion.button
       onClick={onToggle}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
       className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${
         isSelected ? 'bg-primary/10 ring-2 ring-primary' : 'bg-muted/30 hover:bg-muted/50'
       }`}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.97 }}
     >
       {/* Exercise Image */}
       <div className="w-20 h-20 rounded-xl bg-muted/50 overflow-hidden shrink-0 relative">
@@ -489,7 +482,7 @@ const ExerciseListItem = memo(function ExerciseListItem({
           onToggleFavorite()
         }}
         className="shrink-0 p-1 hover:bg-muted/50 rounded-lg transition-colors"
-        whileTap={{ scale: 0.9 }}
+        whileTap={{ scale: 0.97 }}
       >
         <Heart
           className={`h-5 w-5 transition-all ${

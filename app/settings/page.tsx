@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { hapticFeedback } from '@/lib/utils'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, ChevronDown, ChevronUp, Edit, ExternalLink, Eye, EyeOff, Mail, Plus, Save, Trash2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -283,7 +283,7 @@ export default function SettingsPage() {
               </p>
             </div>
             {!showAddForm && !maxAccountsReached && (
-              <motion.div whileTap={{ scale: 0.95 }}>
+              <motion.div whileTap={{ scale: 0.97 }}>
                 <Button
                   onClick={handleAddClick}
                   variant="outline"
@@ -299,8 +299,7 @@ export default function SettingsPage() {
           {/* Empty State */}
           {emailAccounts.length === 0 && !showAddForm && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
+              {...variants.scale}
               className="text-center py-16 px-4"
             >
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
@@ -310,7 +309,7 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground mb-6">
                 Add an email account to automatically import expenses from transaction emails
               </p>
-              <motion.div whileTap={{ scale: 0.95 }}>
+              <motion.div whileTap={{ scale: 0.97 }}>
                 <Button
                   onClick={handleAddClick}
                   variant="outline"
@@ -328,9 +327,8 @@ export default function SettingsPage() {
             {emailAccounts.map((account, index) => (
               <motion.div
                 key={account.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                {...variants.slideUp}
+                exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ delay: getStaggerDelay(index) }}
               >
                 <Card className="ios-card overflow-hidden">
@@ -425,10 +423,8 @@ export default function SettingsPage() {
           <AnimatePresence>
             {showAddForm && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+                {...variants.scale}
+                transition={{ duration: durations.standard }}
               >
                 <Card className="ios-card">
                   <CardHeader className="pb-4">
@@ -658,8 +654,7 @@ export default function SettingsPage() {
           {/* Max accounts message */}
           {maxAccountsReached && !showAddForm && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              {...variants.slideUp}
             >
               <Card className="ios-card bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800">
                 <CardContent className="p-4 flex gap-3">

@@ -21,7 +21,7 @@ import {
 import type { RecurringExpense } from '@/lib/supabase'
 import type { DetectedRecurringExpense } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { springs, variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { cn, formatCurrency } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -236,9 +236,9 @@ export function RecurringView({ expenses }: RecurringViewProps) {
     <div className="space-y-5 pb-24">
       {/* Hero Section */}
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        initial={{ opacity: 0, y: 16, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        transition={springs.ios}
         className="relative overflow-hidden rounded-3xl p-6 bg-primary/10 border border-primary/20"
       >
         <div className="relative z-10">
@@ -246,7 +246,7 @@ export function RecurringView({ expenses }: RecurringViewProps) {
             className="flex items-center gap-2 mb-3"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
+            transition={{ ...springs.ios, delay: durations.micro }}
           >
             <motion.div
               animate={{ scale: [1, 1.1, 1] }}
@@ -259,18 +259,16 @@ export function RecurringView({ expenses }: RecurringViewProps) {
 
           <motion.h2
             className="ios-title1 mb-2"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
+            {...variants.slideUp}
+            transition={{ ...springs.ios, delay: 0.15 }}
           >
             {heroContent.title}
           </motion.h2>
 
           <motion.p
             className="ios-body text-muted-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            {...variants.fade}
+            transition={{ duration: durations.standard, delay: 0.2 }}
           >
             {heroContent.description}
           </motion.p>
@@ -292,9 +290,8 @@ export function RecurringView({ expenses }: RecurringViewProps) {
       {/* Quick Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          {...variants.slideUp}
+          transition={{ ...springs.ios, delay: getStaggerDelay(0) }}
           className="ios-card p-4 text-center"
         >
           <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -305,9 +302,8 @@ export function RecurringView({ expenses }: RecurringViewProps) {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+          {...variants.slideUp}
+          transition={{ ...springs.ios, delay: getStaggerDelay(1) }}
           className="ios-card p-4 text-center"
         >
           <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -318,9 +314,8 @@ export function RecurringView({ expenses }: RecurringViewProps) {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          {...variants.slideUp}
+          transition={{ ...springs.ios, delay: getStaggerDelay(2) }}
           className="ios-card p-4 text-center"
         >
           <div className={cn(
@@ -443,15 +438,14 @@ function ActiveRecurringList({ recurring }: { recurring: RecurringExpense[] }) {
   if (recurring.length === 0) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
+        {...variants.slideUp}
+        exit={{ opacity: 0, y: -8 }}
         className="text-center py-16 px-4"
       >
         <motion.div
           initial={{ scale: 0.8, rotate: -10 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', bounce: 0.5 }}
+          transition={springs.touch}
           className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-primary/10 flex items-center justify-center"
         >
           <CreditCard className="h-10 w-10 text-primary" />
@@ -466,9 +460,7 @@ function ActiveRecurringList({ recurring }: { recurring: RecurringExpense[] }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      {...variants.fade}
       className="space-y-3"
     >
       {recurring.map((item, index) => (
@@ -482,15 +474,14 @@ function DetectedRecurringList({ recurring }: { recurring: DetectedRecurringExpe
   if (recurring.length === 0) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
+        {...variants.slideUp}
+        exit={{ opacity: 0, y: -8 }}
         className="text-center py-16 px-4"
       >
         <motion.div
           initial={{ scale: 0.8, rotate: 10 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', bounce: 0.5 }}
+          transition={springs.touch}
           className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-primary/10 flex items-center justify-center"
         >
           <Sparkles className="h-10 w-10 text-primary" />
@@ -505,9 +496,7 @@ function DetectedRecurringList({ recurring }: { recurring: DetectedRecurringExpe
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      {...variants.fade}
       className="space-y-3"
     >
       {recurring.map((item, index) => (
@@ -541,9 +530,8 @@ function ActiveRecurringCard({ recurring, index }: { recurring: RecurringExpense
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: getStaggerDelay(index), duration: 0.3, type: "spring", stiffness: 300 }}
+      {...variants.slideUp}
+      transition={{ ...springs.ios, delay: getStaggerDelay(index) }}
       className={cn(
         'ios-card p-4 overflow-hidden',
         isOverdue && 'ring-2 ring-destructive/20',
@@ -557,7 +545,7 @@ function ActiveRecurringCard({ recurring, index }: { recurring: RecurringExpense
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            transition={{ delay: getStaggerDelay(index) + 0.1, type: "spring" }}
+            transition={{ ...springs.touch, delay: getStaggerDelay(index) + 0.1 }}
             className={cn(
               "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0",
               isOverdue ? "bg-destructive/10" : "bg-primary/10"
@@ -574,7 +562,7 @@ function ActiveRecurringCard({ recurring, index }: { recurring: RecurringExpense
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring" }}
+                  transition={{ ...springs.touch, delay: 0.2 }}
                 >
                   <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                 </motion.div>
@@ -697,9 +685,8 @@ function DetectedRecurringCard({ recurring, index }: { recurring: DetectedRecurr
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: getStaggerDelay(index), duration: 0.3, type: "spring", stiffness: 300 }}
+      {...variants.slideUp}
+      transition={{ ...springs.ios, delay: getStaggerDelay(index) }}
       className={cn(
         'ios-card p-4 overflow-hidden relative',
         isOverdue && 'ring-2 ring-destructive/20'
@@ -710,7 +697,7 @@ function DetectedRecurringCard({ recurring, index }: { recurring: DetectedRecurr
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: getStaggerDelay(index) + 0.2, type: "spring" }}
+          transition={{ ...springs.touch, delay: getStaggerDelay(index) + 0.2 }}
           className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary"
         >
           <Sparkles className="h-3 w-3" />
@@ -725,7 +712,7 @@ function DetectedRecurringCard({ recurring, index }: { recurring: DetectedRecurr
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            transition={{ delay: getStaggerDelay(index) + 0.1, type: "spring" }}
+            transition={{ ...springs.touch, delay: getStaggerDelay(index) + 0.1 }}
             className={cn(
               "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0",
               isOverdue ? "bg-destructive/10" : "bg-secondary"
@@ -788,7 +775,7 @@ function DetectedRecurringCard({ recurring, index }: { recurring: DetectedRecurr
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${recurring.confidence}%` }}
-              transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1], delay: getStaggerDelay(index) + 0.3 }}
+              transition={{ duration: durations.slow, ease: [0.4, 0, 0.2, 1], delay: getStaggerDelay(index) + 0.3 }}
               className={cn(
                 'h-full rounded-full',
                 recurring.confidence >= 80

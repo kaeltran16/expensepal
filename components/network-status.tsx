@@ -1,5 +1,6 @@
 'use client'
 
+import { variants } from '@/lib/motion-system';
 import { AnimatePresence, motion } from 'motion/react';
 import { Clock, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -60,9 +61,7 @@ export function NetworkStatus({
       <AnimatePresence>
         {showOffline && !isOnline && (
           <motion.div
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
+            {...variants.slideDown}
             className="fixed top-0 left-0 right-0 bg-destructive text-destructive-foreground py-2 px-4 z-50 shadow-lg"
           >
             <div className="flex items-center justify-center gap-2 text-sm font-medium">

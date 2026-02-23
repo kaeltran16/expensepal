@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { variants, durations } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -62,9 +63,8 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
+      {...variants.scale}
+      transition={{ duration: durations.standard }}
       data-testid="expense-form"
     >
       <Card>

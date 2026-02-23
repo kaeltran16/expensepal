@@ -1,6 +1,7 @@
 'use client'
 
 import { useWorkoutStreak } from '@/lib/hooks/use-achievements'
+import { durations, variants } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Flame, TrendingUp, Trophy } from 'lucide-react'
 
@@ -22,8 +23,7 @@ export function WorkoutStreakBadge({ compact = false }: WorkoutStreakBadgeProps)
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        {...variants.slideUp}
         className="ios-card p-4 text-center"
       >
         <Flame className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
@@ -37,8 +37,7 @@ export function WorkoutStreakBadge({ compact = false }: WorkoutStreakBadgeProps)
   if (compact) {
     return (
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+        {...variants.scale}
         className="flex items-center gap-1.5 bg-orange-500/10 text-orange-600 px-3 py-1.5 rounded-full"
       >
         <Flame className="h-4 w-4" />
@@ -49,8 +48,7 @@ export function WorkoutStreakBadge({ compact = false }: WorkoutStreakBadgeProps)
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
       className="ios-card p-5 bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20"
     >
       <div className="flex items-center justify-between">
@@ -121,7 +119,7 @@ function StreakProgress({ currentStreak }: { currentStreak: number }) {
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(progress, 100)}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: durations.slow, ease: 'easeOut' }}
           className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
         />
       </div>

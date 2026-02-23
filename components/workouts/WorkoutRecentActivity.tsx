@@ -1,6 +1,6 @@
 'use client'
 
-import { getStaggerDelay } from '@/lib/motion-system'
+import { getStaggerDelay, springs, variants } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Calendar, Award } from 'lucide-react'
 import { format } from 'date-fns'
@@ -23,9 +23,8 @@ function WorkoutHistoryCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: getStaggerDelay(index), duration: 0.4, ease: [0.175, 0.885, 0.32, 1.275] }}
+      {...variants.slideUp}
+      transition={{ delay: getStaggerDelay(index), ...springs.ios }}
       className="ios-card p-4 flex items-center gap-3"
     >
       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -61,9 +60,8 @@ export function WorkoutRecentActivity({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.175, 0.885, 0.32, 1.275] }}
+      {...variants.slideUp}
+      transition={springs.ios}
       className="space-y-3"
     >
       <div className="flex items-center gap-2 px-1">

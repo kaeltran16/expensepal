@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { motion } from 'motion/react'
+import { durations } from '@/lib/motion-system'
 import { Sparkles, Star } from 'lucide-react'
 import {
   formatXP,
@@ -57,7 +58,7 @@ export function XPProgressBar({ totalXp, className, showDetails = true }: XPProg
           className="absolute inset-y-0 left-0 rounded-full bg-emerald-500"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: durations.slow, ease: 'easeOut' }}
         />
       </div>
 

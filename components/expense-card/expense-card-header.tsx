@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import type { Expense } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
+import { variants, durations, springs } from '@/lib/motion-system';
 import { motion } from 'motion/react';
 import {
   Calendar,
@@ -92,6 +93,7 @@ export function ExpenseCardHeader({ expense, isExpanded, onClick }: ExpenseCardH
         <motion.div
           initial={{ scale: 0, rotate: -12 }}
           animate={{ scale: 1, rotate: -12 }}
+          transition={springs.touch}
           className="absolute top-2 right-2 z-10"
         >
           <div className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
@@ -111,7 +113,7 @@ export function ExpenseCardHeader({ expense, isExpanded, onClick }: ExpenseCardH
           <motion.div
             className="flex-shrink-0 relative"
             whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
           >
             <div className={`w-12 h-12 rounded-2xl ${categoryConfig.bg} border border-border/50 flex items-center justify-center text-2xl shadow-sm relative overflow-hidden`}>
               {/* Shimmer effect */}
@@ -165,8 +167,7 @@ export function ExpenseCardHeader({ expense, isExpanded, onClick }: ExpenseCardH
 
             {!isExpanded && expense.notes && (
               <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                {...variants.fade}
                 className="text-xs text-muted-foreground mt-2 line-clamp-1 bg-muted/30 px-2 py-1 rounded-lg italic"
               >
                 💭 {expense.notes}
@@ -177,7 +178,7 @@ export function ExpenseCardHeader({ expense, isExpanded, onClick }: ExpenseCardH
           {/* Chevron indicator */}
           <motion.div
             animate={{ rotate: isExpanded ? 90 : 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: durations.micro }}
             className="flex-shrink-0 self-center"
           >
             <ChevronRight className="h-5 w-5 text-muted-foreground/50" />

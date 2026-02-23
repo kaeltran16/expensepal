@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { getStaggerDelay, durations } from '@/lib/motion-system'
 import { motion, AnimatePresence } from 'motion/react'
 import { Search, X, History } from 'lucide-react'
 import type { Expense } from '@/lib/supabase'
@@ -104,7 +104,7 @@ export function SearchBar({ expenses, onSearch }: SearchBarProps) {
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: durations.micro }}
             className="absolute top-full left-0 right-0 mt-2 ios-card overflow-hidden z-50"
           >
             {suggestions.map((suggestion, index) => (

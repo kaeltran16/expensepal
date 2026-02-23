@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { motion } from 'motion/react'
+import { variants, getStaggerDelay } from '@/lib/motion-system'
 import {
   Flame,
   Dumbbell,
@@ -110,8 +111,7 @@ export function WeeklyNutritionSummary({ aiInsight }: { aiInsight?: AISectionIns
   if (!summary) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        {...variants.slideUp}
         className="ios-card p-4"
       >
         <div className="flex items-center gap-2 mb-3">
@@ -155,8 +155,7 @@ export function WeeklyNutritionSummary({ aiInsight }: { aiInsight?: AISectionIns
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
       className="ios-card p-4"
     >
       {/* Header */}
@@ -174,9 +173,8 @@ export function WeeklyNutritionSummary({ aiInsight }: { aiInsight?: AISectionIns
       <div className="grid grid-cols-2 gap-3 mb-4">
         {/* Calories */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
+          {...variants.scale}
+          transition={{ delay: getStaggerDelay(1) }}
           className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-3"
         >
           <div className="flex items-center gap-2 mb-2">
@@ -199,9 +197,8 @@ export function WeeklyNutritionSummary({ aiInsight }: { aiInsight?: AISectionIns
 
         {/* Protein */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.15 }}
+          {...variants.scale}
+          transition={{ delay: getStaggerDelay(2) }}
           className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3"
         >
           <div className="flex items-center gap-2 mb-2">
@@ -224,9 +221,8 @@ export function WeeklyNutritionSummary({ aiInsight }: { aiInsight?: AISectionIns
 
         {/* Carbs */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
+          {...variants.scale}
+          transition={{ delay: getStaggerDelay(3) }}
           className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-3"
         >
           <div className="flex items-center gap-2 mb-2">
@@ -249,9 +245,8 @@ export function WeeklyNutritionSummary({ aiInsight }: { aiInsight?: AISectionIns
 
         {/* Fat */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.25 }}
+          {...variants.scale}
+          transition={{ delay: getStaggerDelay(4) }}
           className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3"
         >
           <div className="flex items-center gap-2 mb-2">

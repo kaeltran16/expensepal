@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { ACHIEVEMENTS, type Achievement } from '@/lib/achievements'
 import { useAchievements } from '@/lib/hooks/use-achievements'
 import { hapticFeedback } from '@/lib/utils'
+import { variants, durations } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { Award, ChevronRight, Lock, X } from 'lucide-react'
 import { useState } from 'react'
@@ -61,7 +62,7 @@ export function AchievementsGallery() {
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${(unlockedCount / totalCount) * 100}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: durations.slow, ease: 'easeOut' }}
           className="h-full bg-primary rounded-full"
         />
       </div>
@@ -94,7 +95,7 @@ export function AchievementsGallery() {
                       setSelectedAchievement(achievement)
                       hapticFeedback('light')
                     }}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.97 }}
                     className={`aspect-square rounded-2xl flex flex-col items-center justify-center p-2 transition-all ${
                       isUnlocked
                         ? 'bg-primary/10 border-2 border-primary/20'
@@ -145,18 +146,14 @@ function AchievementDetailModal({
     <>
       {/* Backdrop */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        {...variants.fade}
         onClick={onClose}
         className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
       />
 
       {/* Modal */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        {...variants.scale}
         className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-sm mx-auto"
       >
         <div className="ios-card p-6 text-center">

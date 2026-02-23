@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Card } from '@/components/ui/card'
 import { AnimatedCounter } from '@/components/animated-counter'
 import { formatCurrency } from '@/lib/utils'
-import { springs, stagger, getStaggerDelay } from '@/lib/animation-config'
+import { springs, getStaggerDelay } from '@/lib/motion-system'
 import {
   TrendingUp,
   TrendingDown,
@@ -165,7 +165,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={springs.gentle}
+        transition={springs.sheet}
       >
         <Card className="relative overflow-hidden">
           {/* Background */}
@@ -194,7 +194,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3, ...springs.bouncy }}
+                transition={{ delay: 0.3, ...springs.touch }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
                   summary.change > 0
                     ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
@@ -267,7 +267,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, ...springs.gentle }}
+        transition={{ delay: 0.1, ...springs.sheet }}
       >
         <Card className="p-5">
           <h3 className="text-base font-semibold mb-4">Daily Spending</h3>
@@ -283,13 +283,13 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
                   className="flex-1 flex flex-col items-center gap-2"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + index * stagger.normal }}
+                  transition={{ delay: 0.2 + getStaggerDelay(index) }}
                 >
                   {/* Amount label */}
                   <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 + index * stagger.normal }}
+                    transition={{ delay: 0.5 + getStaggerDelay(index) }}
                     className="text-[10px] text-muted-foreground font-medium"
                   >
                     {day.amount > 0 ? `${(day.amount / 1000).toFixed(0)}k` : '-'}
@@ -307,21 +307,21 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
                       }`}
                       initial={{ height: 0 }}
                       animate={{ height: `${Math.max(height, day.amount > 0 ? 8 : 0)}%` }}
-                      transition={{ delay: 0.3 + index * stagger.normal, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                      transition={{ delay: 0.3 + getStaggerDelay(index), duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
                     >
                       {/* Shimmer effect on bars */}
                       <motion.div
                         className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent"
                         initial={{ y: '100%' }}
                         animate={{ y: '-100%' }}
-                        transition={{ delay: 0.8 + index * stagger.fast, duration: 0.8 }}
+                        transition={{ delay: 0.8 + getStaggerDelay(index), duration: 0.8 }}
                       />
                     </motion.div>
                     {isHighest && day.amount > 0 && (
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        transition={{ delay: 0.8, ...springs.bouncy }}
+                        transition={{ delay: 0.8, ...springs.touch }}
                         className="absolute -top-1 left-1/2 -translate-x-1/2"
                       >
                         <Flame className="h-3 w-3 text-orange-500" />
@@ -347,7 +347,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, ...springs.gentle }}
+        transition={{ delay: 0.2, ...springs.sheet }}
       >
         <Card className="p-5">
           <h3 className="text-base font-semibold mb-4">Top Categories</h3>
@@ -366,7 +366,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
                     key={category}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + index * stagger.normal, ...springs.default }}
+                    transition={{ delay: 0.3 + getStaggerDelay(index), ...springs.ios }}
                     className="flex items-center gap-4"
                   >
                     {/* Category Ring */}
@@ -374,7 +374,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
                       <CategoryRing
                         percentage={percentage}
                         colorClass={colors.ring}
-                        delay={0.4 + index * stagger.normal}
+                        delay={0.4 + getStaggerDelay(index)}
                       />
                       <div
                         className={`absolute inset-0 flex items-center justify-center text-lg ${colors.bg} rounded-full m-1`}
@@ -395,7 +395,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
                             className="h-full bg-primary rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
-                            transition={{ delay: 0.5 + index * stagger.normal, duration: 0.6 }}
+                            transition={{ delay: 0.5 + getStaggerDelay(index), duration: 0.6 }}
                           />
                         </div>
                         <span className="text-xs text-muted-foreground w-10 text-right">
@@ -415,7 +415,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, ...springs.gentle }}
+        transition={{ delay: 0.3, ...springs.sheet }}
       >
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
@@ -436,7 +436,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
                     key={merchant}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + index * stagger.normal, ...springs.default }}
+                    transition={{ delay: 0.4 + getStaggerDelay(index), ...springs.ios }}
                     className="flex items-center gap-3"
                   >
                     {/* Rank Badge */}
@@ -463,7 +463,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
                           }`}
                           initial={{ width: 0 }}
                           animate={{ width: `${percentage}%` }}
-                          transition={{ delay: 0.5 + index * stagger.normal, duration: 0.6 }}
+                          transition={{ delay: 0.5 + getStaggerDelay(index), duration: 0.6 }}
                         />
                       </div>
                     </div>
@@ -479,7 +479,7 @@ export function WeeklySummary({ expenses, aiInsight }: WeeklySummaryProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, ...springs.gentle }}
+        transition={{ delay: 0.4, ...springs.sheet }}
       >
         <Card className="p-5 bg-muted/40">
           <h3 className="text-base font-semibold mb-3">Week Comparison</h3>
@@ -571,7 +571,7 @@ function QuickStatCard({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, ...springs.default }}
+      transition={{ delay, ...springs.ios }}
       className="bg-background/60 backdrop-blur-sm rounded-xl p-3 text-center"
     >
       <Icon className="h-4 w-4 mx-auto mb-1.5 text-muted-foreground" />
@@ -632,7 +632,7 @@ function RankBadge({ rank }: { rank: number }) {
       <motion.div
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{ delay: 0.5, ...springs.bouncy }}
+        transition={{ delay: 0.5, ...springs.touch }}
         className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-500/30"
       >
         <Trophy className="h-4 w-4 text-white" />
@@ -644,7 +644,7 @@ function RankBadge({ rank }: { rank: number }) {
       <motion.div
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{ delay: 0.55, ...springs.bouncy }}
+        transition={{ delay: 0.55, ...springs.touch }}
         className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center shadow-lg shadow-gray-400/30"
       >
         <Medal className="h-4 w-4 text-white" />
@@ -656,7 +656,7 @@ function RankBadge({ rank }: { rank: number }) {
       <motion.div
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{ delay: 0.6, ...springs.bouncy }}
+        transition={{ delay: 0.6, ...springs.touch }}
         className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/30"
       >
         <Award className="h-4 w-4 text-white" />
@@ -667,7 +667,7 @@ function RankBadge({ rank }: { rank: number }) {
     <motion.div
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
-      transition={{ delay: 0.5 + rank * 0.05, ...springs.default }}
+      transition={{ delay: 0.5 + rank * 0.05, ...springs.ios }}
       className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
     >
       <span className="text-sm font-medium text-muted-foreground">{rank}</span>

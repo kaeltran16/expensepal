@@ -129,7 +129,7 @@ export function JournalEntrySheet({
                   <motion.button
                     key={level.value}
                     onClick={() => setEnergyLevel(level.value)}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.97 }}
                     className={cn(
                       'flex flex-col items-center gap-1 rounded-xl p-3 transition-all',
                       isSelected

@@ -2,6 +2,7 @@
 
 import { usePullToRefresh } from '@/lib/hooks';
 import { AnimatePresence, motion } from 'motion/react';
+import { springs, durations } from '@/lib/motion-system';
 import { RefreshCw } from 'lucide-react';
 import { ReactNode, useRef } from 'react';
 
@@ -50,7 +51,7 @@ export function PullToRefreshWrapper({
               scale: pullDistance > threshold ? 1.1 : 1,
             }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            transition={springs.ios}
             className="fixed top-16 left-0 right-0 flex justify-center z-40 pointer-events-none"
           >
             <motion.div
@@ -64,7 +65,7 @@ export function PullToRefreshWrapper({
               <motion.div
                 animate={{ rotate: isRefreshing ? 360 : pullDistance * 3 }}
                 transition={{
-                  duration: isRefreshing ? 1 : 0.2,
+                  duration: isRefreshing ? 1 : durations.micro,
                   repeat: isRefreshing ? Infinity : 0,
                   ease: isRefreshing ? 'linear' : 'easeOut',
                 }}

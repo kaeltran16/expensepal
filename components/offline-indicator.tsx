@@ -1,5 +1,6 @@
 'use client'
 
+import { variants, springs } from '@/lib/motion-system'
 import { motion, AnimatePresence } from 'motion/react'
 import { WifiOff, Wifi, RefreshCw, AlertCircle } from 'lucide-react'
 import { useOfflineQueue } from '@/lib/hooks/use-offline-queue'
@@ -17,10 +18,8 @@ export function OfflineIndicator() {
     <AnimatePresence>
       {(!isOnline || queueLength > 0) && (
         <motion.div
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -100, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          {...variants.slideDown}
+          transition={springs.ios}
           className="fixed top-0 left-0 right-0 z-50 px-4 pt-safe"
         >
           <div className="max-w-2xl mx-auto">
@@ -94,8 +93,7 @@ export function OfflineStatus() {
 
   return (
     <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
+      {...variants.scale}
       className="flex items-center gap-2"
     >
       {!isOnline ? (

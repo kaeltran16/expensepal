@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useBudgets, useCreateBudget, useUpdateBudget } from '@/lib/hooks'
 import { formatCurrency } from '@/lib/utils'
+import { springs, variants, durations } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertTriangle, TrendingUp, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -85,9 +86,8 @@ export function SetBudgetDialog({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
+            transition={{ duration: durations.standard }}
             onClick={onClose}
             className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md"
           />
@@ -102,7 +102,7 @@ export function SetBudgetDialog({
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              transition={springs.sheet}
               className="bg-background w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[calc(100vh-80px)] sm:max-h-[85vh] flex flex-col pointer-events-auto sm:mb-0"
               onClick={(e) => e.stopPropagation()}
             >

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { variants } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Mail } from 'lucide-react'
@@ -55,9 +56,7 @@ export function EmailSyncButton({ onSync }: EmailSyncButtonProps) {
       </Button>
       {message && (
         <motion.p
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0 }}
+          {...variants.fade}
           className={`text-sm ${message.startsWith('✓') ? 'text-green-600' : 'text-red-600'}`}
         >
           {message}

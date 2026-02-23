@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { motion, Reorder } from 'motion/react'
+import { variants, springs } from '@/lib/motion-system'
 import {
   Check,
   ChevronDown,
@@ -289,8 +290,8 @@ export function RoutineTemplateBuilder({
           {/* Step picker */}
           {stepPickerOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              {...variants.slideUp}
+              transition={springs.ios}
               className="rounded-xl border bg-background p-4"
             >
               <div className="mb-3 flex items-center justify-between">

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { UserProfile } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/utils'
+import { springs, variants, durations } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import {
   Bell,
@@ -152,8 +153,8 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
     <div className="space-y-4 pb-8">
       {/* Profile Header */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        {...variants.slideUp}
+        transition={springs.ios}
         className="ios-card p-6"
       >
         <div className="flex flex-col items-center text-center">
@@ -200,6 +201,7 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
+            transition={springs.ios}
             className="mt-6 space-y-4"
           >
             <div>
@@ -262,9 +264,8 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
 
       {/* Settings Section */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        {...variants.slideUp}
+        transition={{ ...springs.ios, delay: durations.micro }}
       >
         <h3 className="ios-headline px-1 mb-3">Settings</h3>
 
@@ -435,9 +436,8 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
 
       {/* Account Actions */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        {...variants.slideUp}
+        transition={{ ...springs.ios, delay: 0.2 }}
       >
         <h3 className="ios-headline px-1 mb-3">Account</h3>
 
@@ -456,9 +456,8 @@ export function ProfileView({ profile, loading, onUpdate }: ProfileViewProps) {
 
       {/* App Info */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        {...variants.fade}
+        transition={{ duration: durations.standard, delay: 0.3 }}
         className="text-center pt-4 space-y-1"
       >
         <p className="ios-caption text-muted-foreground">

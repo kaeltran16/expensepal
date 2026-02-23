@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { variants, springs, durations } from '@/lib/motion-system'
 import { Scale, TrendingDown, TrendingUp, Plus, X, Check, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -87,8 +88,7 @@ export function WeightTracker() {
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        {...variants.slideUp}
         className="ios-card p-5"
       >
         {/* Header */}
@@ -105,7 +105,7 @@ export function WeightTracker() {
             </div>
           </div>
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => {
               setShowLogModal(true)
               hapticFeedback('light')
@@ -219,18 +219,14 @@ export function WeightTracker() {
         {showLogModal && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              {...variants.fade}
+              transition={{ duration: durations.micro }}
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
               onClick={() => setShowLogModal(false)}
             />
             <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+              {...variants.sheet}
+              transition={springs.sheet}
               className="fixed inset-x-0 bottom-0 z-[70] bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50"
               style={{ maxHeight: '85vh' }}
               onClick={(e) => e.stopPropagation()}
@@ -309,7 +305,7 @@ export function WeightTracker() {
                       Cancel
                     </Button>
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={handleLogWeight}
                       disabled={!weight || logWeight.isPending}
                       className="flex-1 h-12 sm:h-14 rounded-xl bg-purple-500 text-white font-semibold text-base shadow-lg shadow-purple-500/25 disabled:opacity-50"

@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { motion } from 'motion/react'
+import { durations } from '@/lib/motion-system'
 import { Flame, Trophy } from 'lucide-react'
 import {
   getStreakColorClass,
@@ -52,7 +53,7 @@ export function RoutineStreakBanner({
               : 'bg-muted'
           )}
           animate={currentStreak >= 3 ? { scale: [1, 1.05, 1] } : {}}
-          transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+          transition={{ repeat: Infinity, duration: durations.slow, ease: 'easeInOut' }}
         >
           <Flame
             className={cn(

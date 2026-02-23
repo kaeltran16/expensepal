@@ -1,5 +1,6 @@
 'use client'
 
+import { springs } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 
 interface WorkoutProgressProps {
@@ -44,11 +45,7 @@ export function WorkoutProgress({
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           className="h-full bg-primary rounded-full relative overflow-hidden"
-          transition={{
-            type: "spring",
-            stiffness: 100,
-            damping: 15
-          }}
+          transition={springs.ios}
         >
           {/* Shimmer Effect */}
           <motion.div

@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { variants } from '@/lib/motion-system'
 import { Loader2, Sparkles, Utensils, Sun, Moon, Coffee, Cookie, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -54,8 +55,7 @@ export function QuickMealForm() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
       className="ios-card p-5"
     >
       {/* Header with gradient icon */}
@@ -84,8 +84,7 @@ export function QuickMealForm() {
           />
           {!isManual && name && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              {...variants.scale}
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
               <Sparkles className="h-4 w-4 text-orange-500" />
@@ -99,7 +98,7 @@ export function QuickMealForm() {
             <motion.button
               key={time.value}
               type="button"
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => {
                 setMealTime(time.value)
                 hapticFeedback('light')
@@ -143,7 +142,7 @@ export function QuickMealForm() {
           {/* Mode toggle */}
           <motion.button
             type="button"
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => {
               setIsManual(!isManual)
               hapticFeedback('light')
@@ -163,7 +162,7 @@ export function QuickMealForm() {
           {/* Submit button */}
           <motion.button
             type="submit"
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
             disabled={createMealMutation.isPending || !name.trim()}
             className={`
               flex-1 flex items-center justify-center gap-2 h-12 rounded-full

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { variants, springs } from '@/lib/motion-system'
 import { motion, AnimatePresence } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -82,17 +83,13 @@ export function Onboarding({ onComplete, onAddExpense, onSyncEmails }: Onboardin
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        {...variants.fade}
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
         onClick={handleSkip}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25 }}
+          {...variants.scale}
+          transition={springs.ios}
           onClick={(e) => e.stopPropagation()}
         >
           <Card className="max-w-md w-full p-6 relative">

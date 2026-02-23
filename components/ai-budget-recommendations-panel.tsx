@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { BudgetRecommendations } from '@/components/budget-recommendations'
 import { useAIBudgetRecommendations, useCreateBudget, useUpdateBudget } from '@/lib/hooks/use-budgets'
+import { durations } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { Sparkles, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
@@ -150,7 +151,7 @@ export function AIBudgetRecommendationsPanel({ onSetBudget }: AIBudgetRecommenda
       <motion.div
         className="ios-card p-4 cursor-pointer select-none border border-border/50"
         onClick={() => setIsExpanded(!isExpanded)}
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.97 }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -209,7 +210,7 @@ export function AIBudgetRecommendationsPanel({ onSetBudget }: AIBudgetRecommenda
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: durations.standard }}
           >
             <BudgetRecommendations
               recommendations={recommendations}

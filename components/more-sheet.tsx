@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSheetBackdrop } from '@/components/sheet-backdrop-context'
-import { springs, getStaggerDelay } from '@/lib/motion-system'
+import { springs, variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { Flame, Target, Repeat, User, ChevronRight, X, Sparkles } from 'lucide-react'
 import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
@@ -42,19 +42,15 @@ export function MoreSheet({ isOpen, onClose, onNavigate, activeView }: MoreSheet
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            {...variants.fade}
+            transition={{ duration: durations.standard }}
             onClick={onClose}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
           />
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            {...variants.sheet}
             transition={springs.sheet}
             className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl shadow-2xl"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}

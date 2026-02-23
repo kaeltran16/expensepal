@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { useExerciseHistory, usePersonalRecords } from '@/lib/hooks/use-workouts'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { getStaggerDelay, variants } from '@/lib/motion-system'
 import { getProgressiveOverloadSuggestion } from '@/lib/workout-helpers'
 import { format, parseISO } from 'date-fns'
 import { motion } from 'motion/react'
@@ -82,8 +82,7 @@ export function ExerciseProgressView({
   if (history.length === 0) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        {...variants.scale}
         className="text-center py-12"
       >
         <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
@@ -102,8 +101,7 @@ export function ExerciseProgressView({
       {/* 1RM Progression Card */}
       {oneRMProgression && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          {...variants.slideUp}
           className="ios-card p-5"
         >
           <div className="flex items-center gap-3 mb-3">
@@ -136,8 +134,7 @@ export function ExerciseProgressView({
 
       {/* Weight Progress Chart */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        {...variants.slideUp}
         transition={{ delay: 0.1 }}
         className="ios-card p-5"
       >
@@ -196,8 +193,7 @@ export function ExerciseProgressView({
       {/* AI Coach Suggestion */}
       {suggestion.type !== 'maintain' && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          {...variants.slideUp}
           transition={{ delay: 0.2 }}
           className={`ios-card p-5 border-l-4 ${
             suggestion.type === 'increase_weight' || suggestion.type === 'increase_reps'
@@ -242,8 +238,7 @@ export function ExerciseProgressView({
       {/* Personal Record */}
       {exercisePR && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          {...variants.slideUp}
           transition={{ delay: 0.3 }}
           className="ios-card p-5 bg-yellow-500/10 border-yellow-500/20"
         >
@@ -272,8 +267,7 @@ export function ExerciseProgressView({
 
       {/* Recent Workout Stats */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        {...variants.slideUp}
         transition={{ delay: 0.4 }}
       >
         <h3 className="font-semibold mb-3">Recent Workouts</h3>

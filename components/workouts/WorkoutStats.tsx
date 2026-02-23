@@ -1,5 +1,6 @@
 'use client'
 
+import { springs, variants } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Activity, Clock, Target, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -43,9 +44,8 @@ export function WorkoutStats({ weekWorkouts }: WorkoutStatsProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.175, 0.885, 0.32, 1.275] }}
+      {...variants.slideUp}
+      transition={springs.ios}
       className="ios-card p-5"
     >
       <div className="flex items-center justify-between mb-4">

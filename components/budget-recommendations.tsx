@@ -1,6 +1,6 @@
 'use client'
 
-import { getStaggerDelay } from '@/lib/motion-system'
+import { getStaggerDelay, variants, springs } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { TrendingUp, TrendingDown, Minus, Lightbulb, Check, X, Sparkles, Calendar, User, PiggyBank } from 'lucide-react'
 import { Button } from './ui/button'
@@ -77,10 +77,9 @@ export function BudgetRecommendations({
         {visibleRecommendations.map((rec, index) => (
           <motion.div
             key={rec.category}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            {...variants.slideUp}
             exit={{ opacity: 0, x: -100 }}
-            transition={{ delay: getStaggerDelay(index) }}
+            transition={{ delay: getStaggerDelay(index), ...springs.ios }}
           >
             <Card className="p-4 space-y-3">
               {/* Header */}

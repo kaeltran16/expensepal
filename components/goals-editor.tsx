@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { variants, springs, durations } from '@/lib/motion-system'
 import { motion, AnimatePresence } from 'motion/react'
 import { Target, X, Flame, Dumbbell, Cookie, Droplet, Scale } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -62,20 +63,16 @@ export function GoalsEditor({ isOpen, onClose }: GoalsEditorProps) {
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            {...variants.fade}
+            transition={{ duration: durations.standard }}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
             onClick={onClose}
           />
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            {...variants.sheet}
+            transition={springs.sheet}
             className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl shadow-2xl p-6 pb-safe max-h-[85vh] overflow-y-auto"
           >
             {/* Handle */}
@@ -255,7 +252,7 @@ export function GoalsEditor({ isOpen, onClose }: GoalsEditorProps) {
 export function EditGoalsButton({ onClick }: { onClick: () => void }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.97 }}
       onClick={() => {
         onClick()
         hapticFeedback('light')

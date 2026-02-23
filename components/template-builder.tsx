@@ -18,6 +18,7 @@ import type { Exercise, WorkoutTemplate } from '@/lib/supabase'
 import type { TemplateExercise } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
+import { springs, variants } from '@/lib/motion-system'
 import {
   ChevronDown,
   ChevronUp,
@@ -194,9 +195,7 @@ export function TemplateBuilder({
     <>
       {/* backdrop */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        {...variants.fade}
         onClick={onClose}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
       />
@@ -206,7 +205,7 @@ export function TemplateBuilder({
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        transition={springs.sheet}
         className="fixed inset-y-0 right-0 w-full sm:w-[500px] bg-background z-50 shadow-2xl"
       >
         <div className="flex flex-col h-full">
@@ -382,9 +381,7 @@ function ExerciseConfigCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      {...variants.slideUp}
       className="ios-card p-4"
     >
       <div className="flex items-start gap-3 mb-3">
@@ -507,9 +504,7 @@ function ExercisePicker({
     <>
       {/* backdrop */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        {...variants.fade}
         onClick={onClose}
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
       />
@@ -519,7 +514,7 @@ function ExercisePicker({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        transition={springs.ios}
         className="fixed inset-x-4 top-[10%] bottom-[10%] z-[60] max-w-2xl mx-auto"
       >
         <div className="ios-card h-full flex flex-col">
@@ -584,7 +579,7 @@ function ExercisePicker({
                   <motion.button
                     key={exercise.id}
                     whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => {
                       onSelect(exercise)
                       hapticFeedback('light')

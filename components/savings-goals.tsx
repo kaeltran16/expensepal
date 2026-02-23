@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { hapticFeedback } from '@/lib/utils';
+import { variants, springs } from '@/lib/motion-system';
 import { Plus, Target } from 'lucide-react';
 import { useGoals } from '@/lib/hooks';
 import { useGoalOperations } from '@/lib/hooks/use-goal-operations';
@@ -67,10 +68,8 @@ export function SavingsGoals() {
       <AnimatePresence>
         {showForm && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
+            {...variants.scale}
+            transition={springs.ios}
           >
             <SavingsGoalForm
               formData={formData}

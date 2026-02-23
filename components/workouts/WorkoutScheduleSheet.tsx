@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
+import { springs, variants } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { X, Calendar, Dumbbell, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -70,9 +71,7 @@ export function WorkoutScheduleSheet({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
             onClick={handleClose}
             className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md"
           />
@@ -82,7 +81,7 @@ export function WorkoutScheduleSheet({
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 40, stiffness: 400, mass: 0.8 }}
+            transition={springs.sheet}
             className="fixed inset-x-0 bottom-0 z-[70] bg-background rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh]"
           >
             {/* Header */}

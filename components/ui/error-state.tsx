@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { variants, springs } from '@/lib/motion-system'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { ReactNode } from 'react'
@@ -102,15 +103,13 @@ export function ErrorState({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      {...variants.fade}
       className={`text-center ${sizes.container}`}
     >
       {/* Error Icon */}
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', bounce: 0.5, duration: 0.6 }}
+        {...variants.scale}
+        transition={{ ...springs.ios }}
         className="flex justify-center mb-4"
       >
         <div className="w-16 h-16 rounded-full bg-destructive/10 dark:bg-destructive/20 flex items-center justify-center">

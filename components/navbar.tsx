@@ -3,6 +3,7 @@
 import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { UserMenu } from '@/components/user-menu'
+import { springs } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { LogIn, Mail, Moon, Sun, Wallet } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -24,7 +25,7 @@ export function Navbar({ onSyncEmails, isSyncing, onOpenProfile, onLogoClick }: 
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      transition={springs.ios}
       className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50"
       style={{
         paddingTop: 'env(safe-area-inset-top)',
@@ -60,7 +61,7 @@ export function Navbar({ onSyncEmails, isSyncing, onOpenProfile, onLogoClick }: 
           <div className="flex items-center gap-2">
             {/* Sync Emails Button */}
             {user && onSyncEmails && (
-              <motion.div whileTap={{ scale: 0.9 }} className="relative">
+              <motion.div whileTap={{ scale: 0.97 }} className="relative">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -106,7 +107,7 @@ export function Navbar({ onSyncEmails, isSyncing, onOpenProfile, onLogoClick }: 
             )}
 
             {/* Theme Toggle */}
-            <motion.div whileTap={{ scale: 0.9 }}>
+            <motion.div whileTap={{ scale: 0.97 }}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -125,7 +126,7 @@ export function Navbar({ onSyncEmails, isSyncing, onOpenProfile, onLogoClick }: 
             ) : user ? (
               <UserMenu onSyncEmails={onSyncEmails} isSyncing={isSyncing} onOpenProfile={onOpenProfile} />
             ) : (
-              <motion.div whileTap={{ scale: 0.95 }}>
+              <motion.div whileTap={{ scale: 0.97 }}>
                 <Button
                   onClick={() => router.push('/login')}
                   size="sm"

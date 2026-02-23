@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Search, X, Filter } from 'lucide-react'
+import { durations } from '@/lib/motion-system'
 import { motion, AnimatePresence } from 'motion/react'
 
 const CATEGORIES = ['All', 'Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Health', 'Other']
@@ -111,7 +112,7 @@ export function ExpenseFilters({ onFilterChange }: ExpenseFiltersProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: durations.standard }}
             className="overflow-hidden"
           >
             <div className="p-4 border rounded-lg space-y-4 bg-muted/50">

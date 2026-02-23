@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { springs, durations } from '@/lib/motion-system'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 
@@ -55,10 +56,7 @@ export function ProgressIndicator({ status, message, progress, detail }: Progres
       initial={{ opacity: 0, y: -20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
-      transition={{
-        duration: 0.3,
-        ease: [0.4, 0, 0.2, 1]
-      }}
+      transition={{ duration: durations.standard }}
       className="ios-card overflow-hidden"
     >
       <div className="p-4">
@@ -67,12 +65,7 @@ export function ProgressIndicator({ status, message, progress, detail }: Progres
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{
-              type: 'spring',
-              damping: 15,
-              stiffness: 400,
-              delay: 0.1
-            }}
+            transition={{ ...springs.touch, delay: durations.micro }}
             className={`
               flex-shrink-0 w-10 h-10 rounded-full
               ${config.iconBg}

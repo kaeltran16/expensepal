@@ -1,5 +1,6 @@
 'use client'
 
+import { springs, variants } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Dumbbell, PlayCircle, CheckCircle2, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -67,9 +68,8 @@ export function WorkoutHero({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.175, 0.885, 0.32, 1.275] }}
+      {...variants.slideUp}
+      transition={springs.ios}
       className="ios-card overflow-hidden"
     >
       <div className="p-6">

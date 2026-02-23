@@ -24,7 +24,7 @@ import {
 } from '@/lib/analytics/spending-insights'
 import { getMerchantInsights, type MerchantInsight } from '@/lib/analytics/detect-recurring'
 import type { Expense } from '@/lib/supabase'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { springs, variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { cn } from '@/lib/utils'
 
 interface InsightsViewProps {
@@ -110,20 +110,18 @@ export function InsightsView({ expenses, loading, onNavigate }: InsightsViewProp
         {activeTab === 'weekly' ? (
           <motion.div
             key="weekly"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            {...variants.slideUp}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: durations.standard }}
           >
             <WeeklySummary expenses={expenses} />
           </motion.div>
         ) : (
           <motion.div
             key="insights"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            {...variants.slideUp}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: durations.standard }}
             className="space-y-4"
           >
             {/* Quick Insights Cards */}
@@ -200,9 +198,8 @@ function PatternCard({ pattern, index }: { pattern: SpendingPattern; index: numb
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: getStaggerDelay(index), duration: 0.2 }}
+      {...variants.slideUp}
+      transition={{ ...springs.ios, delay: getStaggerDelay(index) }}
       className="ios-list-item"
     >
       <div className="flex items-start gap-3">
@@ -233,9 +230,8 @@ function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: getStaggerDelay(index) }}
+      {...variants.slideUp}
+      transition={{ ...springs.ios, delay: getStaggerDelay(index) }}
       className="ios-list-item"
     >
       <div className="flex items-center justify-between gap-3">
@@ -262,9 +258,8 @@ function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number
 function CompactMerchantCard({ merchant, index }: { merchant: MerchantInsight; index: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: getStaggerDelay(index) }}
+      {...variants.slideUp}
+      transition={{ ...springs.ios, delay: getStaggerDelay(index) }}
       className="ios-list-item"
     >
       <div className="space-y-2">
@@ -290,7 +285,7 @@ function CompactMerchantCard({ merchant, index }: { merchant: MerchantInsight; i
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(100, merchant.percentOfTotal)}%` }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: durations.slow }}
             className="h-full bg-primary rounded-full"
           />
         </div>

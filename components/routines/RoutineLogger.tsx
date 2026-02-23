@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { cn, hapticFeedback } from '@/lib/utils'
 import { motion, AnimatePresence } from 'motion/react'
+import { durations, variants } from '@/lib/motion-system'
 import { ArrowLeft, Check, ChevronRight, Clock, Lightbulb, Pause, Play, SkipForward } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -298,7 +299,7 @@ export function RoutineLogger({
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: durations.standard }}
               className="w-full max-w-sm text-center"
             >
               {/* Step Number Badge */}
@@ -416,9 +417,7 @@ export function RoutineLogger({
       <AnimatePresence>
         {isPaused && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
             className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm"
           >
             <div className="text-center">

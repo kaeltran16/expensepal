@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ExerciseProgressView } from '@/components/workouts/ExerciseProgressView'
 import { useExercises } from '@/lib/hooks/use-workouts'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { springs, variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
 import { BarChart3, Dumbbell, Heart, Plus, RefreshCw, Search, Settings2, Trash2, X } from 'lucide-react'
@@ -160,19 +160,16 @@ export function ExerciseDetailSheet({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
+            transition={{ duration: durations.standard }}
             onClick={handleClose}
             className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-md"
           />
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            {...variants.sheet}
+            transition={springs.sheet}
             className="fixed inset-0 z-[90] bg-background flex flex-col"
           >
             {/* Header */}
@@ -280,8 +277,7 @@ export function ExerciseDetailSheet({
                 <div className="flex-1 overflow-y-auto px-5 py-6">
                   {/* Exercise Image */}
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    {...variants.scale}
                     className="w-full aspect-[4/3] rounded-2xl bg-muted/30 overflow-hidden relative mb-6"
                   >
                     {!imageError && imageUrl ? (
@@ -311,8 +307,7 @@ export function ExerciseDetailSheet({
                     {sets.map((set, index) => (
                       <motion.div
                         key={set.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        {...variants.slideUp}
                         transition={{ delay: getStaggerDelay(index) }}
                         className="flex items-center gap-3 p-4 rounded-2xl bg-muted/40"
                       >
@@ -365,7 +360,7 @@ export function ExerciseDetailSheet({
                       e.stopPropagation()
                       handleAddSet()
                     }}
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.97 }}
                     className="w-full py-4 text-center font-medium text-primary hover:text-primary/80 transition-colors border-t border-border"
                   >
                     + Add Set
@@ -416,7 +411,7 @@ function ReplaceExerciseItem({
     <motion.button
       onClick={onSelect}
       className="w-full flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.97 }}
     >
       {/* Exercise Image */}
       <div className="w-14 h-14 rounded-xl bg-muted/50 overflow-hidden shrink-0 relative">

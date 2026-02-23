@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react';
+import { variants } from '@/lib/motion-system';
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -55,8 +56,7 @@ export function TrendIndicator({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
+      {...variants.scale}
       className={cn(
         'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
         colorClass,

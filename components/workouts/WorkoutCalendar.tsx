@@ -1,5 +1,6 @@
 'use client'
 
+import { durations, springs, variants } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -64,20 +65,17 @@ export function WorkoutCalendar({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
         delay: 0.15,
-        type: "spring",
-        stiffness: 300,
-        damping: 25
+        ...springs.ios
       }}
       className="ios-card p-4"
     >
       {/* Header with week navigation */}
       <motion.div
         className="flex items-center justify-between mb-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        {...variants.fade}
         transition={{ delay: 0.2 }}
       >
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
           <Button
             variant="ghost"
             size="icon"
@@ -91,15 +89,14 @@ export function WorkoutCalendar({
 
         <motion.h3
           className="ios-headline text-center flex-1"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, type: "spring", stiffness: 300 }}
+          {...variants.slideDown}
+          transition={{ delay: 0.25, ...springs.ios }}
           key={weekOffset}
         >
           {weekOffset === 0 ? 'This Week' : format(weekDates[0]!, 'MMM d')} - {format(weekDates[6]!, 'MMM d')}
         </motion.h3>
 
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
           <Button
             variant="ghost"
             size="icon"
@@ -125,18 +122,16 @@ export function WorkoutCalendar({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{
                 delay: 0.3 + index * 0.04,
-                type: "spring",
-                stiffness: 400,
-                damping: 20
+                ...springs.touch
               }}
               whileHover={{
                 scale: 1.1,
                 y: -4,
-                transition: { type: "spring", stiffness: 500, damping: 15 }
+                transition: springs.drag
               }}
               whileTap={{
-                scale: 0.95,
-                transition: { duration: 0.1 }
+                scale: 0.97,
+                transition: { duration: durations.micro }
               }}
               onClick={() => handleDateClick(date)}
               className={`
@@ -167,9 +162,7 @@ export function WorkoutCalendar({
                       rotate: 0
                     }}
                     transition={{
-                      type: "spring",
-                      stiffness: 500,
-                      damping: 15,
+                      ...springs.touch,
                       delay: 0.4 + index * 0.04
                     }}
                   >
@@ -199,9 +192,8 @@ export function WorkoutCalendar({
       {/* Legend */}
       <motion.div
         className="flex items-center justify-center gap-4 mt-4 pt-3 border-t"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
+        {...variants.slideUp}
+        transition={{ delay: 0.6, ...springs.ios }}
       >
         <motion.div
           className="flex items-center gap-1.5"

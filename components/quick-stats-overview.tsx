@@ -3,6 +3,7 @@
 import { AnimatedCounter } from '@/components/animated-counter';
 import type { Budget } from '@/lib/supabase';
 import { formatCurrency, getCurrencyLocale, getCurrencySymbol } from '@/lib/utils';
+import { variants, springs, durations } from '@/lib/motion-system';
 import { motion } from 'motion/react';
 import { Activity, ArrowDown, Calendar, Sparkles, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { useMemo } from 'react';
@@ -63,9 +64,8 @@ export function QuickStatsOverview({
     <div className="space-y-3" data-testid="quick-stats">
       {/* Main Today Card with Premium Design */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.175, 0.885, 0.32, 1.275] }}
+        {...variants.slideUp}
+        transition={{ duration: durations.slow, ...springs.ios }}
         className="ios-card overflow-hidden relative group"
       >
 
@@ -107,9 +107,8 @@ export function QuickStatsOverview({
           {/* Main Amount - Larger and More Prominent */}
           <div className="mb-6">
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+              {...variants.scale}
+              transition={{ delay: 0.2, ...springs.ios }}
             >
               <p className="text-6xl font-black tracking-tighter leading-none mb-1" data-testid="today-total">
                 <span className="text-2xl font-bold text-muted-foreground mr-1">{symbol}</span>
@@ -201,9 +200,8 @@ export function QuickStatsOverview({
         {/* Enhanced Trend Footer */}
         {lastMonthTotal > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            {...variants.slideUp}
+            transition={{ delay: 0.5, ...springs.ios }}
             className={`px-6 py-3.5 border-t ${
               isIncreasing
                 ? 'border-destructive/20'

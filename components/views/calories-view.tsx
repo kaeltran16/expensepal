@@ -12,6 +12,7 @@ import { WaterIntake } from '@/components/water-intake';
 import { WeightTracker } from '@/components/weight-tracker';
 import { FavoriteMeals } from '@/components/favorite-meals';
 import { motion } from 'motion/react';
+import { springs } from '@/lib/motion-system';
 import { hapticFeedback } from '@/lib/utils';
 import { useMealFilters } from '@/lib/hooks';
 import type { Meal, Expense } from '@/lib/supabase';
@@ -92,7 +93,7 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
           <h2 className="text-lg font-semibold">Recent Meals</h2>
           <div className="flex items-center gap-2">
             {/* Filter Button */}
-            <motion.div whileTap={{ scale: 0.95 }}>
+            <motion.div whileTap={{ scale: 0.97 }} transition={springs.touch}>
               <Button
                 variant={hasActiveFilters ? 'default' : 'outline'}
                 size="sm"
@@ -107,6 +108,7 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
+                    transition={springs.touch}
                     className="h-2 w-2 rounded-full bg-primary-foreground"
                   />
                 )}
@@ -114,7 +116,7 @@ export function CaloriesView({ meals, calorieStats, loading, showAllMeals = fals
             </motion.div>
 
             {meals.length > 10 && onToggleShowAll && (
-              <motion.div whileTap={{ scale: 0.95 }}>
+              <motion.div whileTap={{ scale: 0.97 }} transition={springs.touch}>
                 <Button
                   variant="ghost"
                   size="sm"

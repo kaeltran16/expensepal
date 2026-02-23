@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { hapticFeedback } from '@/lib/utils'
+import { durations, springs, variants } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { Timer } from 'lucide-react'
 import { useEffect } from 'react'
@@ -62,9 +63,7 @@ export function RestTimer({
     <AnimatePresence>
       {isResting && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          {...variants.fade}
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 flex items-center justify-center p-4"
           onClick={(e) => {
             // Allow clicking background to skip rest
@@ -78,11 +77,7 @@ export function RestTimer({
             initial={{ scale: 0.8, y: 50 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.8, y: 50 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 25
-            }}
+            transition={springs.ios}
             onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
           >
             {/* Timer Icon */}
@@ -94,11 +89,7 @@ export function RestTimer({
               key={restTimer}
               initial={{ scale: 1.2, opacity: 0.5 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 25
-              }}
+              transition={springs.touch}
             >
               {restTimer}s
             </motion.div>
@@ -106,9 +97,8 @@ export function RestTimer({
             {/* Rest Time Label */}
             <motion.p
               className="text-lg text-muted-foreground mb-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
+              {...variants.fade}
+              transition={{ delay: durations.micro }}
             >
               Rest Time
             </motion.p>

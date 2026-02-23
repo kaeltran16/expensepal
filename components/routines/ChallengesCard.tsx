@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { motion } from 'motion/react'
+import { springs } from '@/lib/motion-system'
 import { Award, ChevronRight, Gift, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -83,7 +84,7 @@ export function ChallengesCard({
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    transition={springs.ios}
                   >
                     <Button
                       size="sm"

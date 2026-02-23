@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import type { WorkoutTemplate } from '@/lib/supabase'
 import type { ExerciseLog, ExerciseSet, TemplateExercise, WorkoutData } from '@/lib/types/common'
 import { hapticFeedback } from '@/lib/utils'
+import { springs, variants } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, Timer, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -196,9 +197,7 @@ export function WorkoutLogger({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      {...variants.fade}
       className="fixed inset-0 bg-background z-50 overflow-auto"
     >
       {/* Header with Progress */}
@@ -250,16 +249,12 @@ export function WorkoutLogger({
       <AnimatePresence>
         {showCancelConfirm && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center p-4"
             onClick={() => setShowCancelConfirm(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              {...variants.scale}
               onClick={(e) => e.stopPropagation()}
               className="ios-card p-6 max-w-sm w-full"
             >
@@ -405,17 +400,13 @@ export function WorkoutLogger({
         className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border/50 p-4"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{
-          type: "spring",
-          stiffness: 300,
-          damping: 30
-        }}
+        transition={springs.ios}
       >
         <div className="flex gap-3 max-w-screen-sm mx-auto">
           <motion.div
             className="flex-1"
             whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.97 }}
           >
             <Button
               variant="outline"
@@ -430,7 +421,7 @@ export function WorkoutLogger({
             <motion.div
               className="flex-1"
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
             >
               <Button
                 onClick={handleFinishWorkout}
@@ -459,7 +450,7 @@ export function WorkoutLogger({
             <motion.div
               className="flex-1"
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
             >
               <Button
                 onClick={handleNextExercise}

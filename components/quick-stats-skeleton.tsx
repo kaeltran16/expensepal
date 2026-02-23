@@ -1,12 +1,12 @@
 'use client'
 
 import { motion } from 'motion/react';
+import { variants } from '@/lib/motion-system';
 
 export function QuickStatsSkeleton() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
       className="ios-card overflow-hidden"
     >
       <div className="p-6 relative">

@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import type { ExerciseLog } from '@/lib/types/common'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { getStaggerDelay, springs, variants } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, Dumbbell, Share2, Timer, TrendingUp, Zap } from 'lucide-react'
 
@@ -81,9 +81,7 @@ export function WorkoutSummary({
     <AnimatePresence>
       {show && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          {...variants.fade}
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center p-4"
           onClick={onClose}
         >
@@ -91,11 +89,7 @@ export function WorkoutSummary({
             initial={{ scale: 0.9, opacity: 0, y: 50 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 50 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 25
-            }}
+            transition={springs.ios}
             onClick={(e) => e.stopPropagation()}
             className="ios-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
           >
@@ -110,16 +104,14 @@ export function WorkoutSummary({
                 🎉
               </motion.div>
               <motion.h2
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                {...variants.slideUp}
                 transition={{ delay: 0.2 }}
                 className="ios-title1 mb-2"
               >
                 Workout Complete!
               </motion.h2>
               <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                {...variants.fade}
                 transition={{ delay: 0.3 }}
                 className="text-muted-foreground"
               >
@@ -129,8 +121,7 @@ export function WorkoutSummary({
 
             {/* Stats Grid */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              {...variants.slideUp}
               transition={{ delay: 0.4 }}
               className="grid grid-cols-2 gap-3 mb-6"
             >
@@ -165,8 +156,7 @@ export function WorkoutSummary({
 
             {/* Exercises Completed */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              {...variants.slideUp}
               transition={{ delay: 0.5 }}
               className="mb-6"
             >
@@ -194,8 +184,7 @@ export function WorkoutSummary({
             {/* Personal Records */}
             {personalRecords.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                {...variants.slideUp}
                 transition={{ delay: 0.6 }}
                 className="mb-6"
               >
@@ -217,8 +206,7 @@ export function WorkoutSummary({
 
             {/* Action Buttons */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              {...variants.slideUp}
               transition={{ delay: 0.7 }}
               className="flex gap-3"
             >

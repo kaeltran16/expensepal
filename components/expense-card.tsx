@@ -5,6 +5,7 @@ import { motion, useMotionValue, useTransform, PanInfo } from 'motion/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate, getCategoryColor, hapticFeedback } from '@/lib/utils'
+import { variants, springs } from '@/lib/motion-system'
 import { Trash2, Edit, Mail, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Expense } from '@/lib/supabase'
 
@@ -77,7 +78,7 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
       <div className="absolute inset-0 flex items-center justify-between px-4">
         {/* Right swipe - Edit */}
         <motion.div
-          initial={{ opacity: 0 }}
+          {...variants.fade}
           animate={{ opacity: isRevealed === 'right' ? 1 : 0 }}
           className="flex items-center gap-2 text-blue-600"
         >
@@ -87,7 +88,7 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
 
         {/* Left swipe - Delete */}
         <motion.div
-          initial={{ opacity: 0 }}
+          {...variants.fade}
           animate={{ opacity: isRevealed === 'left' ? 1 : 0 }}
           className="flex items-center gap-2 text-destructive"
         >
@@ -105,9 +106,8 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
         dragElastic={0.1}
         onDragEnd={handleDragEnd}
         style={{ x, backgroundColor }}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
+        {...variants.scale}
+        transition={springs.ios}
         className={`bg-card rounded-2xl p-4 shadow-sm border-l-4 ${categoryColors.border} hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing`}
         onClick={() => {
           if (isRevealed === 'left') handleDelete()

@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { getStaggerDelay } from '@/lib/motion-system'
+import { getStaggerDelay, springs, variants } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -189,19 +189,15 @@ export function WorkoutGeneratorSheet({
         <>
           <motion.div
             key="workout-generator-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...variants.fade}
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
             onClick={handleClose}
           />
 
           <motion.div
             key="workout-generator-sheet"
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            {...variants.sheet}
+            transition={springs.sheet}
             className="fixed inset-0 z-[100] bg-background flex flex-col !mt-0"
             onClick={e => e.stopPropagation()}
           >
@@ -239,7 +235,7 @@ export function WorkoutGeneratorSheet({
                   {MUSCLE_GROUPS.map(muscle => (
                     <motion.button
                       key={muscle.id}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => toggleMuscle(muscle.id)}
                       className={`py-2 px-1 rounded-xl text-center transition-all border-2 ${
                         selectedMuscles.includes(muscle.id)
@@ -261,7 +257,7 @@ export function WorkoutGeneratorSheet({
                   {DURATIONS.map(d => (
                     <motion.button
                       key={d.value}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => {
                         setDuration(d.value)
                         hapticFeedback('light')
@@ -295,7 +291,7 @@ export function WorkoutGeneratorSheet({
                   ] as const).map(type => (
                     <motion.button
                       key={type.id}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => {
                         setWorkoutType(type.id)
                         hapticFeedback('light')
@@ -325,7 +321,7 @@ export function WorkoutGeneratorSheet({
                   ] as const).map(level => (
                     <motion.button
                       key={level.id}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => {
                         setDifficulty(level.id)
                         hapticFeedback('light')
@@ -364,7 +360,7 @@ export function WorkoutGeneratorSheet({
                   {EQUIPMENT.map(eq => (
                     <motion.button
                       key={eq.id}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => toggleEquipment(eq.id)}
                       className={`py-2 px-2 rounded-xl text-xs font-medium transition-all border-2 flex items-center justify-center gap-1 ${
                         selectedEquipment.includes(eq.id)
@@ -436,8 +432,7 @@ export function WorkoutGeneratorSheet({
                 {generatedWorkout.exercises.map((ex, index) => (
                   <motion.div
                     key={ex.exercise_id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    {...variants.slideUp}
                     transition={{ delay: getStaggerDelay(index) }}
                     className="ios-card p-4 flex items-center gap-4"
                   >
@@ -463,7 +458,7 @@ export function WorkoutGeneratorSheet({
         {/* Footer */}
         <div className="safe-bottom p-4 border-t bg-background shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
           {step === 'input' && (
-            <motion.div whileTap={{ scale: 0.98 }}>
+            <motion.div whileTap={{ scale: 0.97 }}>
               <Button
                 onClick={handleGenerate}
                 disabled={selectedMuscles.length === 0}
@@ -478,7 +473,7 @@ export function WorkoutGeneratorSheet({
 
           {step === 'result' && generatedWorkout && (
             <div className="flex gap-3">
-              <motion.div whileTap={{ scale: 0.98 }} className="flex-1">
+              <motion.div whileTap={{ scale: 0.97 }} className="flex-1">
                 <Button
                   variant="outline"
                   onClick={handleSaveAsTemplate}
@@ -489,7 +484,7 @@ export function WorkoutGeneratorSheet({
                   Save Template
                 </Button>
               </motion.div>
-              <motion.div whileTap={{ scale: 0.98 }} className="flex-1">
+              <motion.div whileTap={{ scale: 0.97 }} className="flex-1">
                 <Button
                   onClick={handleStartWorkout}
                   className="w-full min-h-touch gap-2 bg-green-600 hover:bg-green-700"

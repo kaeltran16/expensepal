@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSheetBackdrop } from '@/components/sheet-backdrop-context';
-import { springs } from '@/lib/motion-system';
+import { springs, variants, durations } from '@/lib/motion-system';
 import { hapticFeedback } from '@/lib/utils';
 import { AnimatePresence, motion } from 'motion/react';
 import { Apple, Coffee, Moon, Sun } from 'lucide-react';
@@ -59,10 +59,8 @@ export function MealFilterSheet({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            {...variants.fade}
+            transition={{ duration: durations.standard }}
             onClick={() => {
               onClose();
               hapticFeedback('light');
@@ -72,9 +70,7 @@ export function MealFilterSheet({
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            {...variants.sheet}
             transition={springs.sheet}
             className="fixed inset-x-0 bottom-0 z-[70] bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50"
             style={{ maxHeight: '75vh' }}

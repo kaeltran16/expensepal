@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
 import { AnimatedCounter } from '@/components/animated-counter'
-import { springs, stagger } from '@/lib/animation-config'
+import { springs, durations, getStaggerDelay } from '@/lib/motion-system'
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'motion/react'
 import {
   AlertTriangle,
@@ -386,7 +386,7 @@ export function InsightsCards({ expenses, onNavigate }: InsightsCardsProps) {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={springs.bouncy}
+            transition={springs.touch}
           >
             <Sparkles className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
           </motion.div>
@@ -440,10 +440,10 @@ function RecommendationCard({ recommendation: rec, index, onDismiss, onAction }:
       layout
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, x: -200, transition: { duration: 0.2 } }}
+      exit={{ opacity: 0, x: -200, transition: { duration: durations.standard } }}
       transition={{
-        delay: index * stagger.fast,
-        ...springs.default,
+        delay: getStaggerDelay(index),
+        ...springs.ios,
       }}
       style={{ opacity, scale }}
       drag={rec.dismissable ? 'x' : false}
@@ -457,7 +457,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss, onAction }:
           className={`absolute top-0 left-0 right-0 h-1 ${rec.color.accent}`}
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
-          transition={{ delay: index * stagger.fast + 0.2, duration: 0.4 }}
+          transition={{ delay: getStaggerDelay(index) + 0.2, duration: durations.slow }}
           style={{ transformOrigin: 'left' }}
         />
 
@@ -469,7 +469,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss, onAction }:
           className={`absolute -right-6 -top-6 w-20 h-20 rounded-full ${rec.color.bg}`}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ delay: index * stagger.fast + 0.1, ...springs.bouncy }}
+          transition={{ delay: getStaggerDelay(index) + 0.1, ...springs.touch }}
         />
 
         <CardContent className="relative p-4">
@@ -478,7 +478,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss, onAction }:
             <motion.div
               className={`w-11 h-11 rounded-xl ${rec.color.bg} flex items-center justify-center flex-shrink-0 ring-1 ring-black/5 dark:ring-white/10`}
               whileHover={{ scale: 1.05, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97 }}
             >
               <Icon className={`w-5 h-5 ${rec.color.text}`} />
             </motion.div>
@@ -495,7 +495,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss, onAction }:
                   <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: index * stagger.fast + 0.3 }}
+                    transition={{ delay: getStaggerDelay(index) + 0.3 }}
                     onClick={() => onDismiss(rec.id)}
                     className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                   >
@@ -529,7 +529,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss, onAction }:
                       className={`h-full rounded-full ${rec.color.accent}`}
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(rec.progress, 100)}%` }}
-                      transition={{ delay: index * stagger.fast + 0.4, duration: 0.6 }}
+                      transition={{ delay: getStaggerDelay(index) + 0.4, duration: 0.6 }}
                     />
                   </div>
                 </div>
@@ -540,7 +540,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss, onAction }:
                 <motion.div
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * stagger.fast + 0.3 }}
+                  transition={{ delay: getStaggerDelay(index) + 0.3 }}
                 >
                   <Button
                     size="sm"

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { springs } from '@/lib/motion-system'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Bell, X } from 'lucide-react'
@@ -121,7 +122,7 @@ export function PushNotificationManager() {
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        transition={springs.ios}
         className="fixed bottom-20 left-4 right-4 z-50 sm:left-auto sm:right-4 sm:bottom-20 sm:max-w-sm"
       >
         <Card className="p-4 shadow-2xl border-2 border-primary/20 bg-yellow-50 dark:bg-yellow-950">

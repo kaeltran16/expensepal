@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { variants, springs, durations, getStaggerDelay } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { PieChart, TrendingDown, Wallet } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -46,8 +47,7 @@ function DevLoginForm() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      {...variants.fade}
       transition={{ delay: 0.8 }}
       className="mt-6 p-4 border border-yellow-500/50 rounded-lg bg-yellow-50 dark:bg-yellow-900/10"
     >
@@ -127,9 +127,8 @@ function LoginContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        {...variants.slideUp}
+        transition={{ duration: durations.slow }}
         className="w-full max-w-md"
       >
         <Card className="glass border-white/20 shadow-2xl">
@@ -137,7 +136,7 @@ function LoginContent() {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              transition={{ delay: 0.2, ...springs.ios }}
               className="mx-auto"
             >
               <div className="relative">
@@ -162,7 +161,7 @@ function LoginContent() {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: getStaggerDelay(3) }}
                 className="flex items-center gap-3 text-sm text-muted-foreground"
               >
                 <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
@@ -174,7 +173,7 @@ function LoginContent() {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: getStaggerDelay(4) }}
                 className="flex items-center gap-3 text-sm text-muted-foreground"
               >
                 <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
@@ -186,7 +185,7 @@ function LoginContent() {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
+                transition={{ delay: getStaggerDelay(5) }}
                 className="flex items-center gap-3 text-sm text-muted-foreground"
               >
                 <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
@@ -198,8 +197,7 @@ function LoginContent() {
 
             {/* Sign In Button */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              {...variants.slideUp}
               transition={{ delay: 0.6 }}
             >
               <Button
@@ -237,8 +235,7 @@ function LoginContent() {
 
             {/* Privacy Note */}
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              {...variants.fade}
               transition={{ delay: 0.7 }}
               className="text-xs text-center text-muted-foreground"
             >
@@ -250,8 +247,7 @@ function LoginContent() {
 
         {/* Footer */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          {...variants.fade}
           transition={{ delay: 0.8 }}
           className="mt-6 text-center text-sm text-muted-foreground"
         >

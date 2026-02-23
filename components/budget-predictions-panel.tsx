@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { getDismissedAlerts, useBudgetPredictions, useDismissAlert } from '@/lib/hooks'
 import { formatCurrency } from '@/lib/utils'
+import { durations } from '@/lib/motion-system'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   AlertCircle,
@@ -77,7 +78,7 @@ export function BudgetPredictionsPanel({ onSetBudget }: BudgetPredictionsPanelPr
                 initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                 animate={{ opacity: 1, height: 'auto', marginBottom: 8 }}
                 exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: durations.standard }}
               >
                 <div
                   className={`ios-card p-4 border-l-4 ${

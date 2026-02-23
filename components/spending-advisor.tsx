@@ -6,7 +6,7 @@ import { useBudgets, useAIInsights } from '@/lib/hooks'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
 import { AnimatePresence, motion, useMotionValue, useTransform, PanInfo } from 'motion/react'
-import { springs, stagger } from '@/lib/animation-config'
+import { springs, durations, getStaggerDelay } from '@/lib/motion-system'
 import {
   AlertTriangle,
   ArrowRight,
@@ -422,7 +422,7 @@ export function SpendingAdvisor({ expenses, onNavigate }: SpendingAdvisorProps) 
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={springs.bouncy}
+            transition={springs.touch}
           >
             <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-green-500" />
           </motion.div>
@@ -489,8 +489,8 @@ function RecommendationCard({ recommendation: rec, index, onDismiss }: Recommend
       layout
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, x: -200, transition: { duration: 0.2 } }}
-      transition={{ delay: index * stagger.fast, ...springs.default }}
+      exit={{ opacity: 0, x: -200, transition: { duration: durations.standard } }}
+      transition={{ delay: getStaggerDelay(index), ...springs.ios }}
       style={{ opacity }}
       drag={rec.dismissable ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
@@ -503,7 +503,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss }: Recommend
           className={`absolute top-0 left-0 right-0 h-1 ${config.accent}`}
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
-          transition={{ delay: index * stagger.fast + 0.1, duration: 0.4 }}
+          transition={{ delay: getStaggerDelay(index) + 0.1, duration: durations.slow }}
           style={{ transformOrigin: 'left' }}
         />
 
@@ -527,7 +527,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss }: Recommend
           <motion.button
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: index * stagger.fast + 0.2 }}
+            transition={{ delay: getStaggerDelay(index) + 0.2 }}
             onClick={() => onDismiss(rec.id)}
             className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors z-10"
           >
@@ -541,7 +541,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss }: Recommend
             <div className="relative flex-shrink-0">
               <motion.div
                 className={`w-11 h-11 rounded-xl ${config.iconBg} flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10`}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.97 }}
               >
                 <Icon className={`w-5 h-5 ${config.iconColor}`} />
               </motion.div>
@@ -573,7 +573,7 @@ function RecommendationCard({ recommendation: rec, index, onDismiss }: Recommend
                       className={`h-full rounded-full ${config.accent}`}
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(rec.progress, 100)}%` }}
-                      transition={{ delay: index * stagger.fast + 0.3, duration: 0.5 }}
+                      transition={{ delay: getStaggerDelay(index) + 0.3, duration: durations.slow }}
                     />
                   </div>
                 </div>

@@ -28,7 +28,7 @@ import { WeeklyDigest } from '@/components/weekly-digest'
 import { useWeeklyDigest } from '@/lib/hooks/use-weekly-digest'
 import { ChartSkeleton, InsightCardSkeleton } from '@/components/skeleton-loader'
 import { hapticFeedback, formatCurrency } from '@/lib/utils'
-import { springs, stagger } from '@/lib/animation-config'
+import { springs, variants, durations, getStaggerDelay } from '@/lib/motion-system'
 import { usePreprocessedExpenses } from '@/lib/hooks/use-preprocessed-expenses'
 import {
   getComprehensiveInsights,
@@ -120,7 +120,7 @@ export function AnalyticsInsightsView({
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: durations.standard }}
         >
           {activeTab === 'summary' ? (
             <div className="space-y-4">
@@ -143,9 +143,8 @@ export function AnalyticsInsightsView({
               {/* Spending Patterns */}
               {patterns.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, ...springs.gentle }}
+                  {...variants.slideUp}
+                  transition={{ ...springs.ios, delay: 0.2 }}
                   className="space-y-3"
                 >
                   <div className="flex items-center gap-2 px-1">
@@ -163,9 +162,8 @@ export function AnalyticsInsightsView({
               {/* Top Merchants */}
               {merchantInsights.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, ...springs.gentle }}
+                  {...variants.slideUp}
+                  transition={{ ...springs.ios, delay: 0.3 }}
                   className="space-y-3"
                 >
                   <div className="flex items-center gap-2 px-1">
@@ -188,9 +186,8 @@ export function AnalyticsInsightsView({
               {/* Category Trends */}
               {categoryTrends.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, ...springs.gentle }}
+                  {...variants.slideUp}
+                  transition={{ ...springs.ios, delay: 0.4 }}
                   className="space-y-3"
                 >
                   <div className="flex items-center gap-2 px-1">
@@ -207,9 +204,8 @@ export function AnalyticsInsightsView({
 
               {/* AI Advisor */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, ...springs.gentle }}
+                {...variants.slideUp}
+                transition={{ ...springs.ios, delay: 0.5 }}
               >
                 <SpendingAdvisor expenses={expenses} onNavigate={onNavigate} />
               </motion.div>
@@ -245,7 +241,7 @@ function TabSegmentedControl({
             <motion.div
               layoutId="activeTab"
               className="absolute inset-0 bg-background rounded-xl shadow-sm"
-              transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+              transition={springs.ios}
             />
           )}
           <CalendarDays className="h-4 w-4 relative z-10" />
@@ -265,7 +261,7 @@ function TabSegmentedControl({
             <motion.div
               layoutId="activeTab"
               className="absolute inset-0 bg-background rounded-xl shadow-sm"
-              transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+              transition={springs.ios}
             />
           )}
           <BarChart3 className="h-4 w-4 relative z-10" />
@@ -285,7 +281,7 @@ function TabSegmentedControl({
             <motion.div
               layoutId="activeTab"
               className="absolute inset-0 bg-background rounded-xl shadow-sm"
-              transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+              transition={springs.ios}
             />
           )}
           <Lightbulb className="h-4 w-4 relative z-10" />
@@ -331,15 +327,14 @@ function PatternCard({ pattern, index }: { pattern: SpendingPattern; index: numb
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.3 + index * stagger.normal, ...springs.default }}
+      transition={{ ...springs.ios, delay: 0.3 + getStaggerDelay(index) }}
       className={`relative p-4 border-l-4 ${borderColor} overflow-hidden`}
     >
       {/* Background gradient */}
       <motion.div
         className={`absolute inset-0 bg-gradient-to-r ${gradient}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 + index * stagger.normal }}
+        {...variants.fade}
+        transition={{ delay: 0.4 + getStaggerDelay(index) }}
       />
 
       <div className="relative flex items-start gap-3">
@@ -347,7 +342,7 @@ function PatternCard({ pattern, index }: { pattern: SpendingPattern; index: numb
           className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0`}
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.35 + index * stagger.normal, ...springs.bouncy }}
+          transition={{ ...springs.touch, delay: 0.35 + getStaggerDelay(index) }}
         >
           <Icon className={`h-5 w-5 ${iconColor}`} />
         </motion.div>
@@ -396,7 +391,7 @@ function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.4 + index * stagger.normal, ...springs.default }}
+      transition={{ ...springs.ios, delay: 0.4 + getStaggerDelay(index) }}
       className="p-4"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -409,7 +404,7 @@ function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5 + index * stagger.normal, ...springs.bouncy }}
+          transition={{ ...springs.touch, delay: 0.5 + getStaggerDelay(index) }}
           className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${config.bg} ${config.color}`}
         >
           <TrendIcon className="w-3 h-3" />
@@ -429,7 +424,7 @@ function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number
               className={`h-full rounded-full ${config.barColor}`}
               initial={{ width: 0 }}
               animate={{ width: `${currentWidth}%` }}
-              transition={{ delay: 0.5 + index * stagger.normal, duration: 0.6 }}
+              transition={{ delay: 0.5 + getStaggerDelay(index), duration: durations.slow }}
             />
           </div>
         </div>
@@ -440,7 +435,7 @@ function SimpleTrendCard({ trend, index }: { trend: CategoryTrend; index: number
               className="h-full rounded-full bg-muted-foreground/40"
               initial={{ width: 0 }}
               animate={{ width: `${previousWidth}%` }}
-              transition={{ delay: 0.55 + index * stagger.normal, duration: 0.6 }}
+              transition={{ delay: 0.55 + getStaggerDelay(index), duration: durations.slow }}
             />
           </div>
         </div>
@@ -477,7 +472,7 @@ function CompactMerchantCard({
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.35 + index * stagger.normal, ...springs.default }}
+      transition={{ ...springs.ios, delay: 0.35 + getStaggerDelay(index) }}
       className="p-4"
     >
       <div className="flex items-center gap-3">
@@ -485,7 +480,7 @@ function CompactMerchantCard({
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.4 + index * stagger.normal, ...springs.bouncy }}
+          transition={{ ...springs.touch, delay: 0.4 + getStaggerDelay(index) }}
           className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ${
             rankColors[index] || 'bg-muted text-muted-foreground'
           }`}
@@ -507,7 +502,7 @@ function CompactMerchantCard({
               className={`h-full rounded-full ${barColors[index] || 'bg-primary/60'}`}
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
-              transition={{ delay: 0.5 + index * stagger.normal, duration: 0.6 }}
+              transition={{ delay: 0.5 + getStaggerDelay(index), duration: durations.slow }}
             />
           </div>
 

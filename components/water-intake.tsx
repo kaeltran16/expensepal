@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'motion/react'
+import { variants, springs, durations } from '@/lib/motion-system'
 import { Droplets, Plus, Check, GlassWater, Undo2 } from 'lucide-react'
 import { useWaterLog, useAddWater, useSetWater } from '@/lib/hooks'
 import { hapticFeedback } from '@/lib/utils'
@@ -61,8 +62,7 @@ export function WaterIntake() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...variants.slideUp}
       className="ios-card p-5"
     >
       {/* Header with icon and stats */}
@@ -96,7 +96,7 @@ export function WaterIntake() {
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+          transition={{ duration: durations.slow, ease: 'easeOut' }}
           className={`absolute inset-y-0 left-0 rounded-full ${
             progress >= 100
               ? 'bg-success'
@@ -123,7 +123,7 @@ export function WaterIntake() {
           return (
             <motion.button
               key={index}
-              whileTap={{ scale: 0.85 }}
+              whileTap={{ scale: 0.97 }}
               whileHover={{ scale: 1.08, y: -2 }}
               onClick={() => handleGlassClick(index)}
               className={`
@@ -141,7 +141,7 @@ export function WaterIntake() {
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${fillPercent}%` }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  transition={{ duration: durations.slow, ease: 'easeOut' }}
                   className="absolute bottom-0 left-0 right-0 bg-primary"
                 />
               )}
@@ -177,7 +177,7 @@ export function WaterIntake() {
         {QUICK_ADD_OPTIONS.map((amount) => (
           <motion.button
             key={amount}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => {
               setSelectedAmount(amount)
               hapticFeedback('light')
@@ -196,8 +196,7 @@ export function WaterIntake() {
         {/* Show custom amount when not in presets */}
         {!QUICK_ADD_OPTIONS.includes(selectedAmount) && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            {...variants.scale}
             className="flex-1 py-2 px-3 rounded-full text-sm font-medium bg-white dark:bg-card text-primary shadow-sm text-center"
           >
             {selectedAmount}ml
@@ -209,7 +208,7 @@ export function WaterIntake() {
       <div className="flex items-center gap-3">
         {/* Undo/remove button */}
         <motion.button
-          whileTap={{ scale: 0.9 }}
+          whileTap={{ scale: 0.97 }}
           onClick={handleRemoveWater}
           disabled={currentAmount <= 0 || setWater.isPending}
           className={`
@@ -226,7 +225,7 @@ export function WaterIntake() {
 
         {/* Main add button */}
         <motion.button
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => handleAddWater(selectedAmount)}
           disabled={addWater.isPending}
           className={`
@@ -246,14 +245,13 @@ export function WaterIntake() {
       {/* Completion celebration */}
       {progress >= 100 && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          {...variants.scale}
           className="flex items-center justify-center gap-2 mt-4 py-3 px-4 rounded-2xl bg-success/10 dark:bg-success/20 border border-success/30"
         >
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+            transition={springs.touch}
             className="w-6 h-6 rounded-full bg-success flex items-center justify-center shadow-md shadow-success/30"
           >
             <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />

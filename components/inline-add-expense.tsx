@@ -1,5 +1,6 @@
 'use client'
 
+import { variants, durations } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { Plus } from 'lucide-react'
 import { hapticFeedback } from '@/lib/utils'
@@ -16,13 +17,12 @@ export function InlineAddExpense({ onAddExpense }: InlineAddExpenseProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+      {...variants.slideDown}
+      transition={{ duration: durations.standard }}
     >
       <motion.button
         onClick={handleClick}
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.97 }}
         className="
           w-full ios-card p-4 mb-4
           flex items-center gap-3
