@@ -9,6 +9,7 @@ interface PageHeaderProps {
 }
 
 const VIEW_TITLES: Record<ViewType, string> = {
+  feed: 'Today',
   expenses: 'Expenses',
   budget: 'Budget',
   goals: 'Goals',

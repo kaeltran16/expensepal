@@ -23,16 +23,17 @@ type Direction = 'forward' | 'back'
  * Lower index = further left in the navigation hierarchy.
  */
 const VIEW_ORDER: Record<string, number> = {
-  expenses: 0,
-  budget: 1,
-  goals: 2,
-  recurring: 3,
-  insights: 4,
-  summary: 5,
-  calories: 6,
-  workouts: 7,
-  routines: 8,
-  profile: 9,
+  feed: 0,
+  expenses: 1,
+  budget: 2,
+  goals: 3,
+  recurring: 4,
+  insights: 5,
+  summary: 6,
+  calories: 7,
+  workouts: 8,
+  routines: 9,
+  profile: 10,
 }
 
 function getDirection(prev: string, next: string): Direction {
