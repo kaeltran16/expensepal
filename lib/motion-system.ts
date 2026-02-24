@@ -42,6 +42,13 @@ export const springs = {
     stiffness: 500,
     mass: 1.0,
   },
+  /** Cinematic entrance - softer, more dramatic */
+  cinematic: {
+    type: 'spring' as const,
+    damping: 20,
+    stiffness: 200,
+    mass: 1.2,
+  },
 } as const
 
 // =============================================================================
@@ -99,6 +106,55 @@ export const variants = {
     exit: { y: '100%' },
   },
 } as const
+
+// =============================================================================
+// CHOREOGRAPHY (scroll-reveal & stagger orchestration)
+// =============================================================================
+
+export const choreography = {
+  /** Viewport reveal - larger travel for dramatic entrance */
+  reveal: {
+    initial: { opacity: 0, y: 40 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 20 },
+  },
+  /** Subtle reveal for list items */
+  revealSubtle: {
+    initial: { opacity: 0, y: 12 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0 },
+  },
+  /** Orchestrated container - drives staggerChildren */
+  staggerContainer: {
+    animate: {
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.15,
+      },
+    },
+    exit: {
+      transition: {
+        staggerChildren: 0.03,
+        staggerDirection: -1,
+      },
+    },
+  },
+  /** Child item for stagger container */
+  staggerItem: {
+    initial: { opacity: 0, y: 24 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -8 },
+  },
+} as const
+
+export const reducedChoreography: Record<keyof typeof choreography, typeof variants.fade> = {
+  reveal: variants.fade,
+  revealSubtle: variants.fade,
+  staggerContainer: { initial: {}, animate: {}, exit: {} } as any,
+  staggerItem: variants.fade,
+}
+
+export type ChoreographyName = keyof typeof choreography
 
 // =============================================================================
 // REDUCED MOTION VARIANTS

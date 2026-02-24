@@ -147,8 +147,13 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
               </button>
             </div>
 
-            {/* Content */}
-            <div className="px-4 pb-4">
+            {/* Content - staggers in after sheet settles */}
+            <motion.div
+              className="px-4 pb-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.15, duration: 0.2 } }}
+              exit={{ opacity: 0, transition: { duration: 0.05 } }}
+            >
               <AnimatePresence mode="wait">
                 {step === 'input' && (
                   <motion.div
@@ -261,7 +266,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           </motion.div>
         </>
       )}

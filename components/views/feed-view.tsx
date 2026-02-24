@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react'
 import { motion } from 'motion/react'
-import { springs, getStaggerDelay } from '@/lib/motion-system'
+import { springs } from '@/lib/motion-system'
+import { ScrollReveal } from '@/components/ui/scroll-reveal'
 import { Wallet } from 'lucide-react'
 import { SpendingCard } from '@/components/feed/spending-card'
 import { CaloriesCard } from '@/components/feed/calories-card'
@@ -30,25 +31,61 @@ interface FeedViewProps {
 
 function FeedCardSkeleton() {
   return (
-    <div className="w-full ios-card overflow-hidden animate-pulse">
-      <div className="h-0.5 bg-muted" />
+    <motion.div
+      className="w-full ios-card overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={springs.cinematic}
+    >
+      <motion.div
+        className="h-0.5 bg-muted"
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+        style={{ transformOrigin: 'left' }}
+      />
       <div className="p-5">
-        <div className="flex items-center gap-2.5 mb-4">
-          <div className="w-9 h-9 rounded-full bg-muted" />
-          <div className="h-4 w-20 rounded bg-muted" />
-        </div>
-        <div className="h-3 w-12 rounded bg-muted mb-1" />
-        <div className="h-7 w-32 rounded bg-muted mb-4" />
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
-            <div className="h-3 w-10 rounded bg-muted mb-1" /><div className="h-4 w-16 rounded bg-muted" />
-          </div>
-          <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
-            <div className="h-3 w-10 rounded bg-muted mb-1" /><div className="h-4 w-16 rounded bg-muted" />
-          </div>
-        </div>
+        <motion.div
+          initial="initial"
+          animate="animate"
+          variants={{
+            initial: {},
+            animate: { transition: { staggerChildren: 0.08 } },
+          }}
+          className="space-y-4"
+        >
+          {/* Header row */}
+          <motion.div
+            variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
+            className="flex items-center gap-2.5"
+          >
+            <div className="w-9 h-9 rounded-full bg-muted animate-pulse" />
+            <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+          </motion.div>
+
+          {/* Amount */}
+          <motion.div variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}>
+            <div className="h-3 w-12 rounded bg-muted animate-pulse mb-1" />
+            <div className="h-7 w-32 rounded bg-muted animate-pulse" />
+          </motion.div>
+
+          {/* Stat boxes */}
+          <motion.div
+            variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
+            className="grid grid-cols-2 gap-2"
+          >
+            <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
+              <div className="h-3 w-10 rounded bg-muted animate-pulse mb-1" />
+              <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+            </div>
+            <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
+              <div className="h-3 w-10 rounded bg-muted animate-pulse mb-1" />
+              <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -191,11 +228,7 @@ export function FeedView({ onNavigate }: FeedViewProps) {
 
   return (
     <div className="space-y-3">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springs.ios, delay: getStaggerDelay(0) }}
-      >
+      <ScrollReveal delay={0}>
         {isLoading ? (
           <FeedCardSkeleton />
         ) : (
@@ -212,13 +245,9 @@ export function FeedView({ onNavigate }: FeedViewProps) {
             onTap={() => onNavigate('expenses')}
           />
         )}
-      </motion.div>
+      </ScrollReveal>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springs.ios, delay: getStaggerDelay(1) }}
-      >
+      <ScrollReveal delay={0.08}>
         {isLoading ? (
           <FeedCardSkeleton />
         ) : (
@@ -233,13 +262,9 @@ export function FeedView({ onNavigate }: FeedViewProps) {
             onTap={() => onNavigate('calories')}
           />
         )}
-      </motion.div>
+      </ScrollReveal>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springs.ios, delay: getStaggerDelay(2) }}
-      >
+      <ScrollReveal delay={0.16}>
         {isLoading ? (
           <FeedCardSkeleton />
         ) : (
@@ -253,7 +278,7 @@ export function FeedView({ onNavigate }: FeedViewProps) {
             onTap={() => onNavigate('routines')}
           />
         )}
-      </motion.div>
+      </ScrollReveal>
     </div>
   )
 }

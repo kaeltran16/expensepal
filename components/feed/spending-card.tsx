@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react'
 import { springs, durations } from '@/lib/motion-system'
+import { TiltCard } from '@/components/ui/tilt-card'
 import { Wallet, TrendingUp, TrendingDown, Activity } from 'lucide-react'
 import { AnimatedCounter } from '@/components/animated-counter'
 
@@ -58,9 +59,9 @@ export function SpendingCard({
   const suffix = currency === 'VND' ? 'đ' : ''
 
   return (
+    <TiltCard>
     <motion.button
       onClick={onTap}
-      whileTap={{ scale: 0.98 }}
       transition={springs.ios}
       className="w-full ios-card overflow-hidden text-left relative"
     >
@@ -159,13 +160,31 @@ export function SpendingCard({
                 {budgetUsedPct}%
               </p>
             </div>
-            <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-              <motion.div
-                className={`h-full rounded-full ${budgetOverflow ? 'bg-destructive' : 'bg-primary'}`}
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(budgetUsedPct, 100)}%` }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-              />
+            <div className="h-1.5 bg-secondary rounded-full relative">
+              <div className="absolute inset-0 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full rounded-full ${budgetOverflow ? 'bg-destructive' : 'bg-primary'}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(budgetUsedPct, 100)}%` }}
+                  transition={{ delay: 0.4, duration: 0.6 }}
+                />
+              </div>
+              {/* Milestone pulse */}
+              {(budgetUsedPct >= 50) && (
+                <motion.div
+                  className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${budgetOverflow ? 'bg-destructive' : 'bg-primary'}`}
+                  style={{ left: `${Math.min(budgetUsedPct, 100)}%`, marginLeft: -6 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.5, 1] }}
+                  transition={{ delay: 1, duration: 0.6, ease: 'easeOut' }}
+                >
+                  <motion.div
+                    className={`absolute inset-0 rounded-full ${budgetOverflow ? 'bg-destructive' : 'bg-primary'}`}
+                    animate={{ scale: [1, 2], opacity: [0.4, 0] }}
+                    transition={{ delay: 1.2, duration: 0.8, repeat: 2 }}
+                  />
+                </motion.div>
+              )}
             </div>
           </div>
         )}
@@ -245,5 +264,6 @@ export function SpendingCard({
         </motion.div>
       )}
     </motion.button>
+    </TiltCard>
   )
 }

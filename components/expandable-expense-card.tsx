@@ -2,9 +2,10 @@
 
 import type { Expense } from '@/lib/supabase';
 import { hapticFeedback } from '@/lib/utils';
-import { springs, variants } from '@/lib/motion-system';
+import { springs } from '@/lib/motion-system';
 import { AnimatePresence, motion } from 'motion/react';
 import { forwardRef, useState } from 'react';
+import { useReducedMotion } from '@/hooks/use-motion';
 import { SwipeableCard } from '@/components/ui/swipeable-card';
 import { CATEGORY_CONFIG, ExpenseCardHeader } from '@/components/expense-card/expense-card-header';
 import { ExpenseCardDetails } from '@/components/expense-card/expense-card-details';
@@ -19,6 +20,12 @@ interface ExpandableExpenseCardProps {
   onUpdate?: (expense: Expense) => void;
 }
 
+const detailVariants = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -4, transition: { duration: 0.1 } },
+}
+
 export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpenseCardProps>(
   function ExpandableExpenseCard({
     expense,
@@ -28,6 +35,7 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
   }, ref) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   const categoryConfig = (CATEGORY_CONFIG[expense.category || 'Other'] || CATEGORY_CONFIG.Other)!;
 
@@ -56,10 +64,13 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
       }}
       disabled={isExpanded}
     >
-      <div
+      <motion.div
         ref={ref}
-        className="ios-card overflow-hidden relative group will-animate-all"
+        layout={!reducedMotion}
+        transition={springs.ios}
+        className="ios-card overflow-hidden relative group"
         data-testid="expense-card"
+        animate={isExpanded ? { scale: 1.01 } : { scale: 1 }}
       >
         {/* Category background overlay */}
         <div className={`absolute inset-0 ${categoryConfig.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
@@ -71,38 +82,65 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
           onClick={handleCardClick}
         />
 
-        {/* Expanded content - uses CSS grid for smooth height animation */}
-        <div
-          className="grid transition-[grid-template-rows] duration-300 ease-out"
-          style={{
-            gridTemplateRows: isExpanded ? '1fr' : '0fr',
-          }}
-        >
-          <AnimatePresence initial={false}>
-            {isExpanded && (
+        {/* Expanded content */}
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{
+                height: 'auto',
+                opacity: 1,
+                transition: {
+                  height: { ...springs.ios },
+                  opacity: { duration: 0.2, delay: 0.1 },
+                },
+              }}
+              exit={{
+                height: 0,
+                opacity: 0,
+                transition: {
+                  opacity: { duration: 0.1 },
+                  height: { ...springs.ios, delay: 0.05 },
+                },
+              }}
+              className="overflow-hidden"
+            >
               <motion.div
-                {...variants.slideDown}
-                transition={springs.ios}
-                className="overflow-hidden"
+                className="px-4 pb-4 space-y-4"
+                variants={{
+                  animate: {
+                    transition: { staggerChildren: 0.06, delayChildren: 0.15 },
+                  },
+                  exit: {
+                    transition: { staggerChildren: 0.02, staggerDirection: -1 },
+                  },
+                }}
+                initial="initial"
+                animate="animate"
+                exit="exit"
               >
-                <div className="px-4 pb-4 space-y-4">
                 {/* Details */}
-                <ExpenseCardDetails expense={expense} />
+                <motion.div variants={detailVariants}>
+                  <ExpenseCardDetails expense={expense} />
+                </motion.div>
 
                 {/* Notes editor */}
-                <ExpenseNotesEditor expense={expense} onUpdate={onUpdate} />
+                <motion.div variants={detailVariants}>
+                  <ExpenseNotesEditor expense={expense} onUpdate={onUpdate} />
+                </motion.div>
 
                 {/* Action buttons */}
-                <ExpenseCardActions
-                  expense={expense}
-                  onEdit={onEdit}
-                  onDeleteClick={handleDeleteClick}
-                />
-                </div>
+                <motion.div variants={detailVariants}>
+                  <ExpenseCardActions
+                    expense={expense}
+                    onEdit={onEdit}
+                    onDeleteClick={handleDeleteClick}
+                  />
+                </motion.div>
               </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Delete Confirmation Dialog */}
         <DeleteExpenseDialog
@@ -111,7 +149,7 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
           onOpenChange={setShowDeleteDialog}
           onConfirmDelete={handleConfirmDelete}
         />
-      </div>
+      </motion.div>
     </SwipeableCard>
   );
 });

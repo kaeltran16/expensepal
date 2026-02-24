@@ -18,10 +18,6 @@ import { springs, durations } from '@/lib/motion-system'
 
 type Direction = 'forward' | 'back'
 
-/**
- * Ordered view indices for determining push/pop direction.
- * Lower index = further left in the navigation hierarchy.
- */
 const VIEW_ORDER: Record<string, number> = {
   feed: 0,
   expenses: 1,
@@ -43,33 +39,70 @@ function getDirection(prev: string, next: string): Direction {
 }
 
 // =============================================================================
-// DIRECTION CONTEXT (for child components that need to know)
+// DIRECTION CONTEXT
 // =============================================================================
 
 const DirectionContext = createContext<Direction>('forward')
 export const useNavigationDirection = () => useContext(DirectionContext)
 
 // =============================================================================
-// SLIDE OFFSET
+// ORCHESTRATED VARIANTS
 // =============================================================================
 
-const SLIDE_OFFSET = '25%'
-
-function getSlideVariants(direction: Direction) {
-  const enter = direction === 'forward' ? SLIDE_OFFSET : `-${SLIDE_OFFSET}`
-  const exit = direction === 'forward' ? `-${SLIDE_OFFSET}` : SLIDE_OFFSET
+function getOrchestratedVariants(direction: Direction) {
+  const slideOffset = direction === 'forward' ? 60 : -60
+  const exitOffset = direction === 'forward' ? -30 : 30
 
   return {
-    initial: { x: enter, opacity: 0 },
-    animate: { x: 0, opacity: 1 },
-    exit: { x: exit, opacity: 0 },
+    container: {
+      initial: { opacity: 0 },
+      animate: {
+        opacity: 1,
+        transition: {
+          duration: 0.15,
+          when: 'beforeChildren',
+          staggerChildren: 0.08,
+        },
+      },
+      exit: {
+        opacity: 0,
+        transition: {
+          duration: 0.1,
+          when: 'afterChildren',
+          staggerChildren: 0.03,
+          staggerDirection: -1,
+        },
+      },
+    },
+    content: {
+      initial: { opacity: 0, x: slideOffset, filter: 'blur(4px)' },
+      animate: {
+        opacity: 1,
+        x: 0,
+        filter: 'blur(0px)',
+        transition: springs.cinematic,
+      },
+      exit: {
+        opacity: 0,
+        x: exitOffset,
+        filter: 'blur(2px)',
+        transition: { duration: 0.15 },
+      },
+    },
   }
 }
 
 const reducedVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
+  container: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+  },
+  content: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+  },
 }
 
 // =============================================================================
@@ -77,9 +110,7 @@ const reducedVariants = {
 // =============================================================================
 
 interface ViewTransitionProps {
-  /** Current active view key */
   activeView: string
-  /** The view content to render (already wrapped in Suspense by caller) */
   children: ReactNode
 }
 
@@ -95,31 +126,27 @@ export function ViewTransition({ activeView, children }: ViewTransitionProps) {
     }
   }, [activeView])
 
-  const variants = reducedMotion ? reducedVariants : getSlideVariants(direction)
-  const transition = reducedMotion
-    ? { duration: durations.micro }
-    : springs.ios
+  const v = reducedMotion ? reducedVariants : getOrchestratedVariants(direction)
+  const containerTransition = reducedMotion ? { duration: durations.micro } : undefined
 
   return (
     <DirectionContext.Provider value={direction}>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={activeView}
-          initial={variants.initial}
-          animate={variants.animate}
-          exit={variants.exit}
-          transition={transition}
-          style={{ willChange: 'transform, opacity' }}
-          onAnimationComplete={() => {
-            // clean up will-change after animation settles
-            const el = document.querySelector(`[data-view="${activeView}"]`)
-            if (el instanceof HTMLElement) {
-              el.style.willChange = 'auto'
-            }
-          }}
+          variants={v.container}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={containerTransition}
           data-view={activeView}
         >
-          {children}
+          <motion.div
+            variants={v.content}
+            style={{ willChange: 'transform, opacity, filter' }}
+          >
+            {children}
+          </motion.div>
         </motion.div>
       </AnimatePresence>
     </DirectionContext.Provider>

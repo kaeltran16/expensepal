@@ -9,7 +9,7 @@ import { FilterSheet } from '@/components/filter-sheet';
 import { Navbar } from '@/components/navbar';
 import { NetworkStatus } from '@/components/network-status';
 import { Onboarding } from '@/components/onboarding';
-import { PageHeader } from '@/components/page-header';
+import { CollapsingHeader } from '@/components/collapsing-header';
 import { ProgressIndicator } from '@/components/progress-indicator';
 import { PullToRefreshWrapper } from '@/components/pull-to-refresh-wrapper';
 import { PushNotificationManager } from '@/components/push-notification-manager';
@@ -153,8 +153,6 @@ function HomeContent() {
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const lastScrollY = useRef(0);
 
   // Custom hooks for complex logic
   const {
@@ -326,34 +324,6 @@ function HomeContent() {
     }
   }, [searchParams])
 
-  // Scroll detection for sticky header
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!contentRef.current) return;
-
-      const currentScrollY = contentRef.current.scrollTop;
-
-      if (currentScrollY > 100) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-
-      lastScrollY.current = currentScrollY;
-    };
-
-    const ref = contentRef.current;
-    if (ref) {
-      ref.addEventListener('scroll', handleScroll, { passive: true });
-    }
-
-    return () => {
-      if (ref) {
-        ref.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, []);
-
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
     setShowForm(true);
@@ -471,7 +441,7 @@ function HomeContent() {
         >
 
         {/* Header */}
-        <PageHeader activeView={activeView} scrolled={scrolled} />
+        <CollapsingHeader activeView={activeView} scrollContainerRef={contentRef} />
 
         {/* Sync Progress */}
         <AnimatePresence>

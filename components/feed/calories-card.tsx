@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react'
 import { springs, durations } from '@/lib/motion-system'
+import { TiltCard } from '@/components/ui/tilt-card'
 import { Flame, Droplets, Utensils } from 'lucide-react'
 
 interface CaloriesCardProps {
@@ -62,9 +63,9 @@ export function CaloriesCard({
   const calPct = calorieGoal ? Math.round((caloriesConsumed / calorieGoal) * 100) : null
 
   return (
+    <TiltCard>
     <motion.button
       onClick={onTap}
-      whileTap={{ scale: 0.98 }}
       transition={springs.ios}
       className="w-full ios-card overflow-hidden text-left relative"
     >
@@ -165,5 +166,6 @@ export function CaloriesCard({
         </div>
       </div>
     </motion.button>
+    </TiltCard>
   )
 }

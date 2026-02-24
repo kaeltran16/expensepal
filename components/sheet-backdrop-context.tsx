@@ -63,8 +63,8 @@ export function SheetBackdropProvider({ children }: SheetBackdropProviderProps) 
       <motion.div
         animate={
           isOpen && !reducedMotion
-            ? { scale: 0.94, borderRadius: '10px', filter: 'brightness(0.85)' }
-            : { scale: 1, borderRadius: '0px', filter: 'brightness(1)' }
+            ? { scale: 0.96, borderRadius: '16px', filter: 'brightness(0.88) saturate(0.9)' }
+            : { scale: 1, borderRadius: '0px', filter: 'brightness(1) saturate(1)' }
         }
         transition={springs.sheet}
         style={{

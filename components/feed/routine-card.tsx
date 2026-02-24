@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react'
 import { springs, durations } from '@/lib/motion-system'
+import { TiltCard } from '@/components/ui/tilt-card'
 import { Sparkles, Zap, Flame as StreakIcon, Check, Circle } from 'lucide-react'
 
 interface RoutineStep {
@@ -32,9 +33,9 @@ export function RoutineCard({
   const progressPct = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0
 
   return (
+    <TiltCard>
     <motion.button
       onClick={onTap}
-      whileTap={{ scale: 0.98 }}
       transition={springs.ios}
       className="w-full ios-card overflow-hidden text-left relative"
     >
@@ -172,5 +173,6 @@ export function RoutineCard({
         </div>
       )}
     </motion.button>
+    </TiltCard>
   )
 }
