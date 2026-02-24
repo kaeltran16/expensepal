@@ -57,7 +57,7 @@ import type { WorkoutTemplate } from '@/lib/types';
 import type { ExerciseLog } from '@/lib/types/common';
 import { hapticFeedback } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
-import { SheetBackdropProvider } from '@/components/sheet-backdrop-context';
+import { SheetBackdropProvider, SheetBackdropContent } from '@/components/sheet-backdrop-context';
 import { ViewTransition } from '@/components/view-transition';
 import { AnimatePresence, motion } from 'motion/react';
 import { Filter } from 'lucide-react';
@@ -431,6 +431,7 @@ function HomeContent() {
       />
 
       <SheetBackdropProvider>
+      <SheetBackdropContent>
       <PullToRefreshWrapper
         onRefresh={handleRefresh}
         enabled={['feed', 'expenses', 'budget', 'insights', 'calories', 'routines'].includes(activeView)}
@@ -667,6 +668,7 @@ function HomeContent() {
         </div>
         </div>
       </PullToRefreshWrapper>
+      </SheetBackdropContent>
 
       <MoreSheet
         isOpen={showMoreSheet}

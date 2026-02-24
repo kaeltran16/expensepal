@@ -17,21 +17,21 @@ import { springs } from '@/lib/motion-system'
 // =============================================================================
 
 interface SheetBackdropContextValue {
-  /** Call when a sheet opens */
   onSheetOpen: () => void
-  /** Call when a sheet closes */
   onSheetClose: () => void
+  isOpen: boolean
 }
 
 const SheetBackdropContext = createContext<SheetBackdropContextValue>({
   onSheetOpen: () => {},
   onSheetClose: () => {},
+  isOpen: false,
 })
 
 export const useSheetBackdrop = () => useContext(SheetBackdropContext)
 
 // =============================================================================
-// PROVIDER
+// PROVIDER (context only -- no DOM wrapper)
 // =============================================================================
 
 interface SheetBackdropProviderProps {
@@ -39,14 +39,14 @@ interface SheetBackdropProviderProps {
 }
 
 /**
- * Wraps page content and scales it when any sheet is open.
- * Sheets call onSheetOpen/onSheetClose to trigger the transform.
+ * Provides sheet open/close context. Does NOT apply any CSS transforms so
+ * children with position:fixed (sheets, bottom nav) are not affected.
  *
- * Multiple sheets can be open simultaneously (ref-counted).
+ * Pair with <SheetBackdropContent> around the scrollable area that should
+ * scale when a sheet is open.
  */
 export function SheetBackdropProvider({ children }: SheetBackdropProviderProps) {
   const [openCount, setOpenCount] = useState(0)
-  const reducedMotion = useReducedMotion()
 
   const onSheetOpen = useCallback(() => setOpenCount((c) => c + 1), [])
   const onSheetClose = useCallback(() => setOpenCount((c) => Math.max(0, c - 1)), [])
@@ -54,26 +54,46 @@ export function SheetBackdropProvider({ children }: SheetBackdropProviderProps) 
   const isOpen = openCount > 0
 
   const contextValue = useMemo(
-    () => ({ onSheetOpen, onSheetClose }),
-    [onSheetOpen, onSheetClose]
+    () => ({ onSheetOpen, onSheetClose, isOpen }),
+    [onSheetOpen, onSheetClose, isOpen]
   )
 
   return (
     <SheetBackdropContext.Provider value={contextValue}>
-      <motion.div
-        animate={
-          isOpen && !reducedMotion
-            ? { scale: 0.96, borderRadius: '16px', filter: 'brightness(0.88) saturate(0.9)' }
-            : { scale: 1, borderRadius: '0px', filter: 'brightness(1) saturate(1)' }
-        }
-        transition={springs.sheet}
-        style={{
-          transformOrigin: 'top center',
-          willChange: isOpen ? 'transform, filter' : 'auto',
-        }}
-      >
-        {children}
-      </motion.div>
+      {children}
     </SheetBackdropContext.Provider>
+  )
+}
+
+// =============================================================================
+// CONTENT WRAPPER (applies scale/filter transform)
+// =============================================================================
+
+/**
+ * Wraps the scrollable page content and scales it down when a sheet is open.
+ * Must be rendered inside <SheetBackdropProvider>.
+ *
+ * Do NOT place position:fixed elements inside this -- the CSS transforms
+ * create a containing block that breaks fixed positioning.
+ */
+export function SheetBackdropContent({ children }: { children: ReactNode }) {
+  const { isOpen } = useSheetBackdrop()
+  const reducedMotion = useReducedMotion()
+
+  return (
+    <motion.div
+      animate={
+        isOpen && !reducedMotion
+          ? { scale: 0.96, borderRadius: '16px', filter: 'brightness(0.88) saturate(0.9)' }
+          : { scale: 1, borderRadius: '0px', filter: 'brightness(1) saturate(1)' }
+      }
+      transition={springs.sheet}
+      style={{
+        transformOrigin: 'top center',
+        willChange: isOpen ? 'transform, filter' : 'auto',
+      }}
+    >
+      {children}
+    </motion.div>
   )
 }
