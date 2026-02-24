@@ -668,19 +668,6 @@ function HomeContent() {
         </div>
       </PullToRefreshWrapper>
 
-      {/* Fixed/overlay elements - outside scrollable container */}
-      <BottomNavigation
-        activeView={activeView}
-        onViewChange={setActiveView}
-        onAddExpense={() => {
-          setEditingExpense(undefined);
-          setShowNLInput(true);
-          hapticFeedback('medium');
-        }}
-        onOpenMore={() => setShowMoreSheet(true)}
-        isMoreOpen={showMoreSheet}
-      />
-
       <MoreSheet
         isOpen={showMoreSheet}
         onClose={() => setShowMoreSheet(false)}
@@ -789,6 +776,20 @@ function HomeContent() {
         })()}
       </AnimatePresence>
       </SheetBackdropProvider>
+
+      {/* outside SheetBackdropProvider -- its motion.div applies scale/filter
+          transforms that create a containing block and break position:fixed */}
+      <BottomNavigation
+        activeView={activeView}
+        onViewChange={setActiveView}
+        onAddExpense={() => {
+          setEditingExpense(undefined);
+          setShowNLInput(true);
+          hapticFeedback('medium');
+        }}
+        onOpenMore={() => setShowMoreSheet(true)}
+        isMoreOpen={showMoreSheet}
+      />
     </>
   );
 }
