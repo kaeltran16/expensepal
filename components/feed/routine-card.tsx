@@ -40,7 +40,7 @@ export function RoutineCard({
     >
       {/* Animated accent bar */}
       <motion.div
-        className="absolute top-0 left-0 right-0 h-1 bg-teal-500"
+        className="absolute top-0 left-0 right-0 h-1 bg-success"
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
         transition={{ duration: durations.slow }}
@@ -48,8 +48,7 @@ export function RoutineCard({
       />
 
       {/* Background overlay */}
-      <div className="absolute inset-0 bg-teal-500/[0.03] dark:bg-teal-500/[0.05] pointer-events-none" />
-
+      <div className="absolute inset-0 bg-success/[0.03] dark:bg-success/[0.05] pointer-events-none" />
 
       <div className="p-6 relative z-10">
         {/* Header */}
@@ -62,7 +61,7 @@ export function RoutineCard({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', bounce: 0.5 }}
-                  className="flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  className="flex items-center gap-1 bg-success text-success-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                 >
                   <Check className="h-2 w-2" />
                   Done
@@ -71,17 +70,17 @@ export function RoutineCard({
             </div>
             {steps.length > 0 && (
               <p className="text-sm text-muted-foreground">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse mr-1.5" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-success animate-pulse mr-1.5" />
                 {completedCount}/{steps.length} steps
               </p>
             )}
           </div>
 
           <motion.div
-            className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center border border-border/50 shadow-sm"
+            className="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center border border-border/50 shadow-sm"
             whileTap={{ scale: 0.97 }}
           >
-            <Sparkles className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+            <Sparkles className="h-6 w-6 text-success" />
           </motion.div>
         </div>
 
@@ -94,8 +93,8 @@ export function RoutineCard({
           >
             <div className="bg-muted/40 dark:bg-muted/20 rounded-xl p-3.5 border border-border/50">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                  <StreakIcon className="h-3.5 w-3.5 text-orange-500" />
+                <div className="w-6 h-6 rounded-lg bg-warning/10 flex items-center justify-center">
+                  <StreakIcon className="h-3.5 w-3.5 text-warning" />
                 </div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Streak</p>
               </div>
@@ -109,8 +108,8 @@ export function RoutineCard({
           >
             <div className="bg-muted/40 dark:bg-muted/20 rounded-xl p-3.5 border border-border/50">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                  <Zap className="h-3.5 w-3.5 text-yellow-500" />
+                <div className="w-6 h-6 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Zap className="h-3.5 w-3.5 text-accent" />
                 </div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Level</p>
               </div>
@@ -124,13 +123,13 @@ export function RoutineCard({
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Progress</p>
-              <p className={`text-xs font-medium tabular-nums ${completedToday ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+              <p className={`text-xs font-medium tabular-nums ${completedToday ? 'text-success' : 'text-muted-foreground'}`}>
                 {progressPct}%
               </p>
             </div>
             <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-teal-500"
+                className="h-full rounded-full bg-success"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPct}%` }}
                 transition={{ delay: 0.4, duration: 0.6 }}
@@ -155,9 +154,9 @@ export function RoutineCard({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.5 + i * 0.05, type: 'spring', bounce: 0.4 }}
-                  className="w-4 h-4 rounded-full bg-teal-500 flex items-center justify-center shrink-0"
+                  className="w-4 h-4 rounded-full bg-success flex items-center justify-center shrink-0"
                 >
-                  <Check className="h-2.5 w-2.5 text-white" />
+                  <Check className="h-2.5 w-2.5 text-success-foreground" />
                 </motion.div>
               ) : (
                 <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />

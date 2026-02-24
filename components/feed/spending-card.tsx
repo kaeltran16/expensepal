@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { springs, durations, getStaggerDelay } from '@/lib/motion-system'
+import { springs, durations } from '@/lib/motion-system'
 import { Wallet, TrendingUp, TrendingDown, Activity } from 'lucide-react'
 import { AnimatedCounter } from '@/components/animated-counter'
 
@@ -66,7 +66,7 @@ export function SpendingCard({
     >
       {/* Animated accent bar */}
       <motion.div
-        className="absolute top-0 left-0 right-0 h-1 bg-emerald-500"
+        className="absolute top-0 left-0 right-0 h-1 bg-primary"
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
         transition={{ duration: durations.slow }}
@@ -74,8 +74,7 @@ export function SpendingCard({
       />
 
       {/* Background overlay */}
-      <div className="absolute inset-0 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.05] pointer-events-none" />
-
+      <div className="absolute inset-0 bg-primary/[0.03] dark:bg-primary/[0.05] pointer-events-none" />
 
       <div className="p-6 relative z-10">
         {/* Header */}
@@ -87,7 +86,7 @@ export function SpendingCard({
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  className="flex items-center gap-1 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                 >
                   Active
                 </motion.div>
@@ -97,10 +96,10 @@ export function SpendingCard({
           </div>
 
           <motion.div
-            className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-border/50 shadow-sm"
+            className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-border/50 shadow-sm"
             whileTap={{ scale: 0.97 }}
           >
-            <Wallet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            <Wallet className="h-6 w-6 text-primary" />
           </motion.div>
         </div>
 
@@ -126,8 +125,8 @@ export function SpendingCard({
           >
             <div className="bg-muted/40 dark:bg-muted/20 rounded-xl p-3.5 border border-border/50">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Activity className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Activity className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Week</p>
               </div>
@@ -141,8 +140,8 @@ export function SpendingCard({
           >
             <div className="bg-muted/40 dark:bg-muted/20 rounded-xl p-3.5 border border-border/50">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <Wallet className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                <div className="w-6 h-6 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Wallet className="h-3.5 w-3.5 text-accent" />
                 </div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Month</p>
               </div>
@@ -156,13 +155,13 @@ export function SpendingCard({
           <div className="mb-3">
             <div className="flex items-center justify-between mb-1.5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Budget</p>
-              <p className={`text-xs font-medium tabular-nums ${budgetOverflow ? 'text-red-500' : 'text-muted-foreground'}`}>
+              <p className={`text-xs font-medium tabular-nums ${budgetOverflow ? 'text-destructive' : 'text-muted-foreground'}`}>
                 {budgetUsedPct}%
               </p>
             </div>
             <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
               <motion.div
-                className={`h-full rounded-full ${budgetOverflow ? 'bg-red-500' : 'bg-emerald-500'}`}
+                className={`h-full rounded-full ${budgetOverflow ? 'bg-destructive' : 'bg-primary'}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(budgetUsedPct, 100)}%` }}
                 transition={{ delay: 0.4, duration: 0.6 }}
@@ -194,13 +193,13 @@ export function SpendingCard({
         <div className="px-6 py-3 border-t border-border/30 relative z-10">
           <div className="flex items-center gap-2">
             <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
-              budgetOverflow ? 'bg-red-500' : dailyAllowance < 0 ? 'bg-yellow-500' : 'bg-green-500'
+              budgetOverflow ? 'bg-destructive' : dailyAllowance < 0 ? 'bg-warning' : 'bg-success'
             }`} />
             <p className="text-xs text-muted-foreground">
               {dailyAllowance >= 0 ? (
                 <><span className="font-semibold">{formatAmount(dailyAllowance, currency)}</span>/day remaining</>
               ) : (
-                <span className="text-red-500">Over by <span className="font-semibold">{formatAmount(Math.abs(dailyAllowance), currency)}</span>/day</span>
+                <span className="text-destructive">Over by <span className="font-semibold">{formatAmount(Math.abs(dailyAllowance), currency)}</span>/day</span>
               )}
             </p>
           </div>
@@ -214,16 +213,16 @@ export function SpendingCard({
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
           className={`px-6 py-3 border-t relative z-10 ${
-            isDown ? 'border-green-500/20' : 'border-destructive/20'
+            isDown ? 'border-success/20' : 'border-destructive/20'
           }`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                isDown ? 'bg-green-500/10' : 'bg-destructive/10'
+                isDown ? 'bg-success/10' : 'bg-destructive/10'
               }`}>
                 {isDown ? (
-                  <TrendingDown className="h-4 w-4 text-green-600 dark:text-green-500" />
+                  <TrendingDown className="h-4 w-4 text-success" />
                 ) : (
                   <TrendingUp className="h-4 w-4 text-destructive" />
                 )}
@@ -236,7 +235,7 @@ export function SpendingCard({
               transition={{ delay: 0.6, type: 'spring', bounce: 0.5 }}
               className={`px-2.5 py-1 rounded-full font-bold text-xs ${
                 isDown
-                  ? 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30'
+                  ? 'bg-success/20 text-success border border-success/30'
                   : 'bg-destructive/20 text-destructive border border-destructive/30'
               }`}
             >
