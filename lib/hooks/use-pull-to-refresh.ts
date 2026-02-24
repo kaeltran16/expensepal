@@ -18,14 +18,18 @@ export function usePullToRefresh({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const touchStart = useRef(0);
 
-  const handleTouchStart = (e: React.TouchEvent, contentRef: RefObject<HTMLDivElement>) => {
-    if (
-      enabled &&
-      contentRef.current &&
-      contentRef.current.scrollTop === 0
-    ) {
-      touchStart.current = e.touches[0]!.clientY;
+  const handleTouchStart = (e: React.TouchEvent, _contentRef: RefObject<HTMLDivElement>) => {
+    if (!enabled) return;
+
+    // only activate when at the very top of the page
+    // walk up from the touch target to check all scrollable ancestors
+    let el = e.target as HTMLElement | null;
+    while (el) {
+      if (el.scrollTop > 0) return;
+      el = el.parentElement;
     }
+
+    touchStart.current = e.touches[0]!.clientY;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {

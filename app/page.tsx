@@ -154,6 +154,12 @@ function HomeContent() {
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to top when switching tabs
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    contentRef.current?.scrollTo(0, 0);
+  }, [activeView]);
+
   // Custom hooks for complex logic
   const {
     filteredExpenses,
@@ -659,139 +665,129 @@ function HomeContent() {
             ) : null}
           </ViewTransition>
         </div>
+        </div>
+      </PullToRefreshWrapper>
 
-        {/* Bottom Navigation */}
-        <BottomNavigation
-          activeView={activeView}
-          onViewChange={setActiveView}
-          onAddExpense={() => {
-            setEditingExpense(undefined);
-            setShowNLInput(true);
-            hapticFeedback('medium');
-          }}
-          onOpenMore={() => setShowMoreSheet(true)}
-          isMoreOpen={showMoreSheet}
-        />
+      {/* Fixed/overlay elements - outside scrollable container */}
+      <BottomNavigation
+        activeView={activeView}
+        onViewChange={setActiveView}
+        onAddExpense={() => {
+          setEditingExpense(undefined);
+          setShowNLInput(true);
+          hapticFeedback('medium');
+        }}
+        onOpenMore={() => setShowMoreSheet(true)}
+        isMoreOpen={showMoreSheet}
+      />
 
-        {/* More Sheet */}
-        <MoreSheet
-          isOpen={showMoreSheet}
-          onClose={() => setShowMoreSheet(false)}
-          onNavigate={setActiveView}
-          activeView={activeView}
-        />
+      <MoreSheet
+        isOpen={showMoreSheet}
+        onClose={() => setShowMoreSheet(false)}
+        onNavigate={setActiveView}
+        activeView={activeView}
+      />
 
-        {/* Network Status */}
-        <NetworkStatus syncing={isSyncing} lastSynced={lastSynced} />
+      <NetworkStatus syncing={isSyncing} lastSynced={lastSynced} />
 
-        {/* NL Input Sheet */}
-        <NLInputSheet
-          open={showNLInput}
-          onOpenChange={setShowNLInput}
-          onFallbackToForm={() => setShowForm(true)}
-        />
+      <NLInputSheet
+        open={showNLInput}
+        onOpenChange={setShowNLInput}
+        onFallbackToForm={() => setShowForm(true)}
+      />
 
-        {/* Expense Form Modal */}
-        <AnimatePresence>
-          {showForm && (
-            <QuickExpenseForm
-              expense={editingExpense}
-              onSubmit={async (data) => {
-                await handleSubmit(data)
-              }}
-              onCancel={() => {
-                setShowForm(false);
-                setEditingExpense(undefined);
-              }}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Push Notification Manager */}
-        <PushNotificationManager />
-
-        {/* Onboarding */}
-        {showOnboarding && (
-          <Onboarding
-            onComplete={async () => {
-              setShowOnboarding(false);
-              // Save onboarding completion to profile
-              try {
-                await updateProfile({ has_seen_onboarding: true });
-              } catch (error) {
-                console.error('Failed to update onboarding status:', error);
-              }
+      <AnimatePresence>
+        {showForm && (
+          <QuickExpenseForm
+            expense={editingExpense}
+            onSubmit={async (data) => {
+              await handleSubmit(data)
             }}
-            onAddExpense={() => {
-              setShowForm(true);
-              setShowOnboarding(false);
-            }}
-            onSyncEmails={() => {
-              handleSync();
-              setShowOnboarding(false);
+            onCancel={() => {
+              setShowForm(false);
+              setEditingExpense(undefined);
             }}
           />
         )}
+      </AnimatePresence>
 
-        {/* Filter Sheet */}
-        <FilterSheet
-          isOpen={showFilterSheet}
-          onClose={() => setShowFilterSheet(false)}
-          quickFilter={quickFilter}
-          categoryFilter={categoryFilter}
-          onQuickFilterChange={setQuickFilter}
-          onCategoryFilterChange={setCategoryFilter}
-          onReset={() => {
-            clearFilters();
-            setShowFilterSheet(false);
+      <PushNotificationManager />
+
+      {showOnboarding && (
+        <Onboarding
+          onComplete={async () => {
+            setShowOnboarding(false);
+            try {
+              await updateProfile({ has_seen_onboarding: true });
+            } catch (error) {
+              console.error('Failed to update onboarding status:', error);
+            }
           }}
-          expenses={expenses}
-          budgets={budgets}
-          currentMonth={currentMonth}
+          onAddExpense={() => {
+            setShowForm(true);
+            setShowOnboarding(false);
+          }}
+          onSyncEmails={() => {
+            handleSync();
+            setShowOnboarding(false);
+          }}
         />
+      )}
 
-        {/* Workout Logger - only show when not editing exercises */}
-        <AnimatePresence>
-          {(() => {
-            const shouldShow = activeWorkout && activeView !== 'workouts'
-            return shouldShow && (
-              <WorkoutLogger
-                template={activeWorkout}
-                exercises={exercises}
-                onComplete={async (workoutData) => {
-                  // Transform workout data to API format
-                  const now = new Date().toISOString()
-                  const apiData: WorkoutCompletionData = {
-                    template_id: workoutData.template_id ?? undefined,
-                    started_at: now,  // These would ideally come from the component
-                    completed_at: now,
-                    duration_minutes: workoutData.duration_minutes ?? 0,
-                    exerciseLogs: (workoutData.exercises_completed ?? []).map((log) => ({
-                      exercise_id: log.exercise_id,
-                      sets: log.sets,
-                      notes: log.exercise_name,  // Preserve exercise name in notes
-                    })),
-                  }
-                  await createWorkout(apiData)
-                  setActiveWorkout(null)
-                  setExerciseLogs([])
-                }}
-                onCancel={() => {
-                  setActiveWorkout(null)
-                  setExerciseLogs([])
-                }}
-                onEditExercises={() => {
-                  console.log('onEditExercises called - switching to workouts view, activeWorkout:', activeWorkout?.name)
-                  setEditingWorkoutExercises(true)
-                  setActiveView('workouts')
-                }}
-                onExerciseLogsChange={setExerciseLogs}
-              />
-            )
-          })()}
-        </AnimatePresence>
-        </div>
-      </PullToRefreshWrapper>
+      <FilterSheet
+        isOpen={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        quickFilter={quickFilter}
+        categoryFilter={categoryFilter}
+        onQuickFilterChange={setQuickFilter}
+        onCategoryFilterChange={setCategoryFilter}
+        onReset={() => {
+          clearFilters();
+          setShowFilterSheet(false);
+        }}
+        expenses={expenses}
+        budgets={budgets}
+        currentMonth={currentMonth}
+      />
+
+      <AnimatePresence>
+        {(() => {
+          const shouldShow = activeWorkout && activeView !== 'workouts'
+          return shouldShow && (
+            <WorkoutLogger
+              template={activeWorkout}
+              exercises={exercises}
+              onComplete={async (workoutData) => {
+                const now = new Date().toISOString()
+                const apiData: WorkoutCompletionData = {
+                  template_id: workoutData.template_id ?? undefined,
+                  started_at: now,
+                  completed_at: now,
+                  duration_minutes: workoutData.duration_minutes ?? 0,
+                  exerciseLogs: (workoutData.exercises_completed ?? []).map((log) => ({
+                    exercise_id: log.exercise_id,
+                    sets: log.sets,
+                    notes: log.exercise_name,
+                  })),
+                }
+                await createWorkout(apiData)
+                setActiveWorkout(null)
+                setExerciseLogs([])
+              }}
+              onCancel={() => {
+                setActiveWorkout(null)
+                setExerciseLogs([])
+              }}
+              onEditExercises={() => {
+                console.log('onEditExercises called - switching to workouts view, activeWorkout:', activeWorkout?.name)
+                setEditingWorkoutExercises(true)
+                setActiveView('workouts')
+              }}
+              onExerciseLogsChange={setExerciseLogs}
+            />
+          )
+        })()}
+      </AnimatePresence>
       </SheetBackdropProvider>
     </>
   );
