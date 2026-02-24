@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSheetBackdrop } from '@/components/sheet-backdrop-context'
 import { springs, variants, durations, getStaggerDelay } from '@/lib/motion-system'
-import { Flame, Target, Repeat, User, ChevronRight, X, Sparkles } from 'lucide-react'
+import { Flame, Target, Repeat, User, ChevronRight, X, Wallet, Lightbulb, PiggyBank, BarChart3 } from 'lucide-react'
 import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
 
@@ -16,10 +16,13 @@ interface MoreSheetProps {
 }
 
 const MORE_ITEMS = [
-  { id: 'routines' as const, label: 'Routines', description: 'Daily habits & XP rewards', icon: Sparkles, color: 'text-teal-500' },
+  { id: 'expenses' as const, label: 'Expenses', description: 'Track spending & transactions', icon: Wallet, color: 'text-emerald-500' },
+  { id: 'insights' as const, label: 'Insights', description: 'Analytics & spending patterns', icon: Lightbulb, color: 'text-yellow-500' },
   { id: 'calories' as const, label: 'Calories', description: 'Track meals & nutrition', icon: Flame, color: 'text-orange-500' },
   { id: 'budget' as const, label: 'Budget', description: 'Manage spending limits', icon: Target, color: 'text-blue-500' },
+  { id: 'goals' as const, label: 'Goals', description: 'Savings goals & progress', icon: PiggyBank, color: 'text-pink-500' },
   { id: 'recurring' as const, label: 'Recurring', description: 'Subscriptions & bills', icon: Repeat, color: 'text-green-500' },
+  { id: 'summary' as const, label: 'Summary', description: 'Weekly & monthly overview', icon: BarChart3, color: 'text-indigo-500' },
   { id: 'profile' as const, label: 'Profile', description: 'Settings & preferences', icon: User, color: 'text-purple-500' },
 ]
 
@@ -28,6 +31,7 @@ export function MoreSheet({ isOpen, onClose, onNavigate, activeView }: MoreSheet
 
   useEffect(() => {
     if (isOpen) { onSheetOpen(); return onSheetClose }
+    return undefined
   }, [isOpen, onSheetOpen, onSheetClose])
 
   const handleItemClick = (viewId: ViewType) => {

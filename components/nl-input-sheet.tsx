@@ -35,6 +35,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
 
   useEffect(() => {
     if (open) { onSheetOpen(); return onSheetClose }
+    return undefined
   }, [open, onSheetOpen, onSheetClose])
 
   useEffect(() => {

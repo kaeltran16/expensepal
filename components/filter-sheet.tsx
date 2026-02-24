@@ -42,6 +42,7 @@ export function FilterSheet({
 
   useEffect(() => {
     if (isOpen) { onSheetOpen(); return onSheetClose }
+    return undefined
   }, [isOpen, onSheetOpen, onSheetClose]);
 
   // Extract all unique categories from expenses

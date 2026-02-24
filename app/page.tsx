@@ -94,12 +94,13 @@ const RecurringView = lazy(() => import('@/components/views').then(mod => ({ def
 const WorkoutsView = lazy(() => import('@/components/views').then(mod => ({ default: mod.WorkoutsView })));
 const ProfileView = lazy(() => import('@/components/views').then(mod => ({ default: mod.ProfileView })));
 const RoutinesView = lazy(() => import('@/components/views').then(mod => ({ default: mod.RoutinesView })));
+const FeedView = lazy(() => import('@/components/views').then(mod => ({ default: mod.FeedView })));
 
 function HomeContent() {
   // Client-side UI state (needs to be before hooks that depend on it)
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
+  const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'feed');
 
   // Core hooks - always loaded for expenses view (default)
   const { data: expenses = [], isLoading: expensesLoading, refetch: refetchExpenses } = useExpenses();
@@ -109,7 +110,7 @@ function HomeContent() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgets(
     { month: currentMonth },
-    { enabled: ['budget', 'expenses'].includes(activeView) } // Load for budget view + expenses (for alerts)
+    { enabled: ['budget', 'expenses', 'feed'].includes(activeView) }
   );
 
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -247,11 +248,9 @@ function HomeContent() {
   // Sync active view with URL query params
   useEffect(() => {
     const currentView = searchParams.get('view') as ViewType;
-    if (activeView !== 'expenses' && activeView !== currentView) {
-      // Update URL when view changes (except for default 'expenses' view)
+    if (activeView !== 'feed' && activeView !== currentView) {
       router.replace(`/?view=${activeView}`, { scroll: false });
-    } else if (activeView === 'expenses' && currentView) {
-      // Clear view param when on expenses (default view)
+    } else if (activeView === 'feed' && currentView) {
       router.replace('/', { scroll: false });
     }
   }, [activeView, router, searchParams]);
@@ -450,7 +449,7 @@ function HomeContent() {
           hapticFeedback('light')
         }}
         onLogoClick={() => {
-          setActiveView('expenses')
+          setActiveView('feed')
           hapticFeedback('light')
         }}
       />
@@ -458,7 +457,7 @@ function HomeContent() {
       <SheetBackdropProvider>
       <PullToRefreshWrapper
         onRefresh={handleRefresh}
-        enabled={['expenses', 'budget', 'insights', 'calories', 'routines'].includes(activeView)}
+        enabled={['feed', 'expenses', 'budget', 'insights', 'calories', 'routines'].includes(activeView)}
       >
         <div
           ref={contentRef}
@@ -572,7 +571,13 @@ function HomeContent() {
           )}
 
           <ViewTransition activeView={activeView}>
-            {activeView === 'expenses' ? (
+            {activeView === 'feed' ? (
+              <Suspense fallback={<ViewSkeleton />}>
+                <ErrorBoundary errorTitle="Failed to load feed" errorDescription="Something went wrong while loading your daily feed">
+                  <FeedView onNavigate={setActiveView} />
+                </ErrorBoundary>
+              </Suspense>
+            ) : activeView === 'expenses' ? (
               <Suspense fallback={<ViewSkeleton />}>
                 <ErrorBoundary errorTitle="Failed to load expenses" errorDescription="Something went wrong while loading your expenses">
                   <ExpensesView

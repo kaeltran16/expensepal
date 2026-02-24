@@ -218,6 +218,7 @@ export const queryKeys = {
     parseInput: () => [...queryKeys.ai.all, 'parse-input'] as const,
     habitCoach: () => [...queryKeys.ai.all, 'habit-coach'] as const,
     weeklyDigest: () => [...queryKeys.ai.all, 'weekly-digest'] as const,
+    feedAnnotations: () => [...queryKeys.ai.all, 'feed-annotations'] as const,
   },
 } as const
 

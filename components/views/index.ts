@@ -10,4 +10,5 @@ export { RecurringView } from './recurring-view';
 export { RoutinesView } from '../routines/RoutinesView';
 export { SummaryView } from './summary-view';
 export { WorkoutsView } from './workouts-view';
+export { FeedView } from './feed-view';
 

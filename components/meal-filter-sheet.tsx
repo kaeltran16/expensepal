@@ -51,6 +51,7 @@ export function MealFilterSheet({
 
   useEffect(() => {
     if (isOpen) { onSheetOpen(); return onSheetClose }
+    return undefined
   }, [isOpen, onSheetOpen, onSheetClose]);
 
   return (

@@ -5,7 +5,7 @@ import type { ViewType } from '@/lib/constants/filters'
 import { hapticFeedback } from '@/lib/utils'
 import { motion } from 'motion/react'
 import type { LucideIcon } from 'lucide-react'
-import { Dumbbell, Lightbulb, MoreHorizontal, Plus, Wallet } from 'lucide-react'
+import { Dumbbell, Home, MoreHorizontal, Plus, Sparkles } from 'lucide-react'
 
 interface BottomNavProps {
   activeView: ViewType
@@ -22,17 +22,16 @@ type NavItem = {
 }
 
 const LEFT_NAV_ITEMS: NavItem[] = [
-  { id: 'expenses', label: 'Expenses', icon: Wallet },
+  { id: 'feed', label: 'Home', icon: Home },
   { id: 'workouts', label: 'Workouts', icon: Dumbbell },
 ]
 
 const RIGHT_NAV_ITEMS: NavItem[] = [
-  { id: 'insights', label: 'Insights', icon: Lightbulb },
+  { id: 'routines', label: 'Routines', icon: Sparkles },
   { id: 'more', label: 'More', icon: MoreHorizontal },
 ]
 
-// Views that are accessible from the "More" menu
-const MORE_VIEWS: ViewType[] = ['routines', 'calories', 'budget', 'recurring', 'profile']
+const MORE_VIEWS: ViewType[] = ['expenses', 'insights', 'calories', 'budget', 'goals', 'recurring', 'summary', 'profile']
 
 export function BottomNavigation({ activeView, onViewChange, onAddExpense, onOpenMore, isMoreOpen }: BottomNavProps) {
   const handleNavClick = (viewId: ViewType | 'more') => {
