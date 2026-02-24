@@ -10,12 +10,15 @@ import { RoutineCard } from '@/components/feed/routine-card'
 import {
   useExpenses,
   useBudgets,
+  useMeals,
   useCalorieStats,
   useCalorieGoal,
   useWaterLog,
   useRoutineStreak,
   useRoutineStats,
   useRoutines,
+  useRoutineTemplates,
+  useRoutineSteps,
   useProfile,
   useFeedAnnotations,
 } from '@/lib/hooks'
@@ -27,15 +30,23 @@ interface FeedViewProps {
 
 function FeedCardSkeleton() {
   return (
-    <div className="w-full ios-card p-4 animate-pulse">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 rounded-full bg-muted" />
-        <div className="h-4 w-20 rounded bg-muted" />
-      </div>
-      <div className="grid grid-cols-3 gap-3 mb-2">
-        <div><div className="h-3 w-10 rounded bg-muted mb-1" /><div className="h-5 w-16 rounded bg-muted" /></div>
-        <div><div className="h-3 w-10 rounded bg-muted mb-1" /><div className="h-5 w-16 rounded bg-muted" /></div>
-        <div><div className="h-3 w-10 rounded bg-muted mb-1" /><div className="h-5 w-16 rounded bg-muted" /></div>
+    <div className="w-full ios-card overflow-hidden animate-pulse">
+      <div className="h-0.5 bg-muted" />
+      <div className="p-5">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-9 h-9 rounded-full bg-muted" />
+          <div className="h-4 w-20 rounded bg-muted" />
+        </div>
+        <div className="h-3 w-12 rounded bg-muted mb-1" />
+        <div className="h-7 w-32 rounded bg-muted mb-4" />
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
+            <div className="h-3 w-10 rounded bg-muted mb-1" /><div className="h-4 w-16 rounded bg-muted" />
+          </div>
+          <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
+            <div className="h-3 w-10 rounded bg-muted mb-1" /><div className="h-4 w-16 rounded bg-muted" />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -64,7 +75,7 @@ export function FeedView({ onNavigate }: FeedViewProps) {
   })
   const { data: budgets = [] } = useBudgets({ month: currentMonth })
 
-  const { todayTotal, weekTotal, monthTotal, lastMonthTotal } = useMemo(() => {
+  const { todayTotal, weekTotal, monthTotal, lastMonthTotal, topCategories } = useMemo(() => {
     const now = new Date()
     const todayDate = now.toDateString()
     const weekStart = new Date(now)
@@ -75,14 +86,25 @@ export function FeedView({ onNavigate }: FeedViewProps) {
     const prevMonthSameDay = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate(), 23, 59, 59, 999)
 
     let today = 0, week = 0, month = 0, lastMonth = 0
+    const byCategory: Record<string, number> = {}
     for (const e of expenses) {
       const d = new Date(e.transaction_date)
       if (d.toDateString() === todayDate) today += e.amount
       if (d >= weekStart) week += e.amount
-      if (d >= monthStart) month += e.amount
+      if (d >= monthStart) {
+        month += e.amount
+        const cat = e.category || 'Other'
+        byCategory[cat] = (byCategory[cat] || 0) + e.amount
+      }
       if (d >= prevMonthStart && d <= prevMonthSameDay) lastMonth += e.amount
     }
-    return { todayTotal: today, weekTotal: week, monthTotal: month, lastMonthTotal: lastMonth }
+
+    const categories = Object.entries(byCategory)
+      .map(([category, total]) => ({ category, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3)
+
+    return { todayTotal: today, weekTotal: week, monthTotal: month, lastMonthTotal: lastMonth, topCategories: categories }
   }, [expenses])
 
   const totalBudget = budgets.reduce((s, b) => s + b.amount, 0)
@@ -105,15 +127,55 @@ export function FeedView({ onNavigate }: FeedViewProps) {
   const waterMl = waterData?.waterLog?.amount_ml ?? 0
   const waterGoalMl = waterData?.daily_goal_ml ?? 2500
 
+  const { data: todayMeals = [], isLoading: mealsLoading } = useMeals(
+    { startDate: todayStr, endDate: todayStr },
+    { enabled: !caloriesLoading }
+  )
+  const mealCount = todayMeals.length
+  const lastMealName = todayMeals.length > 0
+    ? [...todayMeals].sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime())[0].name
+    : null
+
   const { data: streakData, isLoading: routineLoading } = useRoutineStreak()
   const { data: statsData } = useRoutineStats()
   const { data: routineData } = useRoutines({ startDate: todayStr })
   const completedToday = (routineData?.completions?.length ?? 0) > 0
 
+  const { data: templateData, isLoading: templatesLoading } = useRoutineTemplates()
+  const { data: stepsData } = useRoutineSteps()
+
+  const routineSteps = useMemo(() => {
+    const completions = routineData?.completions ?? []
+    const completedSteps = completions.flatMap(c => c.steps_completed ?? [])
+
+    if (completedSteps.length > 0) {
+      return completedSteps.map(s => ({
+        name: s.step_name,
+        completed: !s.skipped,
+      }))
+    }
+
+    const templates = templateData?.templates ?? []
+    const builtinSteps = stepsData?.steps ?? []
+    const customSteps = stepsData?.customSteps ?? []
+    if (templates.length === 0) return []
+
+    const template = templates[0]
+    const stepMap = new Map([...builtinSteps, ...customSteps].map(s => [s.id, s.name]))
+    return template.steps
+      .sort((a, b) => a.order - b.order)
+      .map(ref => ({
+        name: stepMap.get(ref.step_id) ?? 'Unknown step',
+        completed: false,
+      }))
+  }, [routineData, templateData, stepsData])
+
   const hasAnyData = todayTotal > 0 || weekTotal > 0 || monthTotal > 0 || todayCalories > 0 || waterMl > 0 || completedToday
   const { data: annotations } = useFeedAnnotations({ enabled: hasAnyData })
 
-  if (!expensesLoading && !caloriesLoading && !routineLoading && !hasAnyData) {
+  const isLoading = expensesLoading || caloriesLoading || routineLoading || mealsLoading || templatesLoading
+
+  if (!isLoading && !hasAnyData) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -134,7 +196,7 @@ export function FeedView({ onNavigate }: FeedViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...springs.ios, delay: getStaggerDelay(0) }}
       >
-        {expensesLoading ? (
+        {isLoading ? (
           <FeedCardSkeleton />
         ) : (
           <SpendingCard
@@ -143,6 +205,8 @@ export function FeedView({ onNavigate }: FeedViewProps) {
             monthTotal={monthTotal}
             lastMonthTotal={lastMonthTotal}
             dailyAllowance={dailyAllowance}
+            budgetTotal={totalBudget}
+            topCategories={topCategories}
             currency={currency}
             annotation={annotations?.spending}
             onTap={() => onNavigate('expenses')}
@@ -155,7 +219,7 @@ export function FeedView({ onNavigate }: FeedViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...springs.ios, delay: getStaggerDelay(1) }}
       >
-        {caloriesLoading ? (
+        {isLoading ? (
           <FeedCardSkeleton />
         ) : (
           <CaloriesCard
@@ -163,6 +227,8 @@ export function FeedView({ onNavigate }: FeedViewProps) {
             calorieGoal={calGoal}
             waterMl={waterMl}
             waterGoalMl={waterGoalMl}
+            mealCount={mealCount}
+            lastMealName={lastMealName}
             annotation={annotations?.calories}
             onTap={() => onNavigate('calories')}
           />
@@ -174,7 +240,7 @@ export function FeedView({ onNavigate }: FeedViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...springs.ios, delay: getStaggerDelay(2) }}
       >
-        {routineLoading ? (
+        {isLoading ? (
           <FeedCardSkeleton />
         ) : (
           <RoutineCard
@@ -182,6 +248,7 @@ export function FeedView({ onNavigate }: FeedViewProps) {
             currentStreak={streakData?.streak?.current_streak ?? 0}
             totalXp={statsData?.stats?.total_xp ?? 0}
             level={statsData?.stats?.current_level ?? 1}
+            steps={routineSteps}
             annotation={annotations?.routine}
             onTap={() => onNavigate('routines')}
           />
