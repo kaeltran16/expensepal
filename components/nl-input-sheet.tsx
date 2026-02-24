@@ -27,6 +27,7 @@ const INTENT_LABELS: Record<string, { label: string; icon: string; color: string
 export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSheetProps) {
   const [input, setInput] = useState('')
   const [step, setStep] = useState<'input' | 'confirm' | 'done'>('input')
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const parseInput = useParseInput()
   const executeInput = useExecuteParsedInput()
@@ -54,6 +55,22 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
     if (!open) return
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
+  }, [open])
+
+  // iOS keyboard avoidance: adjust sheet position when virtual keyboard opens
+  useEffect(() => {
+    if (!open) { setKeyboardOffset(0); return }
+    const vv = window.visualViewport
+    if (!vv) return
+
+    const onResize = () => {
+      const offset = window.innerHeight - vv.height
+      setKeyboardOffset(offset > 0 ? offset : 0)
+    }
+
+    vv.addEventListener('resize', onResize)
+    onResize()
+    return () => vv.removeEventListener('resize', onResize)
   }, [open])
 
   const handleSubmit = async () => {
@@ -103,10 +120,13 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
 
           {/* Bottom panel */}
           <motion.div
-            className="fixed inset-x-0 bottom-0 z-50 bg-background rounded-t-2xl"
+            className="fixed inset-x-0 z-50 bg-background rounded-t-2xl"
             {...variants.sheet}
             transition={springs.sheet}
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            style={{
+              bottom: keyboardOffset,
+              paddingBottom: keyboardOffset > 0 ? undefined : 'env(safe-area-inset-bottom)',
+            }}
           >
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
