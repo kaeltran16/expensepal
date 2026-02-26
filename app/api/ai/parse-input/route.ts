@@ -28,10 +28,18 @@ Intents and their EXACT required fields:
 
 4. "goal" — user is contributing to a savings goal. Fields: "goal_name" (string), "amount" (number).
 
-5. "unknown" — cannot determine intent.
+5. "workout" — user wants to start a workout or exercise session.
+   Required fields in "data":
+   - "workout_name": string (the workout type, e.g. "chest day", "leg day", "cardio", "gym")
+   - "notes": string or null
+   Rules: If user just says "workout" or "gym", set workout_name to the input text. This intent is for STARTING a session, not logging individual exercises.
+
+6. "unknown" — cannot determine intent.
 
 Respond with ONLY valid JSON using these EXACT field names:
-{"intent":"expense","confidence":0.9,"data":{"amount":45000,"merchant":"Coffee shop","category":"Food","currency":"VND"},"display_text":"Coffee shop — 45,000 VND"}
+Expense example: {"intent":"expense","confidence":0.9,"data":{"amount":45000,"merchant":"Coffee shop","category":"Food","currency":"VND"},"display_text":"Coffee shop — 45,000 VND"}
+Workout example: {"intent":"workout","confidence":0.95,"data":{"workout_name":"chest day","notes":null},"display_text":"Start workout: Chest Day"}
+Routine example: {"intent":"routine","confidence":0.9,"data":{"routine_name":"morning routine","completed":true,"notes":null},"display_text":"Start routine: Morning Routine"}
 
 Current date/time: {{now}}
 `

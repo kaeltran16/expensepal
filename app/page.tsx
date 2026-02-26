@@ -683,15 +683,15 @@ function HomeContent() {
         open={showNLInput}
         onOpenChange={setShowNLInput}
         onFallbackToForm={() => setShowForm(true)}
+        onStartWorkout={() => setActiveView('workouts')}
+        onStartRoutine={() => setActiveView('routines')}
       />
 
       <AnimatePresence>
         {showForm && (
           <QuickExpenseForm
             expense={editingExpense}
-            onSubmit={async (data) => {
-              await handleSubmit(data)
-            }}
+            onSubmit={handleSubmit}
             onCancel={() => {
               setShowForm(false);
               setEditingExpense(undefined);

@@ -87,14 +87,14 @@ export function FilterSheet({
               handleClose();
               hapticFeedback('light');
             }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
           />
 
           {/* Sheet */}
           <motion.div
             {...variants.sheet}
             transition={springs.sheet}
-            className="fixed inset-x-0 bottom-0 z-50 bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50 will-animate"
+            className="fixed inset-x-0 bottom-0 z-[60] bg-card/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl border-t border-border/50 will-animate"
             style={{ maxHeight: '75vh' }}
           >
             <div

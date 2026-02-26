@@ -14,24 +14,34 @@ interface NLInputSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onFallbackToForm?: () => void
+  onStartWorkout?: () => void
+  onStartRoutine?: () => void
 }
 
 const INTENT_LABELS: Record<string, { label: string; icon: string; color: string }> = {
   expense: { label: 'Expense', icon: '\u{1F4B0}', color: 'text-orange-500' },
   meal: { label: 'Meal', icon: '\u{1F37D}\u{FE0F}', color: 'text-green-500' },
+  workout: { label: 'Workout', icon: '\u{1F4AA}', color: 'text-violet-500' },
   routine: { label: 'Routine', icon: '\u{2705}', color: 'text-blue-500' },
   goal: { label: 'Goal', icon: '\u{1F3AF}', color: 'text-purple-500' },
   unknown: { label: 'Unknown', icon: '\u{2753}', color: 'text-gray-500' },
 }
 
-export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSheetProps) {
+const SUGGESTION_TINTS: Record<string, string> = {
+  expense: 'bg-orange-500/10 text-orange-700 dark:text-orange-400',
+  meal: 'bg-green-500/10 text-green-700 dark:text-green-400',
+  workout: 'bg-violet-500/10 text-violet-700 dark:text-violet-400',
+  routine: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+}
+
+export function NLInputSheet({ open, onOpenChange, onFallbackToForm, onStartWorkout, onStartRoutine }: NLInputSheetProps) {
   const [input, setInput] = useState('')
   const [step, setStep] = useState<'input' | 'confirm' | 'done'>('input')
   const [keyboardOffset, setKeyboardOffset] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const parseInput = useParseInput()
   const executeInput = useExecuteParsedInput()
-  const suggestions = useQuickSuggestions(5)
+  const suggestions = useQuickSuggestions(4)
   const { onSheetOpen, onSheetClose } = useSheetBackdrop()
 
   useEffect(() => {
@@ -50,7 +60,6 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  // Lock body scroll when open
   useEffect(() => {
     if (!open) return
     document.body.style.overflow = 'hidden'
@@ -80,6 +89,20 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
       toast.error("Couldn't understand that. Try again or use manual entry.")
       return
     }
+
+    // navigation intents — close sheet and open the right flow
+    if (result.intent === 'workout') {
+      onOpenChange(false)
+      onStartWorkout?.()
+      return
+    }
+    if (result.intent === 'routine') {
+      onOpenChange(false)
+      onStartRoutine?.()
+      return
+    }
+
+    // data intents — show confirm card
     setStep('confirm')
   }
 
@@ -112,7 +135,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 z-50 bg-black/50"
+            className="fixed inset-0 z-[60] bg-black/50"
             {...variants.fade}
             transition={{ duration: durations.standard }}
             onClick={() => onOpenChange(false)}
@@ -120,7 +143,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
 
           {/* Bottom panel */}
           <motion.div
-            className="fixed inset-x-0 z-50 bg-background rounded-t-2xl"
+            className="fixed inset-x-0 z-[60] bg-background rounded-t-2xl"
             {...variants.sheet}
             transition={springs.sheet}
             style={{
@@ -167,7 +190,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Type anything... e.g. coffee 45k"
+                        placeholder="coffee 45k, had pho, workout..."
                         className="w-full rounded-xl border bg-muted/50 px-4 py-3 pr-12 text-base outline-none focus:ring-2 focus:ring-violet-500/50"
                         disabled={parseInput.isPending}
                       />
@@ -184,17 +207,21 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm }: NLInputSh
                       </button>
                     </div>
 
-                    {/* Personalized suggestion chips */}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {suggestions.map((s) => (
-                        <button
-                          key={s.text}
-                          onClick={() => setInput(s.text)}
-                          className="rounded-full bg-muted px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted/80"
-                        >
-                          {s.text}
-                        </button>
-                      ))}
+                    {/* Tinted suggestion pills */}
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {suggestions.map((s) => {
+                        const tint = SUGGESTION_TINTS[s.intent] || 'bg-muted text-muted-foreground'
+
+                        return (
+                          <button
+                            key={s.text}
+                            onClick={() => setInput(s.text)}
+                            className={`rounded-xl px-3 py-2 text-sm font-medium text-center ${tint}`}
+                          >
+                            {s.text}
+                          </button>
+                        )
+                      })}
                     </div>
 
                     {/* Manual entry fallback */}

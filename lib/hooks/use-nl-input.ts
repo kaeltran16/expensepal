@@ -5,7 +5,7 @@ import { useCreateExpenseOptimistic } from './use-expenses'
 import { useCreateMealOptimistic } from './use-meals'
 
 interface ParsedInput {
-  intent: 'expense' | 'meal' | 'routine' | 'goal' | 'unknown'
+  intent: 'expense' | 'meal' | 'routine' | 'workout' | 'goal' | 'unknown'
   confidence: number
   data: Record<string, unknown>
   display_text: string
@@ -100,11 +100,12 @@ export function useExecuteParsedInput() {
           })
         }
 
-        case 'goal':
-          return { intent: 'goal', data }
-
+        case 'workout':
         case 'routine':
-          return { intent: 'routine', data }
+          throw new Error(`Intent "${intent}" is navigable, not executable`)
+
+        case 'goal':
+          throw new Error('Goal intent is not yet implemented')
 
         default:
           throw new Error(`Unknown intent: ${intent}`)

@@ -3,10 +3,12 @@
 import { useMemo } from 'react'
 import { useExpenses } from './use-expenses'
 import { useMeals } from './use-meals'
+import { useWorkouts } from './use-workouts'
+import { useRoutines } from './use-routines'
 
 interface QuickSuggestion {
   text: string
-  intent: 'expense' | 'meal'
+  intent: 'expense' | 'meal' | 'workout' | 'routine'
 }
 
 const FALLBACK_SUGGESTIONS: QuickSuggestion[] = [
@@ -31,6 +33,13 @@ const MEAL_TIME_MAP: Record<TimePeriod, string[]> = {
   evening: ['dinner', 'snack'],
 }
 
+const ROUTINE_TIME_MAP: Record<TimePeriod, string> = {
+  morning: 'morning routine',
+  midday: 'routine',
+  afternoon: 'afternoon routine',
+  evening: 'evening routine',
+}
+
 /** Format amount as shorthand: 45000 → "45k", 1500000 → "1.5m" */
 function formatShortAmount(amount: number): string {
   if (amount >= 1_000_000) {
@@ -48,7 +57,7 @@ function formatShortAmount(amount: number): string {
  * Returns personalized quick-add suggestions based on the user's
  * habits at the current time of day and day of week.
  */
-export function useQuickSuggestions(maxItems = 5) {
+export function useQuickSuggestions(maxItems = 4) {
   const thirtyDaysAgo = useMemo(() => {
     const d = new Date()
     d.setDate(d.getDate() - 30)
@@ -62,6 +71,11 @@ export function useQuickSuggestions(maxItems = 5) {
   const { data: meals } = useMeals(
     { startDate: thirtyDaysAgo, limit: 200 }
   )
+
+  const { data: workouts } = useWorkouts(
+    { startDate: thirtyDaysAgo, limit: 1 }
+  )
+  const { data: routines } = useRoutines()
 
   const suggestions = useMemo<QuickSuggestion[]>(() => {
     const now = new Date()
@@ -186,6 +200,16 @@ export function useQuickSuggestions(maxItems = 5) {
       }
     }
 
+    // --- Workout suggestion (only if user has workout history) ---
+    if (workouts && workouts.length > 0) {
+      items.push({ text: 'workout', intent: 'workout' })
+    }
+
+    // --- Routine suggestion based on time of day (only if user has routines) ---
+    if (routines && routines.completions.length > 0) {
+      items.push({ text: ROUTINE_TIME_MAP[currentPeriod], intent: 'routine' })
+    }
+
     // Deduplicate
     const seen = new Set<string>()
     const unique = items.filter((item) => {
@@ -195,7 +219,7 @@ export function useQuickSuggestions(maxItems = 5) {
     })
 
     return unique.length > 0 ? unique.slice(0, maxItems) : FALLBACK_SUGGESTIONS
-  }, [expenses, meals, maxItems])
+  }, [expenses, meals, workouts, routines, maxItems])
 
   return suggestions
 }
