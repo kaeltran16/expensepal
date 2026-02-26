@@ -4,7 +4,7 @@
 
 **Goal:** Replace the current "dashboard of dashboards" home page with an expense-focused layout that matches the visual language of the inner views (Expenses, Insights, Routines), adding a compact widget row for secondary features and a recent transactions list.
 
-**Architecture:** Rewrite `feed-view.tsx` to render: (1) a spending hero card (simplified from current `SpendingCard`), (2) a compact widget row for nutrition/routine at-a-glance, (3) a "Recent Transactions" section reusing `ExpandableExpenseCard`. Remove the three separate full-height feed cards (`SpendingCard`, `CaloriesCard`, `RoutineCard`). Keep all existing data hooks — no backend or API changes.
+**Architecture:** Rewrite `feed-view.tsx` to render: (1) a spending hero card (simplified from current `SpendingCard`), (2) a compact widget row for nutrition/routine at-a-glance, (3) a "Recent Transactions" section reusing `ExpandableExpenseCard`. Remove the three separate full-height feed cards (`SpendingCard`, `CaloriesCard`, `RoutineCard`). FeedView stays self-contained — it fetches its own data via existing hooks and uses `useExpenseOperations` internally for delete/update. The only new prop is `onEdit` (from `page.tsx`, since the edit form sheet lives there). No backend or API changes.
 
 **Tech Stack:** React 18, Motion (Framer Motion v12), Tailwind CSS, TanStack Query, existing `motion-system.ts` springs/variants.
 
@@ -113,7 +113,7 @@ const CURRENCY_LOCALES: Record<string, string> = {
 }
 
 function formatAmount(amount: number, currency: string) {
-  return new Intl.NumberFormat(CURRENCY_LOCALES[currency], {
+  return new Intl.NumberFormat(CURRENCY_LOCALES[currency] ?? 'en-US', {
     style: 'currency',
     currency,
     maximumFractionDigits: 0,
@@ -150,7 +150,7 @@ export function SpendingHero({
               <AnimatedCounter
                 value={todayTotal}
                 duration={1200}
-                locale={CURRENCY_LOCALES[currency] || 'en-US'}
+                locale={CURRENCY_LOCALES[currency] ?? 'en-US'}
               />
               {suffix && <span className="text-lg font-bold text-muted-foreground ml-0.5">{suffix}</span>}
             </p>
@@ -230,7 +230,7 @@ This renders the last 5 expenses on the home page, reusing the existing `Expanda
 'use client'
 
 import { useMemo } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { springs, variants, getStaggerDelay } from '@/lib/motion-system'
 import { ExpandableExpenseCard } from '@/components/expandable-expense-card'
 import type { Expense } from '@/lib/supabase'
@@ -265,7 +265,7 @@ export function RecentTransactions({
   onUpdate,
   onSeeAll,
 }: RecentTransactionsProps) {
-  const recent = expenses.slice(0, 5)
+  const recent = useMemo(() => expenses.slice(0, 5), [expenses])
 
   const groupedItems = useMemo<ListItem[]>(() => {
     const items: ListItem[] = []
@@ -296,41 +296,39 @@ export function RecentTransactions({
       </div>
 
       <div className="space-y-2">
-        <AnimatePresence mode="popLayout">
-          {groupedItems.map((item, index) =>
-            item.type === 'header' ? (
-              <motion.div
-                key={item.key}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: getStaggerDelay(index) }}
-              >
-                <div className="flex items-center gap-3 py-1">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                    {item.label}
-                  </p>
-                  <div className="h-px flex-1 bg-border/50" />
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key={item.expense.id}
-                {...variants.slideUp}
-                transition={{
-                  ...springs.ios,
-                  delay: getStaggerDelay(index),
-                }}
-              >
-                <ExpandableExpenseCard
-                  expense={item.expense}
-                  onDelete={onDelete}
-                  onEdit={onEdit}
-                  onUpdate={onUpdate}
-                />
-              </motion.div>
-            )
-          )}
-        </AnimatePresence>
+        {groupedItems.map((item, index) =>
+          item.type === 'header' ? (
+            <motion.div
+              key={item.key}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: getStaggerDelay(index) }}
+            >
+              <div className="flex items-center gap-3 py-1">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                  {item.label}
+                </p>
+                <div className="h-px flex-1 bg-border/50" />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key={item.expense.id}
+              {...variants.slideUp}
+              transition={{
+                ...springs.ios,
+                delay: getStaggerDelay(index),
+              }}
+            >
+              <ExpandableExpenseCard
+                expense={item.expense}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onUpdate={onUpdate}
+              />
+            </motion.div>
+          )
+        )}
       </div>
     </div>
   )
@@ -355,22 +353,56 @@ git commit -m "feat(feed): add RecentTransactions component for home page"
 
 **Files:**
 - Modify: `components/views/feed-view.tsx` (full rewrite)
+- Modify: `app/page.tsx` (pass `onEdit` prop to FeedView, ~line 554)
 
 **Step 1: Rewrite feed-view.tsx**
 
-Replace the current implementation with the new layout: spending hero + widget row + recent transactions. Keep the same data hooks but drop `CaloriesCard` and `RoutineCard` imports, drop AI annotations, and add expense action handlers.
-
-The new `FeedView` needs additional props for expense actions (delete, edit, update) since it now renders `ExpandableExpenseCard` via `RecentTransactions`. These need to be passed from `page.tsx`.
+Replace the current implementation with the new layout: spending hero + widget row + recent transactions. FeedView stays self-contained — it uses internal hooks for all data and `useExpenseOperations` for delete/update handlers. The only new prop is `onEdit` (passed from `page.tsx` since the edit form sheet lives there).
 
 Update the `FeedViewProps` interface:
 
 ```tsx
 interface FeedViewProps {
   onNavigate: (view: ViewType) => void
-  expenses: Expense[]
-  onDelete: (id: string) => void
   onEdit: (expense: Expense) => void
-  onUpdate: (expense: Expense) => void
+}
+```
+
+Add `useExpenseOperations` to the hook imports and use it inside the component:
+
+```tsx
+const { handleDelete, handleUpdateNotes } = useExpenseOperations(expenses)
+```
+
+Update `FeedCardSkeleton` in the same file to match the new SpendingHero shape (no separate task — skeleton must match layout in the same commit):
+
+```tsx
+function FeedCardSkeleton() {
+  return (
+    <div className="w-full ios-card overflow-hidden">
+      <div className="p-5 space-y-4">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="h-3 w-10 rounded bg-muted animate-pulse mb-2" />
+            <div className="h-7 w-28 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-muted animate-pulse" />
+        </div>
+        {/* Stat boxes */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
+            <div className="h-3 w-10 rounded bg-muted animate-pulse mb-1.5" />
+            <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
+            <div className="h-3 w-10 rounded bg-muted animate-pulse mb-1.5" />
+            <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 ```
 
@@ -397,26 +429,39 @@ return (
 
     {/* Compact widget row */}
     <ScrollReveal delay={0.06}>
-      <div className="flex gap-2.5">
-        <CompactWidget
-          icon={Flame}
-          iconColor="text-accent"
-          iconBg="bg-accent/10"
-          label="Calories"
-          value={`${Math.round(todayCalories)}`}
-          subtitle={calGoal ? `/ ${calGoal} cal` : undefined}
-          onTap={() => onNavigate('calories')}
-        />
-        <CompactWidget
-          icon={Sparkles}
-          iconColor="text-success"
-          iconBg="bg-success/10"
-          label="Routine"
-          value={completedToday ? 'Done' : `${completedCount}/${totalSteps}`}
-          subtitle={`${streakData?.streak?.current_streak ?? 0} day streak`}
-          onTap={() => onNavigate('routines')}
-        />
-      </div>
+      {isLoading ? (
+        <div className="flex gap-2.5">
+          <div className="flex-1 ios-card p-3.5 space-y-2">
+            <div className="h-3 w-14 rounded bg-muted animate-pulse" />
+            <div className="h-5 w-10 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="flex-1 ios-card p-3.5 space-y-2">
+            <div className="h-3 w-14 rounded bg-muted animate-pulse" />
+            <div className="h-5 w-10 rounded bg-muted animate-pulse" />
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2.5">
+          <CompactWidget
+            icon={Flame}
+            iconColor="text-accent"
+            iconBg="bg-accent/10"
+            label="Calories"
+            value={`${Math.round(todayCalories)}`}
+            subtitle={calGoal ? `/ ${calGoal} cal` : undefined}
+            onTap={() => onNavigate('calories')}
+          />
+          <CompactWidget
+            icon={Sparkles}
+            iconColor="text-success"
+            iconBg="bg-success/10"
+            label="Routine"
+            value={completedToday ? 'Done' : `${completedCount}/${totalSteps}`}
+            subtitle={`${streakData?.streak?.current_streak ?? 0} day streak`}
+            onTap={() => onNavigate('routines')}
+          />
+        </div>
+      )}
     </ScrollReveal>
 
     {/* Recent transactions */}
@@ -424,9 +469,9 @@ return (
       {!isLoading && (
         <RecentTransactions
           expenses={expenses}
-          onDelete={onDelete}
+          onDelete={handleDelete}
           onEdit={onEdit}
-          onUpdate={onUpdate}
+          onUpdate={handleUpdateNotes}
           onSeeAll={() => onNavigate('expenses')}
         />
       )}
@@ -436,80 +481,56 @@ return (
 ```
 
 Remove these imports/hooks that are no longer needed:
-- `CaloriesCard`, `RoutineCard` imports
+- `SpendingCard`, `CaloriesCard`, `RoutineCard` imports
 - `useFeedAnnotations` hook (AI annotations)
 - `useMeals` hook (meal count / last meal name only needed for the old CaloriesCard footer)
 - `useRoutineTemplates`, `useRoutineSteps` hooks (step checklist only needed for old RoutineCard)
-- `TiltCard` related logic
+- `useWaterLog` hook (water data no longer shown on home)
 
 Keep these hooks (still needed):
-- `useExpenses` — for spending totals
+- `useExpenses` — for spending totals AND recent transactions list
+- `useExpenseOperations` — **new import**, for `handleDelete` and `handleUpdateNotes`
 - `useBudgets` — for budget bar
 - `useProfile` — for currency
 - `useCalorieStats`, `useCalorieGoal` — for compact widget value
-- `useWaterLog` — can be removed (no longer shown on home)
 - `useRoutineStreak`, `useRoutineStats` — for compact widget value
 - `useRoutines` — for completedToday
 
-**Step 2: Verify the component renders**
+**Step 2: Pass `onEdit` prop from page.tsx**
 
-Run: open `http://localhost:3000` in browser.
-Expected: Home page shows spending hero, two compact widgets side by side, and recent transactions list.
-
-**Step 3: Commit**
-
-```bash
-git add components/views/feed-view.tsx
-git commit -m "feat(feed): rewrite home page with expense-first layout"
-```
-
----
-
-## Task 5: Wire Up New FeedView Props in page.tsx
-
-**Files:**
-- Modify: `app/page.tsx` (lines ~550-556 where FeedView is rendered)
-
-**Step 1: Pass expense action props to FeedView**
-
-Find the `FeedView` render (around line 554):
+Find the `FeedView` render in `app/page.tsx` (around line 554):
 
 ```tsx
 // BEFORE:
 <FeedView onNavigate={setActiveView} />
 
 // AFTER:
-<FeedView
-  onNavigate={setActiveView}
-  expenses={expenses}
-  onDelete={handleDelete}
-  onEdit={handleEdit}
-  onUpdate={handleUpdateNotes}
-/>
+<FeedView onNavigate={setActiveView} onEdit={handleEdit} />
 ```
 
-These handlers (`handleDelete`, `handleEdit`, `handleUpdateNotes`) and the `expenses` array already exist in `HomeContent` — they're currently passed to `ExpensesView`. We're reusing them.
+`handleEdit` (defined at `page.tsx:333`) is already in scope — it calls `setEditingExpense` + `setShowForm` to open the expense form sheet.
 
-**Step 2: Verify end-to-end**
+**Step 3: Verify end-to-end**
 
 Run: open `http://localhost:3000` in browser.
 Expected:
 - Home shows spending hero card with today's amount, week/month stats
-- Two compact widgets: Calories and Routine
+- Two compact widgets: Calories and Routine (with loading skeletons while data loads)
 - Recent transactions with expandable cards (tap to expand, swipe to delete)
 - Tapping "See All" navigates to expenses view
 - Tapping either widget navigates to its respective view
+- Skeleton matches SpendingHero shape during loading
 
-**Step 3: Commit**
+**Step 4: Commit**
 
 ```bash
-git add app/page.tsx
-git commit -m "feat(feed): wire expense actions to new FeedView layout"
+git add components/views/feed-view.tsx app/page.tsx
+git commit -m "feat(feed): rewrite home page with expense-first layout"
 ```
 
 ---
 
-## Task 6: Clean Up Old Feed Card Components
+## Task 5: Clean Up Old Feed Card Components
 
 **Files:**
 - Delete: `components/feed/spending-card.tsx`
@@ -545,64 +566,12 @@ git commit -m "refactor(feed): remove old full-size feed cards"
 
 ---
 
-## Task 7: Update FeedCardSkeleton
-
-**Files:**
-- Modify: `components/views/feed-view.tsx` (the `FeedCardSkeleton` function, currently lines 32-90)
-
-**Step 1: Simplify the skeleton to match the new SpendingHero layout**
-
-The current skeleton mimics the old full-size card with accent bar + header row + stat boxes. Update it to match the simpler `SpendingHero` shape:
-
-```tsx
-function FeedCardSkeleton() {
-  return (
-    <div className="w-full ios-card overflow-hidden">
-      <div className="p-5 space-y-4">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="h-3 w-10 rounded bg-muted animate-pulse mb-2" />
-            <div className="h-7 w-28 rounded bg-muted animate-pulse" />
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-muted animate-pulse" />
-        </div>
-        {/* Stat boxes */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
-            <div className="h-3 w-10 rounded bg-muted animate-pulse mb-1.5" />
-            <div className="h-4 w-16 rounded bg-muted animate-pulse" />
-          </div>
-          <div className="bg-muted/40 rounded-xl p-3 border border-border/50">
-            <div className="h-3 w-10 rounded bg-muted animate-pulse mb-1.5" />
-            <div className="h-4 w-16 rounded bg-muted animate-pulse" />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-```
-
-**Step 2: Verify skeleton renders during loading**
-
-Run: open `http://localhost:3000`, check that the skeleton appears briefly before data loads.
-Expected: Skeleton matches the SpendingHero shape.
-
-**Step 3: Commit**
-
-```bash
-git add components/views/feed-view.tsx
-git commit -m "fix(feed): update skeleton to match new spending hero layout"
-```
-
----
-
 ## Notes
 
 - **No backend changes.** All data hooks remain the same — we're only reshaping the UI.
 - **No routing changes.** The `activeView` state machine in `page.tsx` is unchanged.
 - **No animation system changes.** We use existing springs/variants from `motion-system.ts`.
+- **FeedView stays self-contained.** It fetches its own data via hooks and uses `useExpenseOperations` internally. The only prop added is `onEdit` (since the form sheet lives in `page.tsx`). No expense data is prop-drilled from the parent.
 - **Old cards are not imported elsewhere.** They were only used in `feed-view.tsx`. Safe to delete after Task 4.
 - **The `ExpandableExpenseCard` already handles** swipe-to-delete, tap-to-expand, and edit actions. We're just rendering it in a new context.
 - **`useFeedAnnotations`** (the AI text blurbs) can be dropped from `feed-view.tsx` — the annotation text added visual noise and is not present in the inner views. If the user wants annotations back later, the hook still exists.
