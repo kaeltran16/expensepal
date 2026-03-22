@@ -147,6 +147,44 @@ export class EmailParser {
   }
 
   /**
+   * Pre-extract date from email body using regex patterns.
+   * Avoids LLM ambiguity where "15 Mar 26" gets misread as "March 26th"
+   * instead of "March 15, 2026".
+   */
+  private preExtractDate(text: string): string | null {
+    const monthMap: Record<string, string> = {
+      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+    }
+
+    // Pattern 1: DD MMM YY HH:MM (Grab format) - e.g., "06 Jan 26 11:27"
+    const grabPattern = /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{2})\s+(\d{1,2}):(\d{2})/i
+    const grabMatch = text.match(grabPattern)
+    if (grabMatch) {
+      const day = grabMatch[1]!.padStart(2, '0')
+      const month = monthMap[grabMatch[2]!.toLowerCase()]!
+      const year = `20${grabMatch[3]}`
+      const hour = grabMatch[4]!.padStart(2, '0')
+      const minute = grabMatch[5]!
+      return `${year}-${month}-${day}T${hour}:${minute}:00+07:00`
+    }
+
+    // Pattern 2: DD/MM/YYYY HH:MM or DD-MM-YYYY HH:MM (Shopee/common format)
+    const numericPattern = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\s+(\d{1,2}):(\d{2})/
+    const numericMatch = text.match(numericPattern)
+    if (numericMatch) {
+      const day = numericMatch[1]!.padStart(2, '0')
+      const month = numericMatch[2]!.padStart(2, '0')
+      const year = numericMatch[3]!
+      const hour = numericMatch[4]!.padStart(2, '0')
+      const minute = numericMatch[5]!
+      return `${year}-${month}-${day}T${hour}:${minute}:00+07:00`
+    }
+
+    return null
+  }
+
+  /**
    * Check if email should be skipped before calling LLM (saves API costs)
    */
   private shouldSkipEmail(subject: string, body: string): boolean {
@@ -221,9 +259,19 @@ export class EmailParser {
       // Truncate to reasonable length (first 1000 chars after sanitization)
       const truncatedBody = sanitizedBody.substring(0, 3000);
 
+      // Pre-extract date to avoid LLM ambiguity (e.g., "15 Mar 26" → March 26 instead of 2026-03-15)
+      const preExtractedDate = this.preExtractDate(cleanBody);
+      if (preExtractedDate) {
+        console.log(`Pre-extracted date from email: ${preExtractedDate}`);
+      }
+
       console.log(
         `Sanitized email: ${truncatedBody.length} chars (original: ${cleanBody.length} chars)`
       );
+
+      const dateInstruction = preExtractedDate
+        ? `\n\nPRE-PARSED DATE: The transaction date has been reliably extracted as: ${preExtractedDate}\nYou MUST use this exact value for the transactionDate field. Do NOT attempt to re-parse the date from the email body.`
+        : '';
 
       const prompt = `You are an email parser that extracts transaction information from emails.
 Parse the following email and extract the transaction details in JSON format.
@@ -288,7 +336,7 @@ Output: "transactionDate": "2026-01-06T11:27:00+07:00"
 (NOT January 26, 2026!)
 
 If this email is NOT a completed transaction (e.g., pending order, confirmation email, promotional email), return:
-{"skip": true}`;
+{"skip": true}${dateInstruction}`;
 
       const response = await llmService.completion({
         messages: [{ role: 'user', content: prompt }],
