@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSheetBackdrop } from '@/components/sheet-backdrop-context'
 import { springs, variants, durations } from '@/lib/motion-system'
-import { Sparkles, Send, X, Check, Loader2, ArrowRight, ChevronDown } from 'lucide-react'
+import { Sparkles, X, Check, Loader2, ArrowRight, ChevronDown } from 'lucide-react'
 import { useParseInput, useExecuteParsedInput } from '@/lib/hooks/use-nl-input'
 import { useQuickSuggestions } from '@/lib/hooks/use-quick-suggestions'
 import { Button } from '@/components/ui/button'
@@ -172,7 +172,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm, onStartWork
 
             {/* Content - staggers in after sheet settles */}
             <motion.div
-              className="px-4 pb-4"
+              className="px-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { delay: 0.15, duration: 0.2 } }}
               exit={{ opacity: 0, transition: { duration: 0.05 } }}
@@ -183,29 +183,16 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm, onStartWork
                     key="input"
                     {...variants.slideUp}
                   >
-                    <div className="relative">
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="coffee 45k, had pho, workout..."
-                        className="w-full rounded-xl border bg-muted/50 px-4 py-3 pr-12 text-base outline-none focus:ring-2 focus:ring-violet-500/50"
-                        disabled={parseInput.isPending}
-                      />
-                      <button
-                        onClick={handleSubmit}
-                        disabled={!input.trim() || parseInput.isPending}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-violet-500 p-2 text-white disabled:opacity-50"
-                      >
-                        {parseInput.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="coffee 45k, had pho, workout..."
+                      className="w-full rounded-xl border bg-muted/50 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-violet-500/50"
+                      disabled={parseInput.isPending}
+                    />
 
                     {/* Tinted suggestion pills */}
                     <div className="mt-3 grid grid-cols-2 gap-2">
@@ -294,6 +281,26 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm, onStartWork
                 )}
               </AnimatePresence>
             </motion.div>
+
+            {/* CTA button — fixed at sheet bottom, right above keyboard */}
+            {step === 'input' && (
+              <div className="px-4 pb-4 pt-2">
+                <button
+                  onClick={handleSubmit}
+                  disabled={!input.trim() || parseInput.isPending}
+                  className="w-full rounded-xl bg-violet-500 py-3.5 text-base font-semibold text-white disabled:opacity-40 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                >
+                  {parseInput.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Quick Add
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </motion.div>
         </>
       )}

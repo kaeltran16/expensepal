@@ -22,7 +22,7 @@ type NavItem = {
 }
 
 const LEFT_NAV_ITEMS: NavItem[] = [
-  { id: 'feed', label: 'Home', icon: Home },
+  { id: 'expenses', label: 'Home', icon: Home },
   { id: 'workouts', label: 'Workouts', icon: Dumbbell },
 ]
 
@@ -31,7 +31,7 @@ const RIGHT_NAV_ITEMS: NavItem[] = [
   { id: 'more', label: 'More', icon: MoreHorizontal },
 ]
 
-const MORE_VIEWS: ViewType[] = ['expenses', 'insights', 'calories', 'budget', 'goals', 'recurring', 'summary', 'profile']
+const MORE_VIEWS: ViewType[] = ['insights', 'calories', 'budget', 'goals', 'recurring', 'summary', 'profile']
 
 export function BottomNavigation({ activeView, onViewChange, onAddExpense, onOpenMore, isMoreOpen }: BottomNavProps) {
   const handleNavClick = (viewId: ViewType | 'more') => {

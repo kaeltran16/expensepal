@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic'
 
 import { BottomNavigation } from '@/components/bottom-navigation';
-import { BudgetAlerts } from '@/components/budget-alerts';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { FilterSheet } from '@/components/filter-sheet';
 import { Navbar } from '@/components/navbar';
@@ -15,8 +14,7 @@ import { PullToRefreshWrapper } from '@/components/pull-to-refresh-wrapper';
 import { PushNotificationManager } from '@/components/push-notification-manager';
 import { NLInputSheet } from '@/components/nl-input-sheet';
 import { QuickExpenseForm } from '@/components/quick-expense-form';
-import { QuickStatsOverview } from '@/components/quick-stats-overview';
-import { QuickStatsSkeleton } from '@/components/quick-stats-skeleton';
+import { BentoStats, BentoStatsSkeleton } from '@/components/bento-stats';
 import { SearchBar } from '@/components/search-bar';
 import { Button } from '@/components/ui/button';
 import { Pressable } from '@/components/ui/pressable';
@@ -100,7 +98,7 @@ function HomeContent() {
   // Client-side UI state (needs to be before hooks that depend on it)
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'feed');
+  const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
 
   // Core hooks - always loaded for expenses view (default)
   const { data: expenses = [], isLoading: expensesLoading, refetch: refetchExpenses } = useExpenses();
@@ -110,7 +108,7 @@ function HomeContent() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgets(
     { month: currentMonth },
-    { enabled: ['budget', 'expenses', 'feed'].includes(activeView) }
+    { enabled: ['budget', 'expenses'].includes(activeView) }
   );
 
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -252,9 +250,9 @@ function HomeContent() {
   // Sync active view with URL query params
   useEffect(() => {
     const currentView = searchParams.get('view') as ViewType;
-    if (activeView !== 'feed' && activeView !== currentView) {
+    if (activeView !== 'expenses' && activeView !== currentView) {
       router.replace(`/?view=${activeView}`, { scroll: false });
-    } else if (activeView === 'feed' && currentView) {
+    } else if (activeView === 'expenses' && currentView) {
       router.replace('/', { scroll: false });
     }
   }, [activeView, router, searchParams]);
@@ -357,62 +355,28 @@ function HomeContent() {
     });
   };
 
-  const todayExpenses = expenses.filter((e) => {
+  const todayExpenses = useMemo(() => {
     const today = new Date().toDateString();
-    const expenseDate = new Date(e.transaction_date).toDateString();
-    return today === expenseDate;
-  });
+    return expenses.filter((e) => new Date(e.transaction_date).toDateString() === today);
+  }, [expenses]);
 
-  const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const todayTotal = useMemo(() => todayExpenses.reduce((sum, e) => sum + e.amount, 0), [todayExpenses]);
 
-  // Calculate week total
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  weekStart.setHours(0, 0, 0, 0);
+  const weekExpenses = useMemo(() => {
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    return expenses.filter((e) => new Date(e.transaction_date) >= weekStart);
+  }, [expenses]);
+  const weekTotal = useMemo(() => weekExpenses.reduce((sum, e) => sum + e.amount, 0), [weekExpenses]);
 
-  const weekExpenses = expenses.filter((e) => {
-    const expenseDate = new Date(e.transaction_date);
-    return expenseDate >= weekStart;
-  });
-  const weekTotal = weekExpenses.reduce((sum, e) => sum + e.amount, 0);
-
-  // Calculate month total
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-
-  const monthExpenses = expenses.filter((e) => {
-    const expenseDate = new Date(e.transaction_date);
-    return expenseDate >= monthStart;
-  });
-  const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
-
-  // Calculate last month's spending through the same day for fair comparison
-  const now = new Date();
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-  const lastMonthSameDay = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate(), 23, 59, 59, 999);
-
-  const lastMonthExpenses = expenses.filter((e) => {
-    const expenseDate = new Date(e.transaction_date);
-    return expenseDate >= lastMonthStart && expenseDate <= lastMonthSameDay;
-  });
-  const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
-
-  // Compute last 7 days spending for sparkline (oldest first)
-  const sparklineData = useMemo(() => {
-    const days: number[] = []
-    const now = new Date()
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now)
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toDateString()
-      const dayTotal = expenses
-        .filter((e) => new Date(e.transaction_date).toDateString() === dateStr)
-        .reduce((sum, e) => sum + e.amount, 0)
-      days.push(dayTotal)
-    }
-    return days
-  }, [expenses])
+  const monthExpenses = useMemo(() => {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    return expenses.filter((e) => new Date(e.transaction_date) >= monthStart);
+  }, [expenses]);
+  const monthTotal = useMemo(() => monthExpenses.reduce((sum, e) => sum + e.amount, 0), [monthExpenses]);
 
   return (
     <>
@@ -425,7 +389,7 @@ function HomeContent() {
           hapticFeedback('light')
         }}
         onLogoClick={() => {
-          setActiveView('feed')
+          setActiveView('expenses')
           hapticFeedback('light')
         }}
       />
@@ -434,7 +398,7 @@ function HomeContent() {
       <SheetBackdropContent>
       <PullToRefreshWrapper
         onRefresh={handleRefresh}
-        enabled={['feed', 'expenses', 'budget', 'insights', 'calories', 'routines'].includes(activeView)}
+        enabled={['expenses', 'budget', 'insights', 'calories', 'routines'].includes(activeView)}
       >
         <div
           ref={contentRef}
@@ -467,25 +431,24 @@ function HomeContent() {
         <div className="px-4 space-y-4 mt-4">
           {activeView === 'expenses' && (
             <>
-              {/* Quick Stats Overview */}
+              {/* Bento Stats Dashboard */}
               {loading ? (
-                <QuickStatsSkeleton />
+                <BentoStatsSkeleton />
               ) : (
-                <QuickStatsOverview
+                <BentoStats
                   todayTotal={todayTotal}
                   todayCount={todayExpenses.length}
                   weekTotal={weekTotal}
                   monthTotal={monthTotal}
-                  lastMonthTotal={lastMonthTotal}
-                  sparklineData={sparklineData}
                   currency={profile?.currency || 'VND'}
                   budgets={budgets}
-                  monthSpentSoFar={monthTotal}
+                  expenses={monthExpenses}
+                  onBudgetTap={() => {
+                    setActiveView('budget')
+                    hapticFeedback('light')
+                  }}
                 />
               )}
-
-              {/* Budget Alerts */}
-              {!loading && <BudgetAlerts expenses={expenses} />}
 
               {/* Search and Filter Bar - iOS optimized */}
               <div className="flex gap-3 pt-2">
