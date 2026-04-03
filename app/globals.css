@@ -306,6 +306,26 @@
   }
 
   /* =============================================================================
+     SPLASH SCREEN ANIMATIONS
+     ============================================================================= */
+  @keyframes splash-scale-in {
+    0% { opacity: 0; transform: scale(0.7); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes splash-fade-up {
+    0% { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes splash-fade-in {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes splash-bar-bounce {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.8); }
+  }
+
+  /* =============================================================================
      GPU ACCELERATION FOR ANIMATIONS
      ============================================================================= */
   .will-animate {

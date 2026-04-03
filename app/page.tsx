@@ -60,8 +60,10 @@ import { ViewTransition } from '@/components/view-transition';
 import { AnimatePresence, motion } from 'motion/react';
 import { Filter } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MoreSheet } from '@/components/more-sheet';
+import { SplashScreen } from '@/components/splash-screen';
+import { useAuth } from '@/components/auth-provider';
 
 // Workout completion data type
 type WorkoutCompletionData = {
@@ -759,10 +761,32 @@ function HomeContent() {
   );
 }
 
+function SplashGate({ children }: { children: React.ReactNode }) {
+  const { loading: authLoading } = useAuth()
+  const [showSplash, setShowSplash] = useState(true)
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), 1500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const handleSplashFinished = useCallback(() => setShowSplash(false), [])
+  const ready = minTimeElapsed && !authLoading
+
+  if (showSplash) {
+    return <SplashScreen ready={ready} onFinished={handleSplashFinished} />
+  }
+
+  return <>{children}</>
+}
+
 export default function Home() {
   return (
-    <Suspense fallback={null}>
-      <HomeContent />
-    </Suspense>
+    <SplashGate>
+      <Suspense fallback={null}>
+        <HomeContent />
+      </Suspense>
+    </SplashGate>
   );
 }
