@@ -774,11 +774,12 @@ function SplashGate({ children }: { children: React.ReactNode }) {
   const handleSplashFinished = useCallback(() => setShowSplash(false), [])
   const ready = minTimeElapsed && !authLoading
 
-  if (showSplash) {
-    return <SplashScreen ready={ready} onFinished={handleSplashFinished} />
-  }
-
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      {showSplash && <SplashScreen ready={ready} onFinished={handleSplashFinished} />}
+    </>
+  )
 }
 
 export default function Home() {
