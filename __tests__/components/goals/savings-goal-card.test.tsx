@@ -179,7 +179,7 @@ describe('SavingsGoalCard', () => {
     it('should apply animation delay based on index', () => {
       const { container } = render(<SavingsGoalCard {...defaultProps} index={2} />)
 
-      // The motion.div with layout prop should be rendered
+      // The motion.div should be rendered
       const card = container.querySelector('.ios-card')
       expect(card).toBeInTheDocument()
     })

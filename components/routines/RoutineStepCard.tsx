@@ -40,7 +40,6 @@ export function RoutineStepCard({
 
   return (
     <motion.div
-      layout
       {...variants.slideUp}
       transition={springs.ios}
       className={cn(

@@ -5,7 +5,6 @@ import { hapticFeedback } from '@/lib/utils';
 import { springs } from '@/lib/motion-system';
 import { AnimatePresence, motion } from 'motion/react';
 import { forwardRef, useState } from 'react';
-import { useReducedMotion } from '@/hooks/use-motion';
 import { SwipeableCard } from '@/components/ui/swipeable-card';
 import { CATEGORY_CONFIG, ExpenseCardHeader } from '@/components/expense-card/expense-card-header';
 import { ExpenseCardDetails } from '@/components/expense-card/expense-card-details';
@@ -35,7 +34,6 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
   }, ref) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const reducedMotion = useReducedMotion();
 
   const categoryConfig = (CATEGORY_CONFIG[expense.category || 'Other'] || CATEGORY_CONFIG.Other)!;
 
@@ -66,7 +64,6 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
     >
       <motion.div
         ref={ref}
-        layout={!reducedMotion}
         transition={springs.ios}
         className="ios-card overflow-hidden relative group"
         data-testid="expense-card"

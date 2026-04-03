@@ -486,7 +486,6 @@ function RecommendationCard({ recommendation: rec, index, onDismiss }: Recommend
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, x: -200, transition: { duration: durations.standard } }}

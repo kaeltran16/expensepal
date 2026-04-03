@@ -100,7 +100,6 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
       {/* Card */}
       <motion.div
         ref={cardRef}
-        layout
         drag="x"
         dragConstraints={{ left: -80, right: 80 }}
         dragElastic={0.1}
