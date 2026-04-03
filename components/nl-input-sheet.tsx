@@ -77,20 +77,32 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm, onStartWork
     }
   }, [open])
 
-  // iOS keyboard avoidance: adjust sheet position when virtual keyboard opens
+  // iOS keyboard avoidance: adjust sheet position when virtual keyboard opens.
+  // Must account for vv.offsetTop (iOS scrolls the viewport to reveal the
+  // focused input) and listen to both resize and scroll events.
   useEffect(() => {
     if (!open) { setKeyboardOffset(0); return }
     const vv = window.visualViewport
     if (!vv) return
 
-    const onResize = () => {
-      const offset = window.innerHeight - vv.height
-      setKeyboardOffset(offset > 0 ? offset : 0)
+    let rafId = 0
+    const update = () => {
+      const next = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      setKeyboardOffset(prev => prev === next ? prev : next)
+    }
+    const onViewportChange = () => {
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(update)
     }
 
-    vv.addEventListener('resize', onResize)
-    onResize()
-    return () => vv.removeEventListener('resize', onResize)
+    vv.addEventListener('resize', onViewportChange)
+    vv.addEventListener('scroll', onViewportChange)
+    update()
+    return () => {
+      cancelAnimationFrame(rafId)
+      vv.removeEventListener('resize', onViewportChange)
+      vv.removeEventListener('scroll', onViewportChange)
+    }
   }, [open])
 
   const handleSubmit = async () => {
