@@ -39,6 +39,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm, onStartWork
   const [step, setStep] = useState<'input' | 'confirm' | 'done'>('input')
   const [keyboardOffset, setKeyboardOffset] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const parseInput = useParseInput()
   const executeInput = useExecuteParsedInput()
   const suggestions = useQuickSuggestions(4)
@@ -60,10 +61,20 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm, onStartWork
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // iOS scroll lock: overflow:hidden alone doesn't work on iOS Safari/PWA.
+  // Block touchmove at document level to prevent background scroll without
+  // layout shifts that clash with the backdrop scale animation.
   useEffect(() => {
     if (!open) return
+    const prevent = (e: TouchEvent) => {
+      if (!panelRef.current?.contains(e.target as Node)) e.preventDefault()
+    }
+    document.addEventListener('touchmove', prevent, { passive: false })
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      document.removeEventListener('touchmove', prevent)
+      document.body.style.overflow = ''
+    }
   }, [open])
 
   // iOS keyboard avoidance: adjust sheet position when virtual keyboard opens
@@ -143,6 +154,7 @@ export function NLInputSheet({ open, onOpenChange, onFallbackToForm, onStartWork
 
           {/* Bottom panel */}
           <motion.div
+            ref={panelRef}
             className="fixed inset-x-0 z-[60] bg-background rounded-t-2xl"
             {...variants.sheet}
             transition={springs.sheet}
