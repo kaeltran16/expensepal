@@ -8,13 +8,16 @@ export function SplashScreen({ ready, onFinished }: { ready: boolean; onFinished
   onFinishedRef.current = onFinished
 
   useEffect(() => {
-    if (!ready || exiting) return
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!ready) return
     setExiting(true)
+  }, [ready])
+
+  useEffect(() => {
+    if (!exiting) return
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const timer = setTimeout(() => onFinishedRef.current(), prefersReducedMotion ? 0 : 500)
     return () => clearTimeout(timer)
-  }, [ready, exiting])
+  }, [exiting])
 
   return (
     <div
