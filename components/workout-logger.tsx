@@ -21,7 +21,7 @@ interface PersonalRecord {
 }
 
 interface WorkoutLoggerProps {
-  template: WorkoutTemplate
+  template: WorkoutTemplate | null
   exercises: { id: string; name: string }[]
   onComplete: (workoutData: WorkoutData) => Promise<void>
   onCancel: () => void
@@ -51,6 +51,11 @@ export function WorkoutLogger({
 
   // Initialize exercise logs from template
   useEffect(() => {
+    if (!template) {
+      setExerciseLogs([])
+      onExerciseLogsChange?.([])
+      return
+    }
     const templateExercises = (template.exercises as unknown as TemplateExercise[]) || []
     const logs: ExerciseLog[] = templateExercises.map((te) => {
       const exercise = exercises.find((e) => e.id === te.exercise_id)
@@ -59,7 +64,7 @@ export function WorkoutLogger({
         exercise_name: exercise?.name || 'unknown',
         sets: [],
         target_sets: te.sets || 3,
-        target_reps: String(te.reps || '10'), // Convert to string
+        target_reps: String(te.reps || '10'),
         target_rest: te.rest || 60
       }
     })
@@ -167,10 +172,10 @@ export function WorkoutLogger({
       }, 0)
 
       // For AI-generated workouts, template_id is not a real UUID, so pass null
-      const isGeneratedWorkout = template.id.startsWith('generated-')
+      const isGeneratedWorkout = template?.id?.startsWith('generated-')
 
       const workoutData: WorkoutData = {
-        template_id: isGeneratedWorkout ? null : template.id,
+        template_id: isGeneratedWorkout ? null : (template?.id ?? null),
         exercises_completed: exerciseLogs,
         duration_minutes: duration,
         total_volume: totalVolume
@@ -223,7 +228,7 @@ export function WorkoutLogger({
             <WorkoutProgress
               currentExerciseIndex={currentExerciseIndex}
               totalExercises={exerciseLogs.length}
-              templateName={template.name}
+              templateName={template?.name || 'Quick Workout'}
             />
           </div>
           <Button
@@ -466,7 +471,7 @@ export function WorkoutLogger({
       {/* Workout Summary */}
       <WorkoutSummary
         show={showSummary}
-        templateName={template.name}
+        templateName={template?.name || 'Quick Workout'}
         exerciseLogs={exerciseLogs}
         durationMinutes={durationMinutes}
         personalRecords={detectedPRs}

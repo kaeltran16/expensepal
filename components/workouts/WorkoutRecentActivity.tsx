@@ -1,56 +1,24 @@
 'use client'
 
 import { getStaggerDelay, springs, variants } from '@/lib/motion-system'
+import { hapticFeedback } from '@/lib/utils'
+import { formatDistanceToNow } from 'date-fns'
 import { motion } from 'motion/react'
-import { Calendar, Award } from 'lucide-react'
-import { format } from 'date-fns'
+import { CheckCircle2 } from 'lucide-react'
 import type { Workout } from '@/lib/supabase'
 
 interface WorkoutRecentActivityProps {
   recentWorkouts: Workout[]
+  templateNameMap?: Map<string, string>
   maxVisible?: number
-}
-
-function WorkoutHistoryCard({
-  workout,
-  index
-}: {
-  workout: Workout
-  index: number
-}) {
-  const completedDate = workout.completed_at ? new Date(workout.completed_at) : null
-  const workoutName = workout.notes || 'Workout'
-
-  return (
-    <motion.div
-      {...variants.slideUp}
-      transition={{ delay: getStaggerDelay(index), ...springs.ios }}
-      className="ios-card p-4 flex items-center gap-3"
-    >
-      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-        <Award className="h-5 w-5 text-primary" />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-semibold truncate">{workoutName}</h4>
-        <p className="text-xs text-muted-foreground">
-          {completedDate ? format(completedDate, 'MMM d, h:mm a') : 'Unknown date'}
-          {workout.duration_minutes && ` \u2022 ${workout.duration_minutes}min`}
-        </p>
-      </div>
-
-      <div className="shrink-0">
-        <span className="text-xs text-muted-foreground">
-          {workout.status === 'completed' ? '\u2713 Done' : workout.status}
-        </span>
-      </div>
-    </motion.div>
-  )
+  onViewAll?: () => void
 }
 
 export function WorkoutRecentActivity({
   recentWorkouts,
-  maxVisible = 3
+  templateNameMap,
+  maxVisible = 3,
+  onViewAll,
 }: WorkoutRecentActivityProps) {
   if (recentWorkouts.length === 0) {
     return null
@@ -62,22 +30,53 @@ export function WorkoutRecentActivity({
     <motion.div
       {...variants.slideUp}
       transition={springs.ios}
-      className="space-y-3"
+      className="ios-card p-4"
     >
-      <div className="flex items-center gap-2 px-1">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <h3 className="ios-headline">Recent Activity</h3>
+      <h3 className="text-sm font-semibold mb-3">Recent Activity</h3>
+
+      <div className="space-y-0">
+        {visibleWorkouts.map((workout, index) => {
+          const completedDate = workout.completed_at ? new Date(workout.completed_at) : null
+          const workoutName = workout.notes || (workout.template_id && templateNameMap?.get(workout.template_id)) || 'Quick Workout'
+          const isLast = index === visibleWorkouts.length - 1
+
+          return (
+            <motion.div
+              key={workout.id}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: getStaggerDelay(index), ...springs.ios }}
+              className={`flex items-center gap-3 py-2.5 ${!isLast ? 'border-b border-border/50' : ''}`}
+            >
+              <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{workoutName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {completedDate
+                    ? formatDistanceToNow(completedDate, { addSuffix: true })
+                    : 'Unknown'}
+                  {workout.duration_minutes && ` \u00B7 ${workout.duration_minutes}min`}
+                  {workout.total_volume && ` \u00B7 ${Math.round(workout.total_volume).toLocaleString()} kg`}
+                </p>
+              </div>
+            </motion.div>
+          )
+        })}
       </div>
 
-      <div className="space-y-2">
-        {visibleWorkouts.map((workout, index) => (
-          <WorkoutHistoryCard
-            key={workout.id}
-            workout={workout}
-            index={index}
-          />
-        ))}
-      </div>
+      {recentWorkouts.length > maxVisible && onViewAll && (
+        <button
+          onClick={() => {
+            onViewAll()
+            hapticFeedback('light')
+          }}
+          className="text-xs text-primary font-medium mt-2 block"
+        >
+          View all &rarr;
+        </button>
+      )}
     </motion.div>
   )
 }

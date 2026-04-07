@@ -117,16 +117,16 @@ function HomeContent() {
   const { mutateAsync: updateProfile } = useUpdateProfile();
 
   // Workout tracking hooks - only load when viewing workouts
-  const weekAgo = useMemo(() => {
+  const twoWeeksAgo = useMemo(() => {
     const date = new Date()
-    date.setDate(date.getDate() - 7)
+    date.setDate(date.getDate() - 14)
     return date.toISOString()
   }, [])
   const { data: workoutTemplates = [], isLoading: templatesLoading } = useWorkoutTemplates({
     enabled: activeView === 'workouts'
   })
   const { data: workouts = [] } = useWorkouts(
-    { startDate: weekAgo },
+    { startDate: twoWeeksAgo },
     { enabled: activeView === 'workouts' }
   )
   const { data: exercises = [] } = useExercises({
@@ -146,7 +146,7 @@ function HomeContent() {
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [showAllExpenses, setShowAllExpenses] = useState(false);
   const [showAllMeals, setShowAllMeals] = useState(false);
-  const [activeWorkout, setActiveWorkout] = useState<WorkoutTemplate | null>(null);
+  const [activeWorkout, setActiveWorkout] = useState<WorkoutTemplate | null | undefined>(undefined);
   const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>([]);
   const [editingWorkoutExercises, setEditingWorkoutExercises] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -585,9 +585,17 @@ function HomeContent() {
                   <WorkoutsView
                     templates={workoutTemplates}
                     recentWorkouts={workouts}
+                    exercises={exercises}
                     loading={templatesLoading}
                     onStartWorkout={(template) => {
                       setActiveWorkout(template)
+                      setExerciseLogs([])
+                      setEditingWorkoutExercises(false)
+                      setActiveView('summary')
+                      hapticFeedback('medium')
+                    }}
+                    onStartEmptyWorkout={() => {
+                      setActiveWorkout(null)
                       setExerciseLogs([])
                       setEditingWorkoutExercises(false)
                       setActiveView('summary')
@@ -706,7 +714,7 @@ function HomeContent() {
 
       <AnimatePresence>
         {(() => {
-          const shouldShow = activeWorkout && activeView !== 'workouts'
+          const shouldShow = activeWorkout !== undefined && activeView !== 'workouts'
           return shouldShow && (
             <WorkoutLogger
               template={activeWorkout}
@@ -725,11 +733,11 @@ function HomeContent() {
                   })),
                 }
                 await createWorkout(apiData)
-                setActiveWorkout(null)
+                setActiveWorkout(undefined)
                 setExerciseLogs([])
               }}
               onCancel={() => {
-                setActiveWorkout(null)
+                setActiveWorkout(undefined)
                 setExerciseLogs([])
               }}
               onEditExercises={() => {
@@ -761,17 +769,26 @@ function HomeContent() {
   );
 }
 
+const SPLASH_SHOWN_KEY = 'splash_shown'
+
 function SplashGate({ children }: { children: React.ReactNode }) {
   const { loading: authLoading } = useAuth()
-  const [showSplash, setShowSplash] = useState(true)
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return !sessionStorage.getItem(SPLASH_SHOWN_KEY)
+  })
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
 
   useEffect(() => {
+    if (!showSplash) return
     const timer = setTimeout(() => setMinTimeElapsed(true), 1500)
     return () => clearTimeout(timer)
-  }, [])
+  }, [showSplash])
 
-  const handleSplashFinished = useCallback(() => setShowSplash(false), [])
+  const handleSplashFinished = useCallback(() => {
+    sessionStorage.setItem(SPLASH_SHOWN_KEY, '1')
+    setShowSplash(false)
+  }, [])
   const ready = minTimeElapsed && !authLoading
 
   return (

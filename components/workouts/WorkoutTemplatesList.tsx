@@ -1,9 +1,9 @@
 'use client'
 
 import { motion, AnimatePresence } from 'motion/react'
-import { Plus, ChevronRight, Clock, Dumbbell, Edit, ArrowLeft, Trash2, AlertTriangle } from 'lucide-react'
+import { Plus, ChevronRight, Dumbbell, Edit, ArrowLeft, Trash2, AlertTriangle, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+
 import { EmptyState } from '@/components/ui/empty-state'
 import {
   AlertDialog,
@@ -18,48 +18,57 @@ import {
 import { getStaggerDelay, springs, variants } from '@/lib/motion-system'
 import { hapticFeedback } from '@/lib/utils'
 import type { WorkoutTemplate } from '@/lib/supabase'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 
 interface WorkoutTemplatesListProps {
   templates: WorkoutTemplate[]
+  exerciseMap?: Map<string, { name: string; muscle_groups: string[] }>
   onTemplateClick: (template: WorkoutTemplate) => void
   onEditTemplate?: (template: WorkoutTemplate) => void
   onDeleteTemplate?: (template: WorkoutTemplate) => void
   onCreateTemplate: () => void
+  onGenerateWorkout?: () => void
   maxVisible?: number
 }
 
-const difficultyConfig = {
-  beginner: {
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    border: 'border-l-green-500'
-  },
-  intermediate: {
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    border: 'border-l-blue-500'
-  },
-  advanced: {
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    border: 'border-l-red-500'
-  }
+const difficultyStyles: Record<string, { gradient: string; badge: string }> = {
+  beginner: { gradient: 'from-green-400 to-emerald-500', badge: 'text-green-600 dark:text-green-400' },
+  intermediate: { gradient: 'from-blue-400 to-indigo-500', badge: 'text-blue-600 dark:text-blue-400' },
+  advanced: { gradient: 'from-red-400 to-purple-500', badge: 'text-red-600 dark:text-red-400' },
 }
 
 function TemplateCard({
   template,
   index,
+  exerciseMap,
   onClick,
   onEdit,
   onDelete
 }: {
   template: WorkoutTemplate
   index: number
+  exerciseMap?: Map<string, { name: string; muscle_groups: string[] }>
   onClick: () => void
   onEdit?: () => void
   onDelete?: () => void
 }) {
   const exercises = (template.exercises as unknown as Array<{ exercise_id: string }>) || []
-  const config = difficultyConfig[template.difficulty as keyof typeof difficultyConfig] || difficultyConfig.beginner
+  const styles = difficultyStyles[template.difficulty as string] || difficultyStyles.beginner
+
+  const muscleGroupText = useMemo(() => {
+    if (!exerciseMap) return ''
+    const groups = new Set<string>()
+    for (const ex of exercises) {
+      const exData = exerciseMap.get(ex.exercise_id)
+      if (exData) {
+        for (const mg of exData.muscle_groups) {
+          groups.add(mg.charAt(0).toUpperCase() + mg.slice(1))
+        }
+      }
+    }
+    return Array.from(groups).slice(0, 3).join(', ')
+  }, [exercises, exerciseMap])
 
   // Native touch-based swipe state
   const [translateX, setTranslateX] = useState(0)
@@ -154,43 +163,8 @@ function TemplateCard({
             transition: isAnimating ? 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
             willChange: 'transform',
           }}
-          className={`w-full ios-card p-4 border-l-4 ${config.border} group cursor-pointer relative z-10 bg-background`}
+          className="w-full ios-card p-3.5 group cursor-pointer relative z-10 bg-background"
         >
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <button
-              onClick={() => {
-                if (!isDraggingRef.current) {
-                  onClick()
-                  hapticFeedback('light')
-                }
-              }}
-              className="flex-1 min-w-0 text-left"
-            >
-              <h4 className="text-sm font-semibold mb-1 truncate">{template.name}</h4>
-              <p className="text-xs text-muted-foreground line-clamp-1">{template.description}</p>
-            </button>
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge className={`${config.color} border-0`}>
-                {template.difficulty}
-              </Badge>
-              {onEdit && !template.is_default && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEdit()
-                    hapticFeedback('light')
-                  }}
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Edit template"
-                >
-                  <Edit className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-          </div>
-
           <button
             onClick={() => {
               if (!isDraggingRef.current) {
@@ -198,18 +172,43 @@ function TemplateCard({
                 hapticFeedback('light')
               }
             }}
-            className="w-full flex items-center gap-4 text-sm text-muted-foreground"
+            className="w-full flex items-center gap-3"
           >
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              <span>{template.duration_minutes}min</span>
+            <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${styles.gradient} flex items-center justify-center shrink-0`}>
+              <Dumbbell className="h-5 w-5 text-white" />
             </div>
-            <div className="flex items-center gap-1.5">
-              <Dumbbell className="h-3.5 w-3.5" />
-              <span>{exercises.length} exercises</span>
+
+            <div className="flex-1 min-w-0 text-left">
+              <h4 className="text-sm font-semibold truncate">{template.name}</h4>
+              {muscleGroupText && (
+                <p className="text-[11px] text-muted-foreground truncate">{muscleGroupText}</p>
+              )}
+              <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                <span>{exercises.length} exercises</span>
+                <span>&middot;</span>
+                <span>{template.duration_minutes}min</span>
+                <span className={styles.badge}>{template.difficulty}</span>
+              </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
+
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
           </button>
+
+          {onEdit && !template.is_default && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit()
+                hapticFeedback('light')
+              }}
+              className="absolute top-2 right-8 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Edit template"
+            >
+              <Edit className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </motion.div>
 
@@ -242,10 +241,12 @@ function TemplateCard({
 
 export function WorkoutTemplatesList({
   templates,
+  exerciseMap,
   onTemplateClick,
   onEditTemplate,
   onDeleteTemplate,
   onCreateTemplate,
+  onGenerateWorkout,
   maxVisible = 5
 }: WorkoutTemplatesListProps) {
   const [showAllTemplates, setShowAllTemplates] = useState(false)
@@ -255,19 +256,33 @@ export function WorkoutTemplatesList({
     <>
       <div className="space-y-3 overflow-visible">
         <div className="flex items-center justify-between px-1">
-          <h3 className="ios-headline">Templates</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary gap-1"
-            onClick={() => {
-              onCreateTemplate()
-              hapticFeedback('light')
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            New Template
-          </Button>
+          <h3 className="ios-headline">My Templates</h3>
+          <div className="flex items-center gap-3">
+            {onGenerateWorkout && (
+              <button
+                onClick={() => {
+                  onGenerateWorkout()
+                  hapticFeedback('light')
+                }}
+                className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 font-medium"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                AI Generate
+              </button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary gap-1"
+              onClick={() => {
+                onCreateTemplate()
+                hapticFeedback('light')
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              New
+            </Button>
+          </div>
         </div>
 
         {templates.length === 0 ? (
@@ -288,6 +303,7 @@ export function WorkoutTemplatesList({
                 key={template.id}
                 template={template}
                 index={index}
+                exerciseMap={exerciseMap}
                 onClick={() => onTemplateClick(template)}
                 onEdit={onEditTemplate ? () => onEditTemplate(template) : undefined}
                 onDelete={onDeleteTemplate ? () => onDeleteTemplate(template) : undefined}
