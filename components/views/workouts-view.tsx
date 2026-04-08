@@ -13,7 +13,9 @@ import {
   WorkoutTemplatesList,
   WorkoutTodayHeader,
   WorkoutWeekStrip,
+  CardioView,
 } from '@/components/workouts'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTodayScheduledWorkout, useThisWeekScheduledWorkouts } from '@/lib/hooks/use-workout-schedule'
 import type { Exercise, Workout, WorkoutTemplate, WorkoutTemplateInsert, WorkoutTemplateUpdate } from '@/lib/supabase'
 import type { ExerciseLog } from '@/lib/types/common'
@@ -165,7 +167,18 @@ export function WorkoutsView({
   }
 
   return (
-    <div className="space-y-3 pb-24">
+    <Tabs defaultValue="strength" className="pb-24">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="strength" className="text-xs">
+          Strength
+        </TabsTrigger>
+        <TabsTrigger value="cardio" className="text-xs">
+          Cardio
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="strength" className="mt-3">
+        <div className="space-y-3">
       <WorkoutTodayHeader
         todayWorkout={todayWorkout}
         todayCompleted={todayCompleted}
@@ -365,7 +378,13 @@ export function WorkoutsView({
           }
         }}
       />
-    </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="cardio" className="mt-3">
+        <CardioView />
+      </TabsContent>
+    </Tabs>
   )
 }
 

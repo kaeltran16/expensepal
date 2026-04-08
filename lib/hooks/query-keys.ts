@@ -212,6 +212,15 @@ export const queryKeys = {
     details: () => [...queryKeys.routineJournal.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.routineJournal.details(), id] as const,
   },
+  // Cardio
+  cardio: {
+    plans: ['cardio-plans'] as const,
+    activePlan: () => [...queryKeys.cardio.plans, 'active'] as const,
+    sessions: ['cardio-sessions'] as const,
+    sessionList: (filters: CardioSessionFilters) =>
+      [...queryKeys.cardio.sessions, { filters }] as const,
+  },
+
   // AI Layer
   ai: {
     all: ['ai'] as const,
@@ -286,4 +295,9 @@ export interface RoutineJournalFilters {
   limit?: number
   startDate?: string
   endDate?: string
+}
+
+export interface CardioSessionFilters {
+  startDate?: string
+  limit?: number
 }
