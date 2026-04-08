@@ -116,37 +116,48 @@ export function ExpensesView({
 
   if (loading) {
     return (
-      <div className="space-y-3">
+      <motion.div
+        className="space-y-3"
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+      >
         {[1, 2, 3, 4].map((i) => (
           <ExpenseCardSkeleton key={i} />
         ))}
-      </div>
+      </motion.div>
     );
   }
 
   // Empty state - no expenses at all
   if (expenses.length === 0) {
     return (
-      <EmptyState
-        icon="💸"
-        title="No expenses yet"
-        description="Start tracking your spending by adding an expense manually or syncing your emails"
-        size="lg"
-        animationVariant="bounce"
-        data-testid="empty-expenses"
-        action={{
-          label: 'Add Your First Expense',
-          onClick: onShowForm,
-          icon: <Plus className="h-5 w-5" />,
-        }}
-        secondaryAction={{
-          label: 'Or Sync from Email',
-          onClick: onSync,
-          variant: 'outline',
-          icon: <RefreshCw className="h-5 w-5" />,
-          loading: isSyncing,
-        }}
-      />
+      <motion.div
+        key="empty-expenses"
+        initial={{ opacity: 1 }}
+        exit={{ opacity: 0, scale: 0.94 }}
+        transition={{ duration: 0.1 }}
+      >
+        <EmptyState
+          icon="💸"
+          title="No expenses yet"
+          description="Start tracking your spending by adding an expense manually or syncing your emails"
+          size="lg"
+          animationVariant="bounce"
+          data-testid="empty-expenses"
+          action={{
+            label: 'Add Your First Expense',
+            onClick: onShowForm,
+            icon: <Plus className="h-5 w-5" />,
+          }}
+          secondaryAction={{
+            label: 'Or Sync from Email',
+            onClick: onSync,
+            variant: 'outline',
+            icon: <RefreshCw className="h-5 w-5" />,
+            loading: isSyncing,
+          }}
+        />
+      </motion.div>
     );
   }
 
@@ -206,6 +217,7 @@ export function ExpensesView({
                   left: 0,
                   width: '100%',
                   transform: `translateY(${virtualItem.start}px)`,
+                  animation: 'fadeIn 0.05s ease forwards',
                 }}
               >
                 {item.type === 'header' ? (

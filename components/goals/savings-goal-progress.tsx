@@ -1,12 +1,14 @@
 'use client'
 
-import { formatCurrency } from '@/lib/utils';
-import { motion } from 'motion/react';
+import { formatCurrency } from '@/lib/utils'
+import { motion } from 'motion/react'
+import { springs } from '@/lib/motion-system'
+import { useInView } from 'react-intersection-observer'
 
 interface SavingsGoalProgressProps {
-  progress: number;
-  remaining: number;
-  isCompleted: boolean;
+  progress: number
+  remaining: number
+  isCompleted: boolean
 }
 
 export function SavingsGoalProgress({
@@ -14,13 +16,15 @@ export function SavingsGoalProgress({
   remaining,
   isCompleted,
 }: SavingsGoalProgressProps) {
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 })
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={ref}>
       <div className="h-2 bg-secondary rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: `${Math.min(progress, 100)}%` }}
-          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          animate={inView ? { width: `${Math.min(progress, 100)}%` } : { width: 0 }}
+          transition={springs.ios}
           className={`h-full rounded-full ${
             isCompleted ? 'bg-green-500' : 'bg-primary'
           }`}
@@ -36,5 +40,5 @@ export function SavingsGoalProgress({
         </span>
       </div>
     </div>
-  );
+  )
 }

@@ -14,7 +14,7 @@ import { hapticFeedback } from '@/lib/utils'
 import { motion, PanInfo, useAnimation, useMotionValue, useTransform, animate } from 'motion/react'
 import { springs, durations } from '@/lib/motion-system'
 import { AlertTriangle, Trash2, Heart } from 'lucide-react'
-import { ReactNode, useRef, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
 interface SwipeableCardProps {
   children: ReactNode
@@ -46,6 +46,8 @@ export function SwipeableCard({
   const hasTriggeredDeleteHaptic = useRef(false)
   const hasTriggeredFavoriteHaptic = useRef(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isCollapsing, setIsCollapsing] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   // Delete background opacity (left swipe)
   const deleteBackgroundOpacity = useTransform(
@@ -147,92 +149,103 @@ export function SwipeableCard({
     }
   }
 
-  const handleConfirmDelete = () => {
+  const isMountedRef = useRef(true)
+  useEffect(() => () => { isMountedRef.current = false }, [])
+
+  const handleConfirmDelete = useCallback(() => {
     hapticFeedback('heavy')
     setShowDeleteDialog(false)
 
-    deleteIconControls.start({
-      rotate: [0, -15, 15, -10, 10, 0],
-      scale: [1, 1.3, 1.3, 1.2, 1.1, 1],
-      transition: {
-        duration: durations.slow,
-      }
-    })
-
     cardControls.start({
       opacity: 0,
-      scale: 0.95,
-      transition: {
-        duration: durations.standard,
-      }
+      x: -60,
+      transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
+    }).then(() => {
+      if (isMountedRef.current) setIsCollapsing(true)
     })
-
-    setTimeout(() => {
-      onDelete()
-    }, 300)
-  }
+  }, [cardControls])
 
   return (
-    <motion.div
-      animate={cardControls}
-      className={`relative overflow-hidden rounded-xl ${className}`}
-    >
-      {/* Favorite background (right swipe) - Pink */}
-      {onFavorite && (
+    <>
+      <motion.div
+        ref={wrapperRef}
+        animate={isCollapsing ? {
+          height: 0,
+          marginTop: 0,
+          marginBottom: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          overflow: 'hidden',
+        } : {}}
+        transition={isCollapsing ? springs.ios : {}}
+        onAnimationComplete={() => {
+          if (isCollapsing) {
+            onDelete()
+          }
+        }}
+      >
         <motion.div
-          className="absolute inset-y-0 left-0 flex items-center justify-center rounded-l-xl"
-          style={{
-            background: 'linear-gradient(135deg, rgb(236, 72, 153), rgb(244, 63, 94))',
-            opacity: favoriteBackgroundOpacity,
-            width: ACTION_BUTTON_WIDTH,
-          }}
+          animate={cardControls}
+          className={`relative overflow-hidden rounded-xl ${className}`}
         >
+          {/* Favorite background (right swipe) - Pink */}
+          {onFavorite && (
+            <motion.div
+              className="absolute inset-y-0 left-0 flex items-center justify-center rounded-l-xl"
+              style={{
+                background: 'linear-gradient(135deg, rgb(236, 72, 153), rgb(244, 63, 94))',
+                opacity: favoriteBackgroundOpacity,
+                width: ACTION_BUTTON_WIDTH,
+              }}
+            >
+              <motion.div
+                style={{ scale: favoriteIconScale }}
+                animate={favoriteIconControls}
+              >
+                <Heart className="w-5 h-5 text-white drop-shadow-sm" />
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Delete background (left swipe) - Red */}
           <motion.div
-            style={{ scale: favoriteIconScale }}
-            animate={favoriteIconControls}
+            className="absolute inset-y-0 right-0 flex items-center justify-center rounded-r-xl"
+            style={{
+              backgroundColor: 'rgb(239 68 68)',
+              opacity: deleteBackgroundOpacity,
+              width: ACTION_BUTTON_WIDTH,
+            }}
+            data-testid="delete-action"
           >
-            <Heart className="w-5 h-5 text-white drop-shadow-sm" />
+            <motion.div
+              style={{ scale: deleteIconScale }}
+              animate={deleteIconControls}
+            >
+              <Trash2 className="w-5 h-5 text-white drop-shadow-sm" />
+            </motion.div>
+          </motion.div>
+
+          {/* Swipeable content */}
+          <motion.div
+            drag={disabled ? false : 'x'}
+            dragConstraints={{
+              left: -ACTION_BUTTON_WIDTH,
+              right: onFavorite ? ACTION_BUTTON_WIDTH : 0
+            }}
+            dragElastic={{ left: 0.15, right: onFavorite ? 0.15 : 0 }}
+            dragMomentum={false}
+            dragTransition={{ bounceStiffness: 700, bounceDamping: 35 }}
+            onDragStart={handleDragStart}
+            onDrag={handleDrag}
+            onDragEnd={handleDragEnd}
+            style={{ x }}
+            animate={cardControls}
+            className="relative z-10 bg-background"
+            whileTap={{ scale: 0.97 }}
+          >
+            {children}
           </motion.div>
         </motion.div>
-      )}
-
-      {/* Delete background (left swipe) - Red */}
-      <motion.div
-        className="absolute inset-y-0 right-0 flex items-center justify-center rounded-r-xl"
-        style={{
-          backgroundColor: 'rgb(239 68 68)',
-          opacity: deleteBackgroundOpacity,
-          width: ACTION_BUTTON_WIDTH,
-        }}
-        data-testid="delete-action"
-      >
-        <motion.div
-          style={{ scale: deleteIconScale }}
-          animate={deleteIconControls}
-        >
-          <Trash2 className="w-5 h-5 text-white drop-shadow-sm" />
-        </motion.div>
-      </motion.div>
-
-      {/* Swipeable content */}
-      <motion.div
-        drag={disabled ? false : 'x'}
-        dragConstraints={{
-          left: -ACTION_BUTTON_WIDTH,
-          right: onFavorite ? ACTION_BUTTON_WIDTH : 0
-        }}
-        dragElastic={{ left: 0.15, right: onFavorite ? 0.15 : 0 }}
-        dragMomentum={false}
-        dragTransition={{ bounceStiffness: 700, bounceDamping: 35 }}
-        onDragStart={handleDragStart}
-        onDrag={handleDrag}
-        onDragEnd={handleDragEnd}
-        style={{ x }}
-        animate={cardControls}
-        className="relative z-10 bg-background"
-        whileTap={{ scale: 0.97 }}
-      >
-        {children}
       </motion.div>
 
       {/* Delete Confirmation Dialog */}
@@ -266,6 +279,6 @@ export function SwipeableCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </motion.div>
+    </>
   )
 }

@@ -12,6 +12,7 @@ import {
   type FieldValues,
 } from "react-hook-form"
 
+import { AnimatePresence, motion } from 'motion/react'
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
@@ -145,23 +146,28 @@ FormDescription.displayName = "FormDescription"
 const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, children, ...props }, ref) => {
+>(({ className, children, onDrag: _onDrag, onDragStart: _onDragStart, onDragEnd: _onDragEnd, onAnimationStart: _onAnimationStart, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message ?? "") : children
 
-  if (!body) {
-    return null
-  }
-
   return (
-    <p
-      ref={ref}
-      id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
-      {...props}
-    >
-      {body}
-    </p>
+    <AnimatePresence mode="wait">
+      {body && (
+        <motion.p
+          ref={ref}
+          id={formMessageId}
+          key={String(body)}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className={cn("text-sm font-medium text-destructive", className)}
+          {...props}
+        >
+          {body}
+        </motion.p>
+      )}
+    </AnimatePresence>
   )
 })
 FormMessage.displayName = "FormMessage"

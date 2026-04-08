@@ -1,7 +1,7 @@
 'use client'
 
 import type { Tables } from '@/lib/supabase/database.types';
-import { getStaggerDelay, durations } from '@/lib/motion-system';
+import { getStaggerDelay, springs } from '@/lib/motion-system';
 import { formatCurrency } from '@/lib/utils';
 import { motion } from 'motion/react';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -35,9 +35,9 @@ export function SavingsGoalCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: getStaggerDelay(index), duration: durations.standard }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...springs.ios, delay: getStaggerDelay(index) }}
       className="ios-card p-5"
     >
       {/* Header */}

@@ -6,7 +6,7 @@ import { AddCategoryDialog } from '@/components/add-category-dialog'
 import { SetBudgetDialog } from '@/components/set-budget-dialog'
 import type { Expense } from '@/lib/supabase'
 import { formatCurrency, hapticFeedback } from '@/lib/utils'
-import { getStaggerDelay, durations } from '@/lib/motion-system'
+import { getStaggerDelay, springs } from '@/lib/motion-system'
 import { motion } from 'motion/react'
 import { AlertCircle, CheckCircle, Edit2, Target } from 'lucide-react'
 import { useState, useMemo, useEffect, useRef } from 'react'
@@ -141,9 +141,9 @@ export function BudgetTracker({ expenses, initialEditCategory, initialEditValue 
             <motion.div
               key={category}
               ref={(el) => { categoryRefs.current[category] = el }}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: getStaggerDelay(index), duration: durations.standard }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...springs.ios, delay: getStaggerDelay(index) }}
               className="ios-list-item"
               data-testid="budget-card"
             >
@@ -219,7 +219,7 @@ export function BudgetTracker({ expenses, initialEditCategory, initialEditValue 
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
-                        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                        transition={springs.ios}
                         className={`h-full rounded-full ${
                           status === 'exceeded'
                             ? 'bg-destructive'

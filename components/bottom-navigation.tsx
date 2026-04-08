@@ -62,11 +62,10 @@ export function BottomNavigation({ activeView, onViewChange, onAddExpense, onOpe
         className="relative flex flex-col items-center justify-center flex-1 py-1 ios-touch"
         data-testid={`nav-${item.id}`}
       >
-        {/* Icon - using CSS transform for better performance */}
-        <div
-          className={`relative mb-1 transition-transform duration-200 ease-out ${
-            isActive ? 'scale-100' : 'scale-[0.94]'
-          }`}
+        <motion.div
+          className="relative mb-1"
+          animate={{ scale: isActive ? 1 : 0.94 }}
+          transition={springs.touch}
         >
           <Icon
             className={`h-6 w-6 transition-colors duration-200 ${
@@ -74,7 +73,7 @@ export function BottomNavigation({ activeView, onViewChange, onAddExpense, onOpe
             }`}
             strokeWidth={isActive ? 2.5 : 2}
           />
-        </div>
+        </motion.div>
 
         {/* Label - using CSS for color transition */}
         <span

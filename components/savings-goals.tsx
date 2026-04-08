@@ -85,12 +85,18 @@ export function SavingsGoals() {
 
       {/* Goals List */}
       {goals.length === 0 ? (
-        <EmptyState
-          icon={<Target className="h-16 w-16 text-primary" />}
-          title="No Goals Yet"
-          description="Create your first savings goal to start tracking your progress"
-          animationVariant="pulse"
-        />
+        <motion.div
+          key="empty-goals"
+          exit={{ opacity: 0, scale: 0.94 }}
+          transition={{ duration: 0.1 }}
+        >
+          <EmptyState
+            icon={<Target className="h-16 w-16 text-primary" />}
+            title="No Goals Yet"
+            description="Create your first savings goal to start tracking your progress"
+            animationVariant="pulse"
+          />
+        </motion.div>
       ) : (
         <div className="space-y-3">
           {goals.map((goal, index) => (

@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 import {
   type MotionOptions,
   type MotionProps,
@@ -51,10 +51,6 @@ const PRESS_STYLE = {
   WebkitTapHighlightColor: 'transparent',
 } as const
 
-const PRESS_ACTIVE_STYLE = {
-  transform: 'scale(0.97)',
-} as const
-
 export interface PressProps {
   style: React.CSSProperties
   onTouchStart: () => void
@@ -99,31 +95,6 @@ export function useMotion<V extends VariantName | 'press'>(
 
   // tier 2: macro animations via motion props
   return getMotionProps(variant as VariantName, options) as UseMotionResult<V>
-}
-
-// =============================================================================
-// HOOK: usePressScale
-// =============================================================================
-
-/**
- * Returns handlers and style for press-scale feedback.
- * Uses touchstart/touchend for immediate iOS response.
- */
-export function usePressScale(scale: number = 0.97) {
-  const reducedMotion = useReducedMotion()
-
-  const getStyle = useCallback(
-    (pressed: boolean): React.CSSProperties => {
-      if (reducedMotion) return { WebkitTapHighlightColor: 'transparent' }
-      return {
-        ...PRESS_STYLE,
-        transform: pressed ? `scale(${scale})` : 'scale(1)',
-      }
-    },
-    [reducedMotion, scale]
-  )
-
-  return { getStyle, reducedMotion }
 }
 
 // re-export for convenience

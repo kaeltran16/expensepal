@@ -134,6 +134,10 @@ export function AnalyticsCharts({ expenses, onCategoryFilter }: AnalyticsChartsP
               onClick={(data) => handleCategoryClick(data.name)}
               style={{ cursor: 'pointer' }}
               paddingAngle={2}
+              isAnimationActive={true}
+              animationDuration={600}
+              animationEasing="ease-out"
+              animationBegin={100}
             >
               {categoryData.map((entry, index) => (
                 <Cell
@@ -242,6 +246,10 @@ export function AnalyticsCharts({ expenses, onCategoryFilter }: AnalyticsChartsP
               strokeWidth={2}
               dot={{ fill: '#3b82f6', r: 4 }}
               activeDot={{ r: 6 }}
+              isAnimationActive={true}
+              animationDuration={800}
+              animationEasing="ease-out"
+              animationBegin={200}
             />
           </LineChart>
         </ResponsiveContainer>

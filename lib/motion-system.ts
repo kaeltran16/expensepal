@@ -172,9 +172,9 @@ const reducedVariants: Record<VariantName, typeof variants.fade> = {
 // STAGGER
 // =============================================================================
 
-/** Max 10ms between items per iOS "content as unit" pattern */
-const STAGGER_DELAY = 0.01
-const STAGGER_MAX_ITEMS = 10
+/** Max 40ms between items for visible cascade */
+const STAGGER_DELAY = 0.04
+const STAGGER_MAX_ITEMS = 12
 
 export function getStaggerDelay(index: number): number {
   return Math.min(index, STAGGER_MAX_ITEMS) * STAGGER_DELAY

@@ -17,6 +17,7 @@ interface ExpandableExpenseCardProps {
   onDelete?: (id: string) => void;
   onEdit?: (expense: Expense) => void;
   onUpdate?: (expense: Expense) => void;
+  isNew?: boolean;
 }
 
 const detailVariants = {
@@ -31,6 +32,7 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
     onDelete,
     onEdit,
     onUpdate,
+    isNew,
   }, ref) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -64,10 +66,13 @@ export const ExpandableExpenseCard = forwardRef<HTMLDivElement, ExpandableExpens
     >
       <motion.div
         ref={ref}
-        transition={springs.ios}
+        transition={isNew ? springs.cinematic : springs.ios}
         className="ios-card overflow-hidden relative group"
         data-testid="expense-card"
         animate={isExpanded ? { scale: 1.01 } : { scale: 1 }}
+        style={isNew ? {
+          animation: 'greenFlash 0.3s ease forwards',
+        } : undefined}
       >
         {/* Category background overlay */}
         <div className={`absolute inset-0 ${categoryConfig.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
