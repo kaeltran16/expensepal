@@ -1,12 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
-import { CreateCustomExerciseSchema } from '@/lib/api/schemas'
+import { CreateCustomExerciseSchema, UpdateCustomExerciseSchema } from '@/lib/api/schemas'
 import type { Database } from '@/lib/supabase/database.types'
 
 type CustomExerciseUpdate = Partial<Database['public']['Tables']['custom_exercises']['Update']>
 
-// GET /api/custom-exercises
 export const GET = withAuth(async (_request, user) => {
   const supabase = createClient()
   const { data: customExercises, error } = await supabase
@@ -26,7 +25,6 @@ export const GET = withAuth(async (_request, user) => {
   return NextResponse.json({ customExercises })
 })
 
-// POST /api/custom-exercises
 export const POST = withAuthAndValidation(
   CreateCustomExerciseSchema,
   async (_request, user, validatedData) => {
@@ -53,8 +51,7 @@ export const POST = withAuthAndValidation(
   }
 )
 
-// PUT /api/custom-exercises?id=...
-export const PUT = withAuth(async (request, user) => {
+export const PUT = withAuthAndValidation(UpdateCustomExerciseSchema, async (request, user, validatedData) => {
   const supabase = createClient()
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
@@ -66,7 +63,6 @@ export const PUT = withAuth(async (request, user) => {
     )
   }
 
-  // Verify ownership
   const { data: existing, error: fetchError } = await supabase
     .from('custom_exercises')
     .select('user_id')
@@ -87,34 +83,17 @@ export const PUT = withAuth(async (request, user) => {
     )
   }
 
-  const body = await request.json()
-  const {
-    name,
-    description,
-    muscle_groups,
-    equipment,
-    difficulty,
-    video_url,
-    image_url,
-    instructions,
-    tips
-  } = body
-
   const updates: CustomExerciseUpdate = {}
-  if (name !== undefined) updates.name = name.trim()
-  if (description !== undefined) updates.description = description
-  if (muscle_groups !== undefined) updates.muscle_groups = muscle_groups
-  if (equipment !== undefined) updates.equipment = equipment
-  if (difficulty !== undefined) updates.difficulty = difficulty
-  if (video_url !== undefined) updates.video_url = video_url
-  if (image_url !== undefined) updates.image_url = image_url
-  if (instructions !== undefined) updates.instructions = instructions
-  if (tips !== undefined) updates.tips = tips
+  if (validatedData.name !== undefined) updates.name = validatedData.name.trim()
+  if (validatedData.muscle_group !== undefined) updates.muscle_groups = [validatedData.muscle_group]
+  if (validatedData.equipment !== undefined) updates.equipment = validatedData.equipment
+  if (validatedData.instructions !== undefined) updates.instructions = validatedData.instructions
 
   const { data: customExercise, error } = await supabase
     .from('custom_exercises')
     .update(updates)
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
     .single()
 
@@ -129,7 +108,6 @@ export const PUT = withAuth(async (request, user) => {
   return NextResponse.json({ customExercise })
 })
 
-// DELETE /api/custom-exercises?id=...
 export const DELETE = withAuth(async (request, user) => {
   const supabase = createClient()
   const searchParams = request.nextUrl.searchParams
@@ -142,7 +120,6 @@ export const DELETE = withAuth(async (request, user) => {
     )
   }
 
-  // Verify ownership
   const { data: existing, error: fetchError } = await supabase
     .from('custom_exercises')
     .select('user_id')
@@ -167,6 +144,7 @@ export const DELETE = withAuth(async (request, user) => {
     .from('custom_exercises')
     .delete()
     .eq('id', id)
+    .eq('user_id', user.id)
 
   if (error) {
     console.error('Error deleting custom exercise:', error)

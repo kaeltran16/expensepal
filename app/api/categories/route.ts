@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateCategorySchema } from '@/lib/api/schemas'
 
-// Default categories (hardcoded)
 const DEFAULT_CATEGORIES = [
   { name: 'Food', icon: '🍔', color: '#FF6B35', is_default: true },
   { name: 'Transport', icon: '🚗', color: '#4ECDC4', is_default: true },
@@ -16,11 +15,9 @@ const DEFAULT_CATEGORIES = [
 
 const DEFAULT_CATEGORY_NAMES = DEFAULT_CATEGORIES.map(c => c.name.toLowerCase())
 
-// GET all categories (default + custom)
 export const GET = withAuth(async (_request: NextRequest, user) => {
   const supabase = createClient()
 
-  // Fetch custom categories for user
   const { data: customCategories, error } = await supabase
     .from('categories')
     .select('*')
@@ -28,10 +25,10 @@ export const GET = withAuth(async (_request: NextRequest, user) => {
     .order('name', { ascending: true })
 
   if (error) {
-    throw new Error(error.message)
+    console.error('Failed to fetch categories:', error)
+    throw new Error('Failed to fetch categories')
   }
 
-  // Combine default and custom categories
   const allCategories = [
     ...DEFAULT_CATEGORIES,
     ...(customCategories || []).map((c) => ({
@@ -43,14 +40,12 @@ export const GET = withAuth(async (_request: NextRequest, user) => {
   return NextResponse.json({ categories: allCategories })
 })
 
-// POST create new custom category
 export const POST = withAuthAndValidation(
   CreateCategorySchema,
   async (_request: NextRequest, user, validatedData) => {
     const supabase = createClient()
     const { name, icon, color } = validatedData
 
-    // Check if category name already exists (case-insensitive)
     const { data: existing, error: checkError } = await supabase
       .from('categories')
       .select('name')
@@ -58,7 +53,8 @@ export const POST = withAuthAndValidation(
       .ilike('name', name.trim())
 
     if (checkError) {
-      throw new Error(checkError.message)
+      console.error('Failed to check existing categories:', checkError)
+      throw new Error('Failed to check existing categories')
     }
 
     if (existing && existing.length > 0) {
@@ -68,7 +64,6 @@ export const POST = withAuthAndValidation(
       )
     }
 
-    // Check if it's a default category name
     if (DEFAULT_CATEGORY_NAMES.includes(name.trim().toLowerCase())) {
       return NextResponse.json(
         { error: 'This is a default category name' },
@@ -76,7 +71,6 @@ export const POST = withAuthAndValidation(
       )
     }
 
-    // Create new category
     const { data, error } = await supabase
       .from('categories')
       .insert({
@@ -89,7 +83,8 @@ export const POST = withAuthAndValidation(
       .single()
 
     if (error) {
-      throw new Error(error.message)
+      console.error('Failed to create category:', error)
+      throw new Error('Failed to create category')
     }
 
     return NextResponse.json({ category: data }, { status: 201 })

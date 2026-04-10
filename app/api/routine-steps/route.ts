@@ -1,16 +1,15 @@
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { CreateCustomRoutineStepSchema } from '@/lib/api/schemas'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/routine-steps - list all routine steps (default + custom)
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)
   const category = searchParams.get('category')
 
-  // Fetch default steps
   let defaultQuery = supabase
     .from('routine_steps')
     .select('*')
@@ -28,7 +27,6 @@ export const GET = withAuth(async (request, user) => {
     return NextResponse.json({ error: defaultError.message }, { status: 500 })
   }
 
-  // Fetch user's custom steps
   let customQuery = supabase
     .from('custom_routine_steps')
     .select('*')
@@ -52,29 +50,27 @@ export const GET = withAuth(async (request, user) => {
   })
 })
 
-// POST /api/routine-steps - create a custom step
-export const POST = withAuth(async (request, user) => {
+export const POST = withAuthAndValidation(CreateCustomRoutineStepSchema, async (request, user, validatedData) => {
   const supabase = createClient()
-  const body = await request.json()
 
   const { data, error } = await supabase
     .from('custom_routine_steps')
     .insert({
       user_id: user.id,
-      name: body.name,
-      description: body.description,
-      tips: body.tips,
-      image_url: body.image_url,
-      gif_url: body.gif_url,
-      category: body.category,
-      duration_seconds: body.duration_seconds || 60,
+      name: validatedData.name,
+      description: validatedData.description,
+      tips: validatedData.tips,
+      image_url: validatedData.image_url,
+      gif_url: validatedData.gif_url,
+      category: validatedData.category,
+      duration_seconds: validatedData.duration_seconds || 60,
     })
     .select()
     .single()
 
   if (error) {
     console.error('Error creating custom routine step:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create custom routine step' }, { status: 500 })
   }
 
   return NextResponse.json({ step: data }, { status: 201 })

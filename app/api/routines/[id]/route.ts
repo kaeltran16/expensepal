@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/routines/[id] - get a single completion
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -22,7 +21,7 @@ export async function GET(
 
     if (error) {
       console.error('Error fetching routine completion:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to fetch routine completion' }, { status: 500 })
     }
 
     if (!data) {
@@ -33,7 +32,6 @@ export async function GET(
   })(request)
 }
 
-// DELETE /api/routines/[id] - delete a completion
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -50,7 +48,7 @@ export async function DELETE(
 
     if (error) {
       console.error('Error deleting routine completion:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to delete routine completion' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthParamsAndValidation, withAuthParams } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
+import { UpdateRoutineTemplateSchema } from '@/lib/api/schemas'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/routine-templates/[id] - get a single template
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -20,8 +20,8 @@ export async function GET(
       .single()
 
     if (error) {
-      console.error('Error fetching routine template:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Failed to fetch routine template:', error)
+      return NextResponse.json({ error: 'Failed to fetch routine template' }, { status: 500 })
     }
 
     if (!data) {
@@ -32,72 +32,61 @@ export async function GET(
   })(request)
 }
 
-// PUT /api/routine-templates/[id] - update a template
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (req, user) => {
-    const { id } = await context.params
-    const supabase = createClient()
-    const body = await req.json()
+  return withAuthParamsAndValidation(
+    UpdateRoutineTemplateSchema,
+    async (req, user, params: { id: string }, validatedData) => {
+      const supabase = createClient()
 
-    // Verify ownership (RLS should handle this, but double-check)
-    const { data: existing } = await supabase
-      .from('routine_templates')
-      .select('user_id, is_default')
-      .eq('id', id)
-      .single()
+      const { data: existing } = await supabase
+        .from('routine_templates')
+        .select('user_id, is_default')
+        .eq('id', params.id)
+        .single()
 
-    if (!existing || (existing.user_id !== user.id && !existing.is_default)) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+      if (!existing || (existing.user_id !== user.id && !existing.is_default)) {
+        return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+      }
+
+      if (existing.is_default) {
+        return NextResponse.json({ error: 'Cannot modify default templates' }, { status: 403 })
+      }
+
+      const { data, error } = await supabase
+        .from('routine_templates')
+        .update({
+          ...validatedData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', params.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Failed to update routine template:', error)
+        throw new Error('Failed to update routine template')
+      }
+
+      return NextResponse.json({ template: data })
     }
-
-    if (existing.is_default) {
-      return NextResponse.json({ error: 'Cannot modify default templates' }, { status: 403 })
-    }
-
-    const { data, error } = await supabase
-      .from('routine_templates')
-      .update({
-        name: body.name,
-        description: body.description,
-        icon: body.icon,
-        time_of_day: body.time_of_day,
-        estimated_minutes: body.estimated_minutes,
-        steps: body.steps,
-        tags: body.tags,
-        frequency: body.frequency,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating routine template:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ template: data })
-  })(request)
+  )(request, context)
 }
 
-// DELETE /api/routine-templates/[id] - delete a template
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (req, user) => {
-    const { id } = await context.params
+  return withAuthParams(async (req, user, params: { id: string }) => {
     const supabase = createClient()
 
-    // Verify ownership
     const { data: existing } = await supabase
       .from('routine_templates')
       .select('user_id, is_default')
-      .eq('id', id)
+      .eq('id', params.id)
       .single()
 
     if (!existing || existing.user_id !== user.id) {
@@ -111,14 +100,14 @@ export async function DELETE(
     const { error } = await supabase
       .from('routine_templates')
       .delete()
-      .eq('id', id)
+      .eq('id', params.id)
       .eq('user_id', user.id)
 
     if (error) {
-      console.error('Error deleting routine template:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Failed to delete routine template:', error)
+      throw new Error('Failed to delete routine template')
     }
 
     return NextResponse.json({ success: true })
-  })(request)
+  })(request, context)
 }

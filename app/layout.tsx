@@ -1,10 +1,5 @@
-import { AuthProvider } from '@/components/auth-provider'
-import { PWAInstallPrompt } from '@/components/pwa-install-prompt'
-import { QueryProvider } from '@/components/query-provider'
-import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
-import { ThemeProvider } from '@/components/theme-provider'
+import { Providers } from './providers'
 import type { Metadata, Viewport } from 'next'
-import { Toaster } from 'sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -163,30 +158,7 @@ export default function RootLayout({
         content="black-translucent" />
       </head>
       <body className="font-sans">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <QueryProvider>
-            <AuthProvider>
-              <ServiceWorkerRegistration />
-              {children}
-              <PWAInstallPrompt />
-              <Toaster
-                position="top-center"
-                richColors
-                closeButton
-                toastOptions={{
-                  style: {
-                    marginTop: 'max(env(safe-area-inset-top), 1rem)',
-                  }
-                }}
-              />
-            </AuthProvider>
-          </QueryProvider>
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

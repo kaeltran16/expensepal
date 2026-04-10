@@ -4,13 +4,11 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/routine-challenges - get active challenges with user progress
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)
-  const type = searchParams.get('type') // 'weekly', 'monthly', 'special'
+  const type = searchParams.get('type')
 
-  // Single query with LEFT JOIN to get challenges and user progress together
   let query = supabase
     .from('routine_challenges')
     .select(`
@@ -36,13 +34,11 @@ export const GET = withAuth(async (request, user) => {
 
   if (error) {
     console.error('Error fetching challenges:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch routine challenges' }, { status: 500 })
   }
 
-  // Transform the response to match expected format
   const challengesWithProgress = (challenges || []).map((challenge) => {
     const progressData = challenge.user_challenge_progress?.[0]
-    // Remove the nested array from the response
     const { user_challenge_progress, ...challengeData } = challenge
 
     return {

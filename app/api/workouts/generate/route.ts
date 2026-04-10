@@ -1,15 +1,8 @@
-import { withAuth } from '@/lib/api/middleware'
+import { withAuthAndValidation } from '@/lib/api/middleware'
+import { GenerateWorkoutSchema } from '@/lib/api/schemas'
 import { llmService } from '@/lib/llm-service'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-
-interface GenerateWorkoutRequest {
-  duration: number // minutes
-  equipment: string[] // e.g., ['barbell', 'dumbbells', 'cable']
-  muscleGroups: string[] // e.g., ['chest', 'shoulders', 'triceps']
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  workoutType?: 'strength' | 'hypertrophy' | 'endurance'
-}
 
 interface GeneratedExercise {
   exercise_id: string
@@ -20,14 +13,14 @@ interface GeneratedExercise {
   notes?: string
 }
 
-// POST /api/workouts/generate - generate a personalized workout using AI
-export const POST = withAuth(async (request, user) => {
+export const POST = withAuthAndValidation(GenerateWorkoutSchema, async (request, user, validatedData) => {
   const supabase = createClient()
-  const body: GenerateWorkoutRequest = await request.json()
+  const duration = validatedData.duration_minutes
+  const equipment = validatedData.equipment || []
+  const muscleGroups = validatedData.muscle_groups || []
+  const difficulty = validatedData.difficulty
+  const workoutType = validatedData.target_goal || 'hypertrophy'
 
-  const { duration, equipment, muscleGroups, difficulty, workoutType = 'hypertrophy' } = body
-
-  // Validate inputs
   if (!duration || duration < 15 || duration > 120) {
     return NextResponse.json({ error: 'Duration must be between 15 and 120 minutes' }, { status: 400 })
   }
@@ -36,7 +29,6 @@ export const POST = withAuth(async (request, user) => {
     return NextResponse.json({ error: 'At least one muscle group is required' }, { status: 400 })
   }
 
-  // Fetch available exercises from database
   const { data: exercises, error: exercisesError } = await supabase
     .from('exercises')
     .select('id, name, category, muscle_groups, equipment, difficulty, image_url, gif_url, thumbnail_url')
@@ -47,9 +39,7 @@ export const POST = withAuth(async (request, user) => {
     return NextResponse.json({ error: 'Failed to fetch exercises' }, { status: 500 })
   }
 
-  // Filter exercises based on equipment and muscle groups
   const availableExercises = exercises.filter(ex => {
-    // Check if exercise targets any of the requested muscle groups
     const targetsMuscle = muscleGroups.some(mg =>
       ex.muscle_groups?.some((emg: string) =>
         emg.toLowerCase().includes(mg.toLowerCase()) ||
@@ -57,7 +47,6 @@ export const POST = withAuth(async (request, user) => {
       )
     )
 
-    // Check if user has required equipment (or exercise is bodyweight)
     const hasEquipment = !ex.equipment ||
       ex.equipment.toLowerCase() === 'body only' ||
       ex.equipment.toLowerCase() === 'bodyweight' ||
@@ -72,7 +61,6 @@ export const POST = withAuth(async (request, user) => {
     }, { status: 400 })
   }
 
-  // Build prompt for LLM
   const systemPrompt = `You are a professional fitness coach specializing in strength training program design.
 You create effective, safe workout routines tailored to the user's goals and constraints.
 Always prioritize compound movements and proper exercise order (larger muscle groups first).
@@ -115,9 +103,8 @@ Respond with ONLY a JSON object in this exact format:
   ],
   "estimated_duration": ${duration},
   "warmup_notes": "Suggested warmup"
-}`
+  }`
 
-  // Call LLM
   const response = await llmService.completion({
     messages: [
       { role: 'system', content: systemPrompt },
@@ -131,7 +118,6 @@ Respond with ONLY a JSON object in this exact format:
     return NextResponse.json({ error: 'Failed to generate workout. Please try again.' }, { status: 500 })
   }
 
-  // Parse response
   const generatedWorkout = llmService.parseJSON<{
     name: string
     description: string
@@ -145,7 +131,6 @@ Respond with ONLY a JSON object in this exact format:
     return NextResponse.json({ error: 'Failed to parse generated workout' }, { status: 500 })
   }
 
-  // Validate that all exercise IDs exist
   const validExerciseIds = new Set(exercises.map(e => e.id))
   const validatedExercises = generatedWorkout.exercises.filter(ex =>
     validExerciseIds.has(ex.exercise_id)
@@ -155,7 +140,6 @@ Respond with ONLY a JSON object in this exact format:
     return NextResponse.json({ error: 'Generated workout contains no valid exercises' }, { status: 500 })
   }
 
-  // Enrich exercises with image URLs
   const enrichedExercises = validatedExercises.map(ex => {
     const fullExercise = exercises.find(e => e.id === ex.exercise_id)
     return {

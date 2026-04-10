@@ -3,11 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateWorkoutTemplateSchema } from '@/lib/api/schemas'
 
-// GET /api/workout-templates - list user's workout templates
 export const GET = withAuth(async (request: NextRequest, user) => {
   const supabase = createClient()
 
-  // Fetch user's workout templates
   const { data, error } = await supabase
     .from('workout_templates')
     .select('*')
@@ -15,7 +13,8 @@ export const GET = withAuth(async (request: NextRequest, user) => {
     .order('created_at', { ascending: false })
 
   if (error) {
-    throw new Error(error.message)
+    console.error('Failed to fetch workout templates:', error)
+    throw new Error('Failed to fetch workout templates')
   }
 
   return NextResponse.json({
@@ -23,7 +22,6 @@ export const GET = withAuth(async (request: NextRequest, user) => {
   })
 })
 
-// POST /api/workout-templates - create workout template
 export const POST = withAuthAndValidation(
   CreateWorkoutTemplateSchema,
   async (request: NextRequest, user, validatedData) => {
@@ -34,13 +32,14 @@ export const POST = withAuthAndValidation(
       .insert({
         ...validatedData,
         user_id: user.id,
-        is_default: false, // Explicitly set as custom template
+        is_default: false,
       })
       .select()
       .single()
 
     if (error) {
-      throw new Error(error.message)
+      console.error('Failed to create workout template:', error)
+      throw new Error('Failed to create workout template')
     }
 
     return NextResponse.json({ template: data })

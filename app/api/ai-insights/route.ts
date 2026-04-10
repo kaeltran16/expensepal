@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { AIInsightsSchema } from '@/lib/api/schemas'
 import { llmService } from '@/lib/llm-service'
 
-// Type definitions
 interface Expense {
   transaction_date: string
   amount: number
@@ -60,8 +60,9 @@ interface LLMInsightResponse {
   }>
 }
 
-export const POST = withAuth(async (request, _user) => {
-  const { expenses, budgets } = await request.json()
+export const POST = withAuthAndValidation(AIInsightsSchema, async (request, _user, validatedData) => {
+  const expenses = validatedData.expenses
+  const budgets = validatedData.budgets ?? []
 
   if (!expenses || expenses.length === 0) {
     return NextResponse.json({
@@ -70,10 +71,7 @@ export const POST = withAuth(async (request, _user) => {
     })
   }
 
-  // Prepare data summary for LLM (don't send raw transactions for privacy)
   const dataSummary = prepareDataSummary(expenses, budgets)
-
-  // Call LLM API
   const aiInsights = await generateAIInsights(dataSummary)
 
   return NextResponse.json({
@@ -82,17 +80,12 @@ export const POST = withAuth(async (request, _user) => {
   })
 })
 
-/**
- * Prepare anonymized data summary for LLM
- * Don't send raw transactions - just aggregated stats
- */
 function prepareDataSummary(expenses: Expense[], budgets: Budget[]): DataSummary {
   const now = new Date()
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
 
-  // Current month data
   const currentMonthExpenses = expenses.filter(e =>
     new Date(e.transaction_date) >= currentMonth
   )
@@ -101,14 +94,12 @@ function prepareDataSummary(expenses: Expense[], budgets: Budget[]): DataSummary
     return date >= lastMonth && date <= lastMonthEnd
   })
 
-  // Category breakdown
   const categoryTotals: Record<string, number> = {}
   currentMonthExpenses.forEach(e => {
     const cat = e.category || 'Other'
     categoryTotals[cat] = (categoryTotals[cat] || 0) + e.amount
   })
 
-  // Merchant analysis (top 5)
   const merchantTotals: Record<string, { count: number; total: number }> = {}
   currentMonthExpenses.forEach(e => {
     const merchant = e.merchant
@@ -123,7 +114,6 @@ function prepareDataSummary(expenses: Expense[], budgets: Budget[]): DataSummary
     .slice(0, 5)
     .map(([merchant, data]) => ({ merchant, ...data }))
 
-  // Budget comparison
   const budgetComparison = budgets.map(b => ({
     category: b.category,
     budget: b.amount,
@@ -147,11 +137,7 @@ function prepareDataSummary(expenses: Expense[], budgets: Budget[]): DataSummary
   }
 }
 
-/**
- * Generate AI insights using LLM service
- */
 async function generateAIInsights(dataSummary: DataSummary): Promise<AIInsight[]> {
-  // Check if LLM service is configured
   if (!llmService.isConfigured()) {
     console.warn('LLM service not configured - skipping AI insights')
     return []
@@ -230,6 +216,6 @@ Be concise, specific, and actionable. Use Vietnamese Dong (₫) in amounts.`
     description: insight.description,
     impact: insight.impact || 'medium',
     action: insight.action,
-    isAI: true, // Mark as AI-generated
+    isAI: true,
   }))
 }

@@ -4,7 +4,6 @@ import { withOptionalAuth } from '@/lib/api/middleware'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/exercises - list all exercises (public, no auth required)
 export const GET = withOptionalAuth(async (request: NextRequest, _user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)
@@ -22,7 +21,8 @@ export const GET = withOptionalAuth(async (request: NextRequest, _user) => {
   const { data, error } = await query
 
   if (error) {
-    throw new Error(error.message)
+    console.error('Failed to fetch exercises:', error)
+    throw new Error('Failed to fetch exercises')
   }
 
   return NextResponse.json({

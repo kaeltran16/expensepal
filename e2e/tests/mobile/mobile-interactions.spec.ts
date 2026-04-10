@@ -1,5 +1,5 @@
 import { devices } from '@playwright/test'
-import { test, expect, createOfflineHelper } from '../../fixtures'
+import { test, expect } from '../../fixtures'
 import { ExpensesPage } from '../../pages/expenses.page'
 
 test.use({
@@ -25,34 +25,6 @@ test.describe('Mobile Interactions', () => {
 
     // Should reveal at least one delete action
     await expect(page.locator('[data-testid="delete-action"]').first()).toBeVisible()
-  })
-
-  test.skip('should work offline and queue changes', async ({ api, page, context }) => {
-    // Skip: Offline functionality is complex and relies on service worker behavior
-    // which is difficult to test reliably in Playwright
-    const offline = createOfflineHelper(page, context)
-
-    await api.seedExpense({ merchant: 'Online Expense', amount: 50000 })
-    await expensesPage.goto()
-
-    await offline.goOffline()
-    await offline.waitForOfflineIndicator()
-
-    await expensesPage.openAddExpenseForm()
-    await expensesPage.fillExpenseForm({
-      amount: 25000,
-      merchant: 'Offline Expense',
-      category: 'Food',
-    })
-    await expensesPage.submitExpenseForm()
-
-    await expect(page.locator('text=/pending|offline/i')).toBeVisible()
-
-    await offline.goOnline()
-    await offline.waitForOnlineIndicator()
-    await page.waitForTimeout(2000)
-
-    await expensesPage.expectExpenseVisible('Offline Expense')
   })
 
   test('should support pull-to-refresh on expenses list', async ({ api, page }) => {

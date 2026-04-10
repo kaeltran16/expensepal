@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthParamsAndValidation, withAuthParams } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
+import { UpdateRecurringExpenseSchema } from '@/lib/api/schemas'
 
-/**
- * GET /api/recurring-expenses/[id]
- * Get a single recurring expense by ID
- */
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -21,77 +18,60 @@ export async function GET(
       .eq('user_id', user.id)
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Failed to fetch recurring expense:', error)
+      throw new Error('Failed to fetch recurring expense')
+    }
 
     return NextResponse.json(data)
   })(request)
 }
 
-/**
- * PATCH /api/recurring-expenses/[id]
- * Update a recurring expense
- */
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (req, user) => {
-    const supabase = createClient()
-    const { id } = await context.params
-    const body = await req.json()
+  return withAuthParamsAndValidation(
+    UpdateRecurringExpenseSchema,
+    async (req, user, params: { id: string }, validatedData) => {
+      const supabase = createClient()
 
-    const updates: any = {}
+      const { data, error } = await supabase
+        .from('recurring_expenses')
+        .update(validatedData)
+        .eq('id', params.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
 
-    if (body.name !== undefined) updates.name = body.name
-    if (body.merchant !== undefined) updates.merchant = body.merchant
-    if (body.category !== undefined) updates.category = body.category
-    if (body.amount !== undefined) updates.amount = body.amount
-    if (body.currency !== undefined) updates.currency = body.currency
-    if (body.frequency !== undefined) updates.frequency = body.frequency
-    if (body.intervalDays !== undefined) updates.interval_days = body.intervalDays
-    if (body.startDate !== undefined) updates.start_date = body.startDate
-    if (body.endDate !== undefined) updates.end_date = body.endDate
-    if (body.nextDueDate !== undefined) updates.next_due_date = body.nextDueDate
-    if (body.lastProcessedDate !== undefined) updates.last_processed_date = body.lastProcessedDate
-    if (body.isActive !== undefined) updates.is_active = body.isActive
-    if (body.autoCreate !== undefined) updates.auto_create = body.autoCreate
-    if (body.notifyBeforeDays !== undefined) updates.notify_before_days = body.notifyBeforeDays
-    if (body.notes !== undefined) updates.notes = body.notes
+      if (error) {
+        console.error('Failed to update recurring expense:', error)
+        throw new Error('Failed to update recurring expense')
+      }
 
-    const { data, error } = await supabase
-      .from('recurring_expenses')
-      .update(updates)
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .select()
-      .single()
-
-    if (error) throw error
-
-    return NextResponse.json(data)
-  })(request)
+      return NextResponse.json(data)
+    }
+  )(request, context)
 }
 
-/**
- * DELETE /api/recurring-expenses/[id]
- * Delete a recurring expense
- */
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (_req, user) => {
+  return withAuthParams(async (_req, user, params: { id: string }) => {
     const supabase = createClient()
-    const { id } = await context.params
 
     const { error } = await supabase
       .from('recurring_expenses')
       .delete()
-      .eq('id', id)
+      .eq('id', params.id)
       .eq('user_id', user.id)
 
-    if (error) throw error
+    if (error) {
+      console.error('Failed to delete recurring expense:', error)
+      throw new Error('Failed to delete recurring expense')
+    }
 
     return NextResponse.json({ success: true })
-  })(request)
+  })(request, context)
 }

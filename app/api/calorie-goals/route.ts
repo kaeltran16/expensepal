@@ -3,12 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateCalorieGoalSchema, UpdateCalorieGoalSchema } from '@/lib/api/schemas'
 
-// GET /api/calorie-goals - Get active calorie goal
 export const GET = withAuth(async (_request, user) => {
   const supabase = createClient()
   const today = new Date().toISOString().split('T')[0]
 
-  // RLS automatically filters by user_id
   const { data, error } = await supabase
     .from('calorie_goals')
     .select('*')
@@ -19,12 +17,10 @@ export const GET = withAuth(async (_request, user) => {
     .single()
 
   if (error && error.code !== 'PGRST116') {
-    // PGRST116 = no rows returned
-    console.error('Error fetching calorie goal:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Failed to fetch calorie goal:', error)
+    return NextResponse.json({ error: 'Failed to fetch calorie goal' }, { status: 500 })
   }
 
-  // If no goal found, return default
   if (!data) {
     return NextResponse.json({
       daily_calories: 2000,
@@ -38,20 +34,17 @@ export const GET = withAuth(async (_request, user) => {
   return NextResponse.json(data)
 })
 
-// POST /api/calorie-goals - Create new calorie goal
 export const POST = withAuthAndValidation(
   CreateCalorieGoalSchema,
   async (_request, user, validatedData) => {
     const supabase = createClient()
     const today = new Date().toISOString().split('T')[0]
 
-    // End previous goals for this user - RLS automatically filters by user_id
     await supabase
       .from('calorie_goals')
       .update({ end_date: today })
       .is('end_date', null)
 
-    // Create new goal - RLS automatically sets user_id
     const { data, error } = await supabase
       .from('calorie_goals')
       .insert({
@@ -63,22 +56,20 @@ export const POST = withAuthAndValidation(
       .single()
 
     if (error) {
-      console.error('Error creating calorie goal:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Failed to create calorie goal:', error)
+      return NextResponse.json({ error: 'Failed to create calorie goal' }, { status: 500 })
     }
 
     return NextResponse.json(data, { status: 201 })
   }
 )
 
-// PUT /api/calorie-goals - Update current calorie goal
 export const PUT = withAuthAndValidation(
   UpdateCalorieGoalSchema,
   async (_request, user, validatedData) => {
     const supabase = createClient()
     const today = new Date().toISOString().split('T')[0]
 
-    // Get the current active goal - RLS automatically filters by user_id
     const { data: currentGoal } = await supabase
       .from('calorie_goals')
       .select('*')
@@ -88,7 +79,6 @@ export const PUT = withAuthAndValidation(
       .limit(1)
       .single()
 
-    // If goal exists, update it
     if (currentGoal) {
       const { data, error } = await supabase
         .from('calorie_goals')
@@ -101,30 +91,29 @@ export const PUT = withAuthAndValidation(
         .single()
 
       if (error) {
-        console.error('Error updating calorie goal:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error('Failed to update calorie goal:', error)
+        return NextResponse.json({ error: 'Failed to update calorie goal' }, { status: 500 })
       }
 
       return NextResponse.json(data)
-    } else {
-      // If no goal exists, create a new one - RLS automatically sets user_id
-      const { data, error } = await supabase
-        .from('calorie_goals')
-        .insert({
-          user_id: user.id,
-          ...validatedData,
-          goal_type: 'maintenance',
-          start_date: today,
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating calorie goal:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
-      }
-
-      return NextResponse.json(data, { status: 201 })
     }
+
+    const { data, error } = await supabase
+      .from('calorie_goals')
+      .insert({
+        user_id: user.id,
+        ...validatedData,
+        goal_type: 'maintenance',
+        start_date: today,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Failed to create calorie goal:', error)
+      return NextResponse.json({ error: 'Failed to create calorie goal' }, { status: 500 })
+    }
+
+    return NextResponse.json(data, { status: 201 })
   }
 )

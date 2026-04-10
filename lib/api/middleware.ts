@@ -45,8 +45,11 @@ export function withAuth(
     } catch (error) {
       console.error('API Error:', error)
 
-      // Return appropriate error response
-      const message = error instanceof Error ? error.message : 'Internal server error'
+      const message = error instanceof Error
+        ? error.message
+        : (typeof error === 'object' && error !== null && 'message' in error)
+          ? String((error as { message: unknown }).message)
+          : 'Internal server error'
       return NextResponse.json(
         { error: message },
         { status: 500 }
@@ -83,7 +86,11 @@ export function withOptionalAuth(
     } catch (error) {
       console.error('API Error:', error)
 
-      const message = error instanceof Error ? error.message : 'Internal server error'
+      const message = error instanceof Error
+        ? error.message
+        : (typeof error === 'object' && error !== null && 'message' in error)
+          ? String((error as { message: unknown }).message)
+          : 'Internal server error'
       return NextResponse.json(
         { error: message },
         { status: 500 }
@@ -223,6 +230,38 @@ export function withAuthAndQueryValidation<T extends z.ZodType>(
       throw error
     }
   })
+}
+
+export function withAuthParamsAndValidation<TParams, TSchema extends z.ZodType>(
+  schema: TSchema,
+  handler: (
+    request: NextRequest,
+    user: User,
+    params: TParams,
+    validatedData: z.infer<TSchema>
+  ) => Promise<Response>
+) {
+  return async (
+    request: NextRequest,
+    context: { params: Promise<TParams> }
+  ) => {
+    const resolvedParams = await context.params
+    return withAuthAndValidation(schema, async (req, user, validatedData) => {
+      return handler(req, user, resolvedParams, validatedData)
+    })(request)
+  }
+}
+
+export function withAuthParams<TParams>(
+  handler: (request: NextRequest, user: User, params: TParams) => Promise<Response>
+) {
+  return async (
+    request: NextRequest,
+    context: { params: Promise<TParams> }
+  ) => {
+    const resolvedParams = await context.params
+    return withAuth((req, user) => handler(req, user, resolvedParams))(request)
+  }
 }
 
 /**

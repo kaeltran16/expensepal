@@ -1,25 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuthAndValidation } from '@/lib/api/middleware'
+import { PushSubscriptionSchema } from '@/lib/api/schemas'
 
-export const POST = withAuth(async (request, user) => {
-  const supabase = createClient()
-  const subscription = await request.json()
+export const POST = withAuthAndValidation(
+  PushSubscriptionSchema,
+  async (request, user, subscription) => {
+    const supabase = createClient()
 
-  // Store subscription in database with user_id
-  const { error } = await supabase.from('push_subscriptions').upsert({
-    user_id: user.id,
-    endpoint: subscription.endpoint,
-    p256dh: subscription.keys.p256dh,
-    auth: subscription.keys.auth,
-    user_agent: request.headers.get('user-agent'),
-    created_at: new Date().toISOString(),
-  })
+    const { error } = await supabase.from('push_subscriptions').upsert({
+      user_id: user.id,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+      user_agent: request.headers.get('user-agent'),
+      created_at: new Date().toISOString(),
+    })
 
-  if (error) {
-    console.error('Error storing subscription:', error)
-    return NextResponse.json({ error: 'Failed to store subscription' }, { status: 500 })
+    if (error) {
+      console.error('Failed to store subscription:', error)
+      throw new Error('Failed to store subscription')
+    }
+
+    return NextResponse.json({ success: true })
   }
-
-  return NextResponse.json({ success: true })
-})
+)

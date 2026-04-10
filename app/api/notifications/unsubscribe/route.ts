@@ -1,22 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuthAndValidation } from '@/lib/api/middleware'
+import { UnsubscribeSchema } from '@/lib/api/schemas'
 
-export const POST = withAuth(async (request, user) => {
-  const supabase = createClient()
-  const { endpoint } = await request.json()
+export const POST = withAuthAndValidation(
+  UnsubscribeSchema,
+  async (request, user, validatedData) => {
+    const supabase = createClient()
 
-  // Only allow users to unsubscribe their own subscriptions
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .delete()
-    .eq('endpoint', endpoint)
-    .eq('user_id', user.id)
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('endpoint', validatedData.endpoint)
+      .eq('user_id', user.id)
 
-  if (error) {
-    console.error('Error removing subscription:', error)
-    return NextResponse.json({ error: 'Failed to remove subscription' }, { status: 500 })
+    if (error) {
+      console.error('Error removing subscription:', error)
+      return NextResponse.json({ error: 'Failed to remove subscription' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
   }
-
-  return NextResponse.json({ success: true })
-})
+)

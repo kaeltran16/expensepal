@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthParamsAndValidation, withAuthParams } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
+import { UpdateJournalEntrySchema } from '@/lib/api/schemas'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/routine-journal/[id] - get a single journal entry
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -21,8 +21,8 @@ export async function GET(
       .single()
 
     if (error) {
-      console.error('Error fetching journal entry:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Failed to fetch journal entry:', error)
+      return NextResponse.json({ error: 'Failed to fetch journal entry' }, { status: 500 })
     }
 
     if (!data) {
@@ -33,58 +33,51 @@ export async function GET(
   })(request)
 }
 
-// PUT /api/routine-journal/[id] - update a journal entry
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (req, user) => {
-    const { id } = await context.params
-    const supabase = createClient()
-    const body = await req.json()
+  return withAuthParamsAndValidation(
+    UpdateJournalEntrySchema,
+    async (req, user, params: { id: string }, validatedData) => {
+      const supabase = createClient()
 
-    const { data, error } = await supabase
-      .from('routine_journal_entries')
-      .update({
-        mood: body.mood,
-        energy_level: body.energy_level,
-        notes: body.notes,
-        tags: body.tags,
-      })
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .select()
-      .single()
+      const { data, error } = await supabase
+        .from('routine_journal_entries')
+        .update(validatedData)
+        .eq('id', params.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
 
-    if (error) {
-      console.error('Error updating journal entry:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      if (error) {
+        console.error('Failed to update journal entry:', error)
+        throw new Error('Failed to update journal entry')
+      }
+
+      return NextResponse.json({ entry: data })
     }
-
-    return NextResponse.json({ entry: data })
-  })(request)
+  )(request, context)
 }
 
-// DELETE /api/routine-journal/[id] - delete a journal entry
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (req, user) => {
-    const { id } = await context.params
+  return withAuthParams(async (req, user, params: { id: string }) => {
     const supabase = createClient()
 
     const { error } = await supabase
       .from('routine_journal_entries')
       .delete()
-      .eq('id', id)
+      .eq('id', params.id)
       .eq('user_id', user.id)
 
     if (error) {
-      console.error('Error deleting journal entry:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Failed to delete journal entry:', error)
+      throw new Error('Failed to delete journal entry')
     }
 
     return NextResponse.json({ success: true })
-  })(request)
+  })(request, context)
 }

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthParamsAndValidation, withAuthParams } from '@/lib/api/middleware'
+import { UpdateWorkoutSchemaNew } from '@/lib/api/schemas'
 
-// GET /api/workouts/[id] - get single workout with exercises
 export async function GET(
   request: NextRequest,
   context: { params: { id: string } }
@@ -25,7 +25,8 @@ export async function GET(
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: error.code === 'PGRST116' ? 404 : 500 })
+      console.error('Failed to fetch workout:', error)
+      return NextResponse.json({ error: 'Failed to fetch workout' }, { status: error.code === 'PGRST116' ? 404 : 500 })
     }
 
     if (!workout) {
@@ -36,56 +37,55 @@ export async function GET(
   })(request)
 }
 
-// PUT /api/workouts/[id] - update workout
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (req, user) => {
-    const { id } = context.params
-    const supabase = createClient()
-    const body = await req.json()
+  return withAuthParamsAndValidation(
+    UpdateWorkoutSchemaNew,
+    async (req, user, params: { id: string }, validatedData) => {
+      const supabase = createClient()
 
-    const { data: workout, error } = await supabase
-      .from('workouts')
-      .update({
-        notes: body.notes,
-        status: body.status,
-        completed_at: body.completed_at,
-        duration_minutes: body.duration_minutes,
-      })
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .select()
-      .single()
+      const { data: workout, error } = await supabase
+        .from('workouts')
+        .update({
+          notes: validatedData.notes,
+          status: validatedData.status,
+          completed_at: validatedData.completed_at,
+        })
+        .eq('id', params.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
 
-    if (error) {
-      throw new Error(error.message)
+      if (error) {
+        console.error('Failed to update workout:', error)
+        throw new Error('Failed to update workout')
+      }
+
+      return NextResponse.json({ workout })
     }
-
-    return NextResponse.json({ workout })
-  })(request)
+  )(request, context)
 }
 
-// DELETE /api/workouts/[id] - delete workout
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (req, user) => {
-    const { id } = context.params
+  return withAuthParams(async (req, user, params: { id: string }) => {
     const supabase = createClient()
 
     const { error } = await supabase
       .from('workouts')
       .delete()
-      .eq('id', id)
+      .eq('id', params.id)
       .eq('user_id', user.id)
 
     if (error) {
-      throw new Error(error.message)
+      console.error('Failed to delete workout:', error)
+      throw new Error('Failed to delete workout')
     }
 
     return NextResponse.json({ success: true })
-  })(request)
+  })(request, context)
 }

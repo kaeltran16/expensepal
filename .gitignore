@@ -43,3 +43,5 @@ next-env.d.ts
 /test-results
 /playwright-report
 /.superpowers
+/graphify-out
+.graphify_cached.json

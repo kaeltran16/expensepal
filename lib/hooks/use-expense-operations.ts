@@ -25,12 +25,10 @@ export function useExpenseOperations(expenses: Expense[]) {
 
     const index = expenses.findIndex((e) => e.id === id);
 
-    // Store for undo
     setDeletedExpense({ expense: expenseToDelete, index });
 
     hapticFeedback('medium');
 
-    // Show undo toast
     toast.success('Expense deleted', {
       action: {
         label: 'Undo',
@@ -40,10 +38,8 @@ export function useExpenseOperations(expenses: Expense[]) {
     });
 
     try {
-      // Use optimistic delete mutation (UI updates immediately)
       await deleteExpenseMutation.mutateAsync(id);
 
-      // Clear undo after successful delete
       setTimeout(() => setDeletedExpense(null), 5000);
     } catch (error) {
       console.error('Error deleting expense:', error);
@@ -57,7 +53,6 @@ export function useExpenseOperations(expenses: Expense[]) {
     hapticFeedback('light');
 
     try {
-      // Re-create the expense using optimistic mutation
       await createExpenseMutation.mutateAsync({
         amount: deletedExpense.expense.amount,
         merchant: deletedExpense.expense.merchant,
@@ -96,9 +91,6 @@ export function useExpenseOperations(expenses: Expense[]) {
           onSuccess: () => {
             toast.success('Notes updated');
           },
-          onError: () => {
-            // Error already handled by mutation
-          },
         }
       );
     } catch (error) {
@@ -124,31 +116,27 @@ export function useExpenseOperations(expenses: Expense[]) {
   ) => {
     hapticFeedback('medium');
 
-    // Close form immediately for better UX (optimistic)
     callbacks.onBeforeSubmit();
 
     try {
       if (editingExpense) {
-        // Update existing expense
         await updateExpenseMutation.mutateAsync({
           id: editingExpense.id,
           updates: data,
         });
+        toast.success('Expense updated');
       } else {
-        // Create new expense (optimistically shown immediately)
         await createExpenseMutation.mutateAsync({
           ...data,
           source: 'manual',
         });
 
-        // Celebrate only for first expense
         if (expenses.length === 0) {
           celebrateSuccess();
         }
       }
     } catch (error) {
       console.error('Error saving expense:', error);
-      // Re-open form on error
       callbacks.onError();
     }
   };

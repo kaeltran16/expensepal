@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { ExerciseFavoriteSchema } from '@/lib/api/schemas'
 
-// GET /api/exercise-favorites
 export const GET = withAuth(async (_request, user) => {
   const supabase = createClient()
 
@@ -26,20 +26,10 @@ export const GET = withAuth(async (_request, user) => {
   return NextResponse.json({ favorites })
 })
 
-// POST /api/exercise-favorites
-export const POST = withAuth(async (request, user) => {
+export const POST = withAuthAndValidation(ExerciseFavoriteSchema, async (request, user, validatedData) => {
   const supabase = createClient()
-  const body = await request.json()
-  const { exercise_id } = body
+  const { exercise_id } = validatedData
 
-  if (!exercise_id) {
-    return NextResponse.json(
-      { error: 'exercise_id is required' },
-      { status: 400 }
-    )
-  }
-
-  // Check if already favorited
   const { data: existing } = await supabase
     .from('exercise_favorites')
     .select('exercise_id')
@@ -77,7 +67,6 @@ export const POST = withAuth(async (request, user) => {
   return NextResponse.json({ favorite }, { status: 201 })
 })
 
-// DELETE /api/exercise-favorites?exercise_id=...
 export const DELETE = withAuth(async (request, user) => {
   const supabase = createClient()
   const searchParams = request.nextUrl.searchParams

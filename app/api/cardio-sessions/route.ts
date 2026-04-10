@@ -47,8 +47,8 @@ export const GET = withAuth(async (request, user) => {
   const { data, error } = await query
 
   if (error) {
-    console.error('error fetching cardio sessions:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Failed to fetch cardio sessions:', error)
+    return NextResponse.json({ error: 'Failed to fetch cardio sessions' }, { status: 500 })
   }
 
   return NextResponse.json({ sessions: data || [] })
@@ -77,8 +77,8 @@ export const POST = withAuthAndValidation(CreateCardioSessionSchema, async (requ
     .single()
 
   if (sessionError) {
-    console.error('error creating cardio session:', sessionError)
-    return NextResponse.json({ error: sessionError.message }, { status: 500 })
+    console.error('Failed to create cardio session:', sessionError)
+    return NextResponse.json({ error: 'Failed to create cardio session' }, { status: 500 })
   }
 
   const pendingOps: Promise<unknown>[] = []

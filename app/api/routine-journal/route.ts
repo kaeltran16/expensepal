@@ -1,10 +1,10 @@
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { CreateJournalEntrySchema } from '@/lib/api/schemas'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/routine-journal - list journal entries
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)
@@ -30,7 +30,7 @@ export const GET = withAuth(async (request, user) => {
 
   if (error) {
     console.error('Error fetching journal entries:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch journal entries' }, { status: 500 })
   }
 
   return NextResponse.json({
@@ -38,28 +38,26 @@ export const GET = withAuth(async (request, user) => {
   })
 })
 
-// POST /api/routine-journal - create a journal entry
-export const POST = withAuth(async (request, user) => {
+export const POST = withAuthAndValidation(CreateJournalEntrySchema, async (request, user, validatedData) => {
   const supabase = createClient()
-  const body = await request.json()
 
   const { data, error } = await supabase
     .from('routine_journal_entries')
     .insert({
       user_id: user.id,
-      routine_completion_id: body.routine_completion_id,
-      entry_date: body.entry_date || new Date().toISOString().split('T')[0],
-      mood: body.mood,
-      energy_level: body.energy_level,
-      notes: body.notes,
-      tags: body.tags,
+      routine_completion_id: validatedData.routine_completion_id,
+      entry_date: validatedData.entry_date || new Date().toISOString().split('T')[0],
+      mood: validatedData.mood,
+      energy_level: validatedData.energy_level,
+      notes: validatedData.notes,
+      tags: validatedData.tags,
     })
     .select()
     .single()
 
   if (error) {
     console.error('Error creating journal entry:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create journal entry' }, { status: 500 })
   }
 
   return NextResponse.json({ entry: data }, { status: 201 })

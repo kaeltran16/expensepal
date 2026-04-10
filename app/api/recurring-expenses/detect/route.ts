@@ -5,14 +5,9 @@ import { detectRecurringExpenses } from '@/lib/analytics/detect-recurring'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * GET /api/recurring-expenses/detect
- * Detect recurring patterns from transaction history
- */
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
 
-  // Fetch user's expenses
   const { data: expenses, error } = await supabase
     .from('expenses')
     .select('*')
@@ -20,10 +15,10 @@ export const GET = withAuth(async (request, user) => {
     .order('transaction_date', { ascending: true })
 
   if (error) {
-    throw new Error(error.message)
+    console.error('Failed to fetch expenses for recurring detection:', error)
+    throw new Error('Failed to fetch expenses for recurring detection')
   }
 
-  // Run detection algorithm
   const detectedExpenses = detectRecurringExpenses(expenses || [])
 
   return NextResponse.json({ detectedExpenses })

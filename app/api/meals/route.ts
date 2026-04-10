@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calorieEstimator } from '@/lib/calorie-estimator'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { CreateMealInputSchema } from '@/lib/api/schemas'
 import type { Database } from '@/lib/supabase/database.types'
 
 type MealInsert = Database['public']['Tables']['meals']['Insert']
 
-// GET /api/meals - List meals with filters
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)
@@ -16,14 +16,12 @@ export const GET = withAuth(async (request, user) => {
   const endDate = searchParams.get('endDate')
   const mealTime = searchParams.get('mealTime')
 
-  // RLS automatically filters by user_id
   let query = supabase
     .from('meals')
     .select('*, expenses(*)', { count: 'exact' })
     .order('meal_date', { ascending: false })
     .range(offset, offset + limit - 1)
 
-  // Apply filters
   if (startDate) {
     query = query.gte('meal_date', startDate)
   }
@@ -37,8 +35,8 @@ export const GET = withAuth(async (request, user) => {
   const { data, error, count } = await query
 
   if (error) {
-    console.error('Error fetching meals:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Failed to fetch meals:', error)
+    return NextResponse.json({ error: 'Failed to fetch meals' }, { status: 500 })
   }
 
   return NextResponse.json({
@@ -47,83 +45,70 @@ export const GET = withAuth(async (request, user) => {
   })
 })
 
-// POST /api/meals - Create new meal (with optional LLM estimation)
-export const POST = withAuth(async (request, user) => {
+export const POST = withAuthAndValidation(CreateMealInputSchema, async (request, user, validatedData) => {
   const supabase = createClient()
-  const body = await request.json()
-    const {
-      name,
-      calories,
-      protein,
-      carbs,
-      fat,
-      meal_time,
-      meal_date,
-      expense_id,
-      notes,
-      estimate, // If true, use LLM to estimate calories
+
+  const {
+    name,
+    calories,
+    protein,
+    carbs,
+    fat,
+    meal_time,
+    meal_date,
+    expense_id,
+    notes,
+    estimate,
+    portionSize,
+  } = validatedData
+
+  let mealData: Partial<MealInsert> = {
+    user_id: user.id,
+    name,
+    meal_time: meal_time || 'other',
+    meal_date,
+    expense_id,
+    notes,
+  }
+
+  if (estimate && !calories) {
+    const estimation = await calorieEstimator.estimate(supabase, name, {
       portionSize,
-    } = body
+      mealTime: meal_time,
+      additionalInfo: notes,
+    })
 
-    // Validation
-    if (!name || !meal_date) {
-      return NextResponse.json(
-        { error: 'Missing required fields: name, meal_date' },
-        { status: 400 }
-      )
+    mealData = {
+      ...mealData,
+      calories: estimation.calories,
+      protein: estimation.protein,
+      carbs: estimation.carbs,
+      fat: estimation.fat,
+      source: estimation.source,
+      confidence: estimation.confidence,
+      llm_reasoning: estimation.reasoning,
     }
-
-    let mealData: Partial<MealInsert> = {
-      user_id: user.id,
-      name,
-      meal_time: meal_time || 'other',
-      meal_date,
-      expense_id,
-      notes,
+  } else {
+    mealData = {
+      ...mealData,
+      calories: calories || 0,
+      protein: protein || 0,
+      carbs: carbs || 0,
+      fat: fat || 0,
+      source: 'manual',
     }
+  }
 
-    // If estimate=true, use LLM to get calories
-    if (estimate && !calories) {
-      console.log(`Estimating calories for "${name}"...`)
-      const estimation = await calorieEstimator.estimate(supabase, name, {
-        portionSize,
-        mealTime: meal_time,
-        additionalInfo: notes,
-      })
+  const { data, error } = await supabase
+    .from('meals')
+    .insert(mealData as MealInsert)
+    .select()
+    .single()
 
-      mealData = {
-        ...mealData,
-        calories: estimation.calories,
-        protein: estimation.protein,
-        carbs: estimation.carbs,
-        fat: estimation.fat,
-        source: estimation.source,
-        confidence: estimation.confidence,
-        llm_reasoning: estimation.reasoning,
-      }
-    } else {
-      // Manual entry
-      mealData = {
-        ...mealData,
-        calories: calories || 0,
-        protein: protein || 0,
-        carbs: carbs || 0,
-        fat: fat || 0,
-        source: 'manual',
-      }
-    }
+  if (error) {
+    console.error('Failed to create meal:', error)
+    return NextResponse.json({ error: 'Failed to create meal' }, { status: 500 })
+  }
 
-    // RLS automatically sets user_id
-    const { data, error } = await supabase
-      .from('meals')
-      .insert(mealData as MealInsert)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating meal:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json(data, { status: 201 })
+  return NextResponse.json(data, { status: 201 })
 })

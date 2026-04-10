@@ -1,4 +1,5 @@
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { CreateRoutineCompletionSchema } from '@/lib/api/schemas'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { checkNewAchievements } from '@/lib/routine-achievements'
@@ -7,7 +8,6 @@ import { sendPushNotification } from '@/lib/push-notifications'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/routines - list completed routines (history)
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)
@@ -34,7 +34,7 @@ export const GET = withAuth(async (request, user) => {
 
   if (error) {
     console.error('Error fetching routine completions:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch routine completions' }, { status: 500 })
   }
 
   return NextResponse.json({
@@ -42,12 +42,9 @@ export const GET = withAuth(async (request, user) => {
   })
 })
 
-// POST /api/routines - record a completed routine
-export const POST = withAuth(async (request, user) => {
+export const POST = withAuthAndValidation(CreateRoutineCompletionSchema, async (request, user, validatedData) => {
   const supabase = createClient()
-  const body = await request.json()
 
-  // Snapshot previous state before insert (DB triggers update after insert)
   const [prevStatsResult, prevStreakResult] = await Promise.all([
     supabase.from('user_routine_stats').select('*').eq('user_id', user.id).single(),
     supabase.from('user_routine_streaks').select('*').eq('user_id', user.id).single(),
@@ -59,26 +56,24 @@ export const POST = withAuth(async (request, user) => {
     .from('routine_completions')
     .insert({
       user_id: user.id,
-      template_id: body.template_id,
-      routine_date: body.routine_date || new Date().toISOString().split('T')[0],
-      time_of_day: body.time_of_day,
-      started_at: body.started_at,
-      completed_at: body.completed_at,
-      duration_minutes: body.duration_minutes,
-      steps_completed: body.steps_completed,
-      xp_earned: body.xp_earned || 0,
-      bonus_xp: body.bonus_xp || 0,
+      template_id: validatedData.template_id,
+      routine_date: validatedData.routine_date || new Date().toISOString().split('T')[0],
+      time_of_day: validatedData.time_of_day,
+      started_at: validatedData.started_at,
+      completed_at: validatedData.completed_at,
+      duration_minutes: validatedData.duration_minutes,
+      steps_completed: validatedData.steps_completed,
+      xp_earned: validatedData.xp_earned || 0,
+      bonus_xp: validatedData.bonus_xp || 0,
     })
     .select()
     .single()
 
   if (error) {
     console.error('Error creating routine completion:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create routine completion' }, { status: 500 })
   }
 
-  // Streaks and stats are updated automatically via database triggers
-  // Read new state after triggers have fired
   const [newStatsResult, newStreakResult] = await Promise.all([
     supabase.from('user_routine_stats').select('*').eq('user_id', user.id).single(),
     supabase.from('user_routine_streaks').select('*').eq('user_id', user.id).single(),
@@ -86,14 +81,12 @@ export const POST = withAuth(async (request, user) => {
   const newStats = newStatsResult.data
   const newStreak = newStreakResult.data
 
-  // Check for new achievements and level-ups
   const newAchievements = checkNewAchievements(prevStats, prevStreak, newStats, newStreak)
   const previousXp = prevStats?.total_xp ?? 0
   const newXp = newStats?.total_xp ?? 0
   const levelUp = checkLevelUp(previousXp, newXp)
 
-  // Fire push notifications without blocking the response
-  const notifications: Promise<any>[] = []
+  const notifications: Promise<unknown>[] = []
 
   for (const achievement of newAchievements) {
     notifications.push(

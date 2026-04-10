@@ -250,7 +250,356 @@ export const UpdateSavedFoodSchema = z.object({
   is_favorite: z.boolean().optional(),
   use_count: z.number().int().nonnegative().optional(),
   last_used_at: z.string().datetime().optional(),
+  increment_use: z.boolean().optional(),
 })
 
 export type CreateSavedFoodInput = z.infer<typeof CreateSavedFoodSchema>
 export type UpdateSavedFoodInput = z.infer<typeof UpdateSavedFoodSchema>
+
+// ============================================================================
+// Routine Schemas
+// ============================================================================
+
+export const CreateRoutineCompletionSchema = z.object({
+  template_id: z.string().uuid().optional(),
+  routine_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  time_of_day: z.enum(['morning', 'afternoon', 'evening', 'any']).optional(),
+  started_at: z.string().datetime().optional(),
+  completed_at: z.string().datetime().optional(),
+  duration_minutes: z.number().nonnegative().optional(),
+  steps_completed: z.number().nonnegative().optional(),
+  xp_earned: z.number().nonnegative().optional(),
+  bonus_xp: z.number().nonnegative().optional(),
+})
+
+export const CreateRoutineTemplateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  description: z.string().max(500).optional(),
+  icon: z.string().max(10).optional(),
+  time_of_day: z.enum(['morning', 'afternoon', 'evening', 'any']).optional(),
+  estimated_minutes: z.number().positive().optional(),
+  steps: z.array(z.object({
+    step_id: z.string().optional(),
+    name: z.string(),
+    duration_seconds: z.number().nonnegative().optional(),
+  })).optional(),
+  tags: z.array(z.string()).optional(),
+  frequency: z.object({ type: z.string() }).optional(),
+})
+
+export const UpdateRoutineTemplateSchema = CreateRoutineTemplateSchema.partial()
+
+export const CreateCustomRoutineStepSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  description: z.string().max(500).optional(),
+  tips: z.string().max(1000).optional(),
+  image_url: z.string().url().optional(),
+  gif_url: z.string().url().optional(),
+  category: z.string().max(50).optional(),
+  duration_seconds: z.number().positive().default(60),
+})
+
+export const UpdateRoutineStatsSchema = z.object({
+  add_xp: z.number().nonnegative().optional(),
+  total_xp: z.number().nonnegative().optional(),
+  current_level: z.number().positive().optional(),
+  lifetime_routines: z.number().nonnegative().optional(),
+  perfect_weeks: z.number().nonnegative().optional(),
+})
+
+export const UpdateRoutineStreakSchema = z.object({
+  current_streak: z.number().nonnegative().optional(),
+  longest_streak: z.number().nonnegative().optional(),
+  last_routine_date: z.string().optional(),
+  total_completions: z.number().nonnegative().optional(),
+})
+
+export const CreateJournalEntrySchema = z.object({
+  routine_completion_id: z.string().uuid().optional(),
+  entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  mood: z.number().int().min(1).max(5).optional(),
+  energy_level: z.number().int().min(1).max(5).optional(),
+  notes: z.string().max(1000).optional(),
+  tags: z.array(z.string()).optional(),
+})
+
+export const UpdateJournalEntrySchema = z.object({
+  mood: z.number().int().min(1).max(5).optional(),
+  energy_level: z.number().int().min(1).max(5).optional(),
+  notes: z.string().max(1000).optional(),
+  tags: z.array(z.string()).optional(),
+})
+
+export const ChallengeActionSchema = z.object({
+  action: z.enum(['update_progress', 'claim']).optional(),
+  increment_by: z.number().positive().optional(),
+})
+
+// ============================================================================
+// Scheduled Workout Schemas
+// ============================================================================
+
+export const CreateScheduledWorkoutSchema = z.object({
+  template_id: z.string().uuid().optional(),
+  scheduled_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'scheduled_date is required'),
+  notes: z.string().max(500).optional(),
+})
+
+export const UpdateScheduledWorkoutSchema = z.object({
+  template_id: z.string().uuid().optional(),
+  scheduled_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  status: z.enum(['scheduled', 'completed', 'skipped']).optional(),
+  notes: z.string().max(500).optional(),
+  completed_workout_id: z.string().uuid().optional(),
+})
+
+// ============================================================================
+// Notification Schemas
+// ============================================================================
+
+export const PushSubscriptionSchema = z.object({
+  endpoint: z.string().url('Invalid endpoint URL'),
+  keys: z.object({
+    p256dh: z.string().min(1, 'p256dh key is required'),
+    auth: z.string().min(1, 'auth key is required'),
+  }),
+})
+
+export const UnsubscribeSchema = z.object({
+  endpoint: z.string().url('Invalid endpoint URL'),
+})
+
+// ============================================================================
+// Settings Schemas
+// ============================================================================
+
+export const EmailSettingsSchema = z.object({
+  id: z.string().uuid().optional(),
+  email_address: z.string().email('Valid email is required'),
+  app_password: z.string().min(1, 'App password is required'),
+  imap_host: z.string().default('imap.gmail.com'),
+  imap_port: z.number().int().min(1).max(65535).default(993),
+  imap_tls: z.boolean().default(true),
+  is_enabled: z.boolean().default(true),
+  trusted_senders: z.array(z.string()).optional(),
+})
+
+// ============================================================================
+// Personal Record Schema
+// ============================================================================
+
+export const CreatePersonalRecordSchema = z.object({
+  exercise_id: z.string().uuid(),
+  record_type: z.enum(['1rm', 'max_reps', 'max_volume', 'max_weight']),
+  value: z.number().positive(),
+  unit: z.string().max(20).optional(),
+  achieved_at: z.string().datetime().optional(),
+  workout_exercise_id: z.string().uuid().optional(),
+  notes: z.string().max(500).optional(),
+})
+
+// ============================================================================
+// Achievement Schema
+// ============================================================================
+
+export const UnlockAchievementSchema = z.object({
+  achievementType: z.string().min(1, 'achievementType is required'),
+})
+
+// ============================================================================
+// Exercise Favorite Schema
+// ============================================================================
+
+export const ExerciseFavoriteSchema = z.object({
+  exercise_id: z.string().uuid('Valid exercise_id is required'),
+})
+
+// ============================================================================
+// Workout Update / Generate Schemas
+// ============================================================================
+
+export const UpdateWorkoutSchemaNew = z.object({
+  status: z.enum(['in_progress', 'completed', 'abandoned']).optional(),
+  completed_at: z.string().datetime().optional(),
+  notes: z.string().max(500).optional(),
+})
+
+export const GenerateWorkoutSchema = z.object({
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  target_goal: z.enum(['strength', 'hypertrophy', 'endurance', 'general_fitness']).optional(),
+  duration_minutes: z.number().positive().optional(),
+  muscle_groups: z.array(z.string()).optional(),
+  equipment: z.array(z.string()).optional(),
+})
+
+// ============================================================================
+// Recurring Expense Schemas
+// ============================================================================
+
+export const CreateRecurringExpenseSchema = z.object({
+  merchant: z.string().min(1, 'Merchant is required'),
+  amount: z.number().positive('Amount must be positive'),
+  category: z.string().min(1, 'Category is required'),
+  frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  notes: z.string().max(500).optional(),
+})
+
+export const UpdateRecurringExpenseSchema = z.object({
+  merchant: z.string().min(1).optional(),
+  amount: z.number().positive().optional(),
+  category: z.string().min(1).optional(),
+  frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional(),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  notes: z.string().max(500).optional(),
+  is_active: z.boolean().optional(),
+})
+
+export const SkipRecurringExpenseSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date is required'),
+})
+
+export const SaveDetectedExpensesSchema = z.object({
+  detectedExpenses: z.array(z.object({
+    merchant: z.string().min(1),
+    category: z.string().min(1),
+    averageAmount: z.number().positive(),
+    frequency: z.string(),
+    intervalDays: z.number(),
+    nextExpected: z.string(),
+    confidence: z.number(),
+  })).min(1, 'At least one detected expense is required'),
+})
+
+// ============================================================================
+// Goal Update Schema (with field mapping)
+// ============================================================================
+
+export const UpdateGoalWithMappingSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  targetAmount: z.number().positive().optional(),
+  currentAmount: z.number().nonnegative().optional(),
+  target_amount: z.number().positive().optional(),
+  current_amount: z.number().nonnegative().optional(),
+  deadline: z.string().optional(),
+  icon: z.string().max(10).optional(),
+})
+
+// ============================================================================
+// Budget Update Schema
+// ============================================================================
+
+export const UpdateBudgetAmountSchema = z.object({
+  amount: z.number().positive('Amount must be positive'),
+})
+
+// ============================================================================
+// Cardio Plan Update Schema
+// ============================================================================
+
+export const UpdateCardioPlanSchema = z.object({
+  status: z.enum(['active', 'completed', 'abandoned']).optional(),
+  current_week: z.number().positive().optional(),
+  current_session: z.number().positive().optional(),
+})
+
+// ============================================================================
+// Workout Template Update Schema
+// ============================================================================
+
+export const UpdateWorkoutTemplateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  duration_minutes: z.number().positive().optional(),
+  exercises: z.array(z.object({
+    exercise_id: z.string().uuid(),
+    name: z.string().optional(),
+    sets: z.number().positive().int(),
+    reps: z.union([z.number().positive().int(), z.string()]),
+    rest: z.number().nonnegative().default(60),
+    notes: z.string().optional(),
+    image_url: z.string().nullable().optional(),
+    gif_url: z.string().nullable().optional(),
+    order: z.number().nonnegative().int().optional(),
+  })).optional(),
+  tags: z.array(z.string()).optional(),
+  target_goal: z.enum(['strength', 'hypertrophy', 'endurance', 'general_fitness']).optional(),
+})
+
+// ============================================================================
+// AI Schemas
+// ============================================================================
+
+export const ParseInputSchema = z.object({
+  input: z.string().min(1, 'Input text is required'),
+})
+
+export const AIInsightsSchema = z.object({
+  expenses: z.array(z.any()),
+  budgets: z.array(z.any()).optional(),
+  timeRange: z.enum(['week', 'month', 'quarter']).optional(),
+})
+
+// ============================================================================
+// Streak Update Schema
+// ============================================================================
+
+export const UpdateStreakSchema = z.object({
+  type: z.enum(['workout', 'meal']).optional(),
+  current_streak: z.number().nonnegative().optional(),
+  longest_streak: z.number().nonnegative().optional(),
+  last_activity_date: z.string().optional(),
+})
+
+// ============================================================================
+// Custom Exercise Update Schema
+// ============================================================================
+
+export const UpdateCustomExerciseSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  category: z.string().min(1).optional(),
+  muscle_group: z.string().optional(),
+  equipment: z.string().optional(),
+  instructions: z.string().max(1000).optional(),
+})
+
+// ============================================================================
+// Goal Input Schema (camelCase for client API)
+// ============================================================================
+
+export const CreateGoalInputSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  targetAmount: z.number().positive('Target amount must be positive'),
+  currentAmount: z.number().nonnegative().default(0),
+  deadline: z.string().optional(),
+  icon: z.string().max(10).default('\uD83C\uDFAF'),
+})
+
+// ============================================================================
+// Meal Input Schema (with LLM estimation support)
+// ============================================================================
+
+export const CreateMealInputSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  calories: z.number().positive().optional(),
+  protein: z.number().nonnegative().optional(),
+  carbs: z.number().nonnegative().optional(),
+  fat: z.number().nonnegative().optional(),
+  meal_time: z.string().optional(),
+  meal_date: z.string().min(1, 'meal_date is required'),
+  expense_id: z.string().optional(),
+  notes: z.string().max(500).optional(),
+  estimate: z.boolean().optional(),
+  portionSize: z.string().optional(),
+})
+
+// ============================================================================
+// Additional Type Exports
+// ============================================================================
+
+export type CreateRoutineCompletionInput = z.infer<typeof CreateRoutineCompletionSchema>
+export type CreateRoutineTemplateInput = z.infer<typeof CreateRoutineTemplateSchema>
+export type CreateScheduledWorkoutInput = z.infer<typeof CreateScheduledWorkoutSchema>
+export type PushSubscriptionInput = z.infer<typeof PushSubscriptionSchema>

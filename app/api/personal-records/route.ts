@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { CreatePersonalRecordSchema } from '@/lib/api/schemas'
 
-// GET /api/personal-records - list user's personal records
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)
   const exerciseId = searchParams.get('exerciseId')
 
-  // RLS automatically filters by user_id
   let query = supabase
     .from('personal_records')
     .select('*, exercises(*)')
@@ -21,31 +20,27 @@ export const GET = withAuth(async (request, user) => {
   const { data, error } = await query
 
   if (error) {
-    console.error('error fetching personal records:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Failed to fetch personal records:', error)
+    return NextResponse.json({ error: 'Failed to fetch personal records' }, { status: 500 })
   }
 
   return NextResponse.json({ personalRecords: data || [] })
 })
 
-// POST /api/personal-records - create or update personal record
-export const POST = withAuth(async (request, user) => {
+export const POST = withAuthAndValidation(CreatePersonalRecordSchema, async (request, user, validatedData) => {
   const supabase = createClient()
-  const body = await request.json()
 
-  // upsert (insert or update if exists)
-  // RLS automatically sets user_id
   const { data, error } = await supabase
     .from('personal_records')
     .upsert({
       user_id: user.id,
-      exercise_id: body.exercise_id,
-      record_type: body.record_type,
-      value: body.value,
-      unit: body.unit,
-      achieved_at: body.achieved_at || new Date().toISOString(),
-      workout_exercise_id: body.workout_exercise_id,
-      notes: body.notes,
+      exercise_id: validatedData.exercise_id,
+      record_type: validatedData.record_type,
+      value: validatedData.value,
+      unit: validatedData.unit,
+      achieved_at: validatedData.achieved_at || new Date().toISOString(),
+      workout_exercise_id: validatedData.workout_exercise_id,
+      notes: validatedData.notes,
     }, {
       onConflict: 'user_id,exercise_id,record_type',
     })
@@ -53,8 +48,8 @@ export const POST = withAuth(async (request, user) => {
     .single()
 
   if (error) {
-    console.error('error creating personal record:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Failed to create personal record:', error)
+    return NextResponse.json({ error: 'Failed to create personal record' }, { status: 500 })
   }
 
   return NextResponse.json({ personalRecord: data })

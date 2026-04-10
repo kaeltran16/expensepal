@@ -1,51 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware'
+import { withAuthParamsAndValidation } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
+import { SkipRecurringExpenseSchema } from '@/lib/api/schemas'
 
-/**
- * POST /api/recurring-expenses/[id]/skip
- * Skip a specific date for a recurring expense
- */
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(async (req, user) => {
-    const supabase = createClient()
-    const { id } = await context.params
-    const body = await req.json()
+  return withAuthParamsAndValidation(
+    SkipRecurringExpenseSchema,
+    async (req, user, params: { id: string }, validatedData) => {
+      const supabase = createClient()
 
-  if (!body.date) {
-    return NextResponse.json({ error: 'Date is required' }, { status: 400 })
-  }
+      const { data: expense, error: fetchError } = await supabase
+        .from('recurring_expenses')
+        .select('skipped_dates')
+        .eq('id', params.id)
+        .eq('user_id', user.id)
+        .single()
 
-  // Get current recurring expense
-  const { data: expense, error: fetchError } = await supabase
-    .from('recurring_expenses')
-    .select('skipped_dates')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single()
+      if (fetchError) {
+        console.error('Failed to fetch recurring expense:', fetchError)
+        throw new Error('Failed to fetch recurring expense')
+      }
 
-  if (fetchError) throw fetchError
+      const skippedDates = expense.skipped_dates || []
+      if (!skippedDates.includes(validatedData.date)) {
+        skippedDates.push(validatedData.date)
+      }
 
-  // Add date to skipped_dates array if not already there
-  const skippedDates = expense.skipped_dates || []
-  if (!skippedDates.includes(body.date)) {
-    skippedDates.push(body.date)
-  }
+      const { data, error } = await supabase
+        .from('recurring_expenses')
+        .update({ skipped_dates: skippedDates })
+        .eq('id', params.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
 
-  // Update with new skipped dates
-  const { data, error } = await supabase
-    .from('recurring_expenses')
-    .update({ skipped_dates: skippedDates })
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single()
+      if (error) {
+        console.error('Failed to skip recurring expense:', error)
+        throw new Error('Failed to skip recurring expense')
+      }
 
-  if (error) throw error
-
-  return NextResponse.json(data)
-  })(request)
+      return NextResponse.json(data)
+    }
+  )(request, context)
 }

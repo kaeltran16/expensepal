@@ -44,8 +44,8 @@ export const GET = withAuth(async (request, user) => {
   const { data, error } = await query
 
   if (error) {
-    console.error('error fetching cardio plans:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Failed to fetch cardio plans:', error)
+    return NextResponse.json({ error: 'Failed to fetch cardio plans' }, { status: 500 })
   }
 
   return NextResponse.json({ plans: data || [] })
@@ -79,8 +79,8 @@ export const POST = withAuthAndValidation(CreateCardioPlanSchema, async (request
     .single()
 
   if (error) {
-    console.error('error creating cardio plan:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Failed to create cardio plan:', error)
+    return NextResponse.json({ error: 'Failed to create cardio plan' }, { status: 500 })
   }
 
   return NextResponse.json({ plan: data })

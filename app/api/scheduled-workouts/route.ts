@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware'
+import { NextResponse } from 'next/server'
+import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
+import { CreateScheduledWorkoutSchema } from '@/lib/api/schemas'
 
-// GET /api/scheduled-workouts?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const searchParams = request.nextUrl.searchParams
@@ -39,56 +39,49 @@ export const GET = withAuth(async (request, user) => {
   return NextResponse.json({ scheduledWorkouts })
 })
 
-// POST /api/scheduled-workouts
-export const POST = withAuth(async (request, user) => {
-  const supabase = createClient()
-  const body = await request.json()
-  const { template_id, scheduled_date, notes } = body
+export const POST = withAuthAndValidation(
+  CreateScheduledWorkoutSchema,
+  async (request, user, validatedData) => {
+    const supabase = createClient()
+    const { template_id, scheduled_date, notes } = validatedData
 
-  if (!scheduled_date) {
-    return NextResponse.json(
-      { error: 'scheduled_date is required' },
-      { status: 400 }
-    )
+    const { data: existing } = await supabase
+      .from('scheduled_workouts')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('scheduled_date', scheduled_date)
+      .single()
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'A workout is already scheduled for this date' },
+        { status: 409 }
+      )
+    }
+
+    const { data: scheduledWorkout, error } = await supabase
+      .from('scheduled_workouts')
+      .insert({
+        user_id: user.id,
+        template_id,
+        scheduled_date,
+        notes,
+        status: 'scheduled'
+      })
+      .select(`
+        *,
+        template:workout_templates(*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error creating scheduled workout:', error)
+      return NextResponse.json(
+        { error: 'Failed to create scheduled workout' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ scheduledWorkout }, { status: 201 })
   }
-
-  // Check if a workout is already scheduled for this date
-  const { data: existing } = await supabase
-    .from('scheduled_workouts')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('scheduled_date', scheduled_date)
-    .single()
-
-  if (existing) {
-    return NextResponse.json(
-      { error: 'A workout is already scheduled for this date' },
-      { status: 409 }
-    )
-  }
-
-  const { data: scheduledWorkout, error } = await supabase
-    .from('scheduled_workouts')
-    .insert({
-      user_id: user.id,
-      template_id,
-      scheduled_date,
-      notes,
-      status: 'scheduled'
-    })
-    .select(`
-      *,
-      template:workout_templates(*)
-    `)
-    .single()
-
-  if (error) {
-    console.error('Error creating scheduled workout:', error)
-    return NextResponse.json(
-      { error: 'Failed to create scheduled workout' },
-      { status: 500 }
-    )
-  }
-
-  return NextResponse.json({ scheduledWorkout }, { status: 201 })
-})
+)

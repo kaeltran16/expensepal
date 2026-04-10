@@ -60,12 +60,12 @@ import { ViewTransition } from '@/components/view-transition';
 import { AnimatePresence, motion } from 'motion/react';
 import { Filter } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MoreSheet } from '@/components/more-sheet';
 import { SplashScreen } from '@/components/splash-screen';
 import { useAuth } from '@/components/auth-provider';
 
-// Workout completion data type
 type WorkoutCompletionData = {
   template_id?: string
   started_at: string
@@ -83,7 +83,6 @@ type WorkoutCompletionData = {
   }[]
 }
 
-// Lazy load view components for code splitting and better performance
 const ExpensesView = lazy(() => import('@/components/views').then(mod => ({ default: mod.ExpensesView })));
 const AnalyticsInsightsView = lazy(() => import('@/components/views').then(mod => ({ default: mod.AnalyticsInsightsView })));
 const BudgetView = lazy(() => import('@/components/views').then(mod => ({ default: mod.BudgetView })));
@@ -97,16 +96,13 @@ const RoutinesView = lazy(() => import('@/components/views').then(mod => ({ defa
 const FeedView = lazy(() => import('@/components/views').then(mod => ({ default: mod.FeedView })));
 
 function HomeContent() {
-  // Client-side UI state (needs to be before hooks that depend on it)
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeView, setActiveView] = useState<ViewType>((searchParams.get('view') as ViewType) || 'expenses');
 
-  // Core hooks - always loaded for expenses view (default)
   const { data: expenses = [], isLoading: expensesLoading, refetch: refetchExpenses } = useExpenses();
   const { isLoading: statsLoading, refetch: refetchStats } = useStats();
 
-  // Conditionally load data based on active view
   const currentMonth = new Date().toISOString().slice(0, 7);
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgets(
     { month: currentMonth },
@@ -116,7 +112,6 @@ function HomeContent() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { mutateAsync: updateProfile } = useUpdateProfile();
 
-  // Workout tracking hooks - only load when viewing workouts
   const twoWeeksAgo = useMemo(() => {
     const date = new Date()
     date.setDate(date.getDate() - 14)
@@ -137,10 +132,8 @@ function HomeContent() {
   const { mutateAsync: updateTemplate } = useUpdateTemplate()
   const { mutateAsync: deleteTemplate } = useDeleteTemplate()
 
-  // Derived loading state for expenses view
   const loading = expensesLoading || statsLoading || budgetsLoading;
 
-  // Client-side UI state
   const [showForm, setShowForm] = useState(false);
   const [showNLInput, setShowNLInput] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
@@ -154,13 +147,11 @@ function HomeContent() {
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to top when switching tabs
   useEffect(() => {
     window.scrollTo(0, 0);
     contentRef.current?.scrollTo(0, 0);
   }, [activeView]);
 
-  // Custom hooks for complex logic
   const {
     filteredExpenses,
     quickFilter,
@@ -193,7 +184,6 @@ function HomeContent() {
     await refetchStats();
   };
 
-  // Calorie tracking state - now using TanStack Query hooks
   const startDate = useMemo(() => {
     return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   }, []);
@@ -207,10 +197,8 @@ function HomeContent() {
     { enabled: activeView === 'calories' && meals.length > 0 }
   );
 
-  // Prefetch data for likely next views to make navigation instant
   const queryClient = useQueryClient();
   useEffect(() => {
-    // When on expenses view, prefetch budget view data (most common navigation)
     if (activeView === 'expenses') {
       queryClient.prefetchQuery({
         queryKey: queryKeys.budgets.list({ month: currentMonth }),
@@ -225,13 +213,6 @@ function HomeContent() {
       });
     }
 
-    // When on budget view, prefetch insights data
-    if (activeView === 'budget' && expenses.length > 0) {
-      // No specific prefetch needed as insights use already-loaded expenses
-    }
-
-    // When on any view, prefetch workouts if user might navigate there
-    // This is lower priority, only prefetch after a delay
     const prefetchTimer = setTimeout(() => {
       if (activeView !== 'workouts') {
         queryClient.prefetchQuery({
@@ -244,12 +225,11 @@ function HomeContent() {
           },
         });
       }
-    }, 2000); // Prefetch after 2 seconds
+    }, 2000);
 
     return () => clearTimeout(prefetchTimer);
   }, [activeView, currentMonth, expenses.length, queryClient]);
 
-  // Sync active view with URL query params
   useEffect(() => {
     const currentView = searchParams.get('view') as ViewType;
     if (activeView !== 'expenses' && activeView !== currentView) {
@@ -259,26 +239,21 @@ function HomeContent() {
     }
   }, [activeView, router, searchParams]);
 
-  // Check if should show onboarding - use profile data instead of localStorage
   useEffect(() => {
     if (profileLoading || !profile) return;
 
-    // Show onboarding if user hasn't seen it yet
     if (!profile.has_seen_onboarding) {
       setShowOnboarding(true);
     }
   }, [profile, profileLoading]);
 
-  // Clean up auth cache-busting parameter
   useEffect(() => {
     const url = new URL(window.location.href)
     if (url.searchParams.has('_auth')) {
-      // Remove the cache-busting parameter added by auth callback
       url.searchParams.delete('_auth')
       window.history.replaceState({}, '', url.pathname + url.search)
 
-      // Clear service worker caches on first load after login
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
           type: 'CLEAR_AUTH_CACHES'
         })
@@ -286,47 +261,36 @@ function HomeContent() {
     }
   }, [])
 
-  // Handle shared content from Web Share Target API
   useEffect(() => {
     const source = searchParams.get('source')
     const action = searchParams.get('action')
 
-    if (source === 'share' && action === 'add') {
-      // Retrieve shared data from cache
-      if ('caches' in window) {
-        // Find the dynamic cache (versioned)
-        caches.keys().then(cacheNames => {
+    if (source === 'share' && action === 'add' && 'caches' in window) {
+      const handleShare = async () => {
+        try {
+          const cacheNames = await caches.keys()
           const dynamicCache = cacheNames.find(name => name.startsWith('dynamic-'))
           if (!dynamicCache) return
 
-          return caches.open(dynamicCache)
-        }).then(cache => {
-          if (!cache) return
-          cache.match('/shared-data').then(response => {
-            if (response) {
-              response.json().then(data => {
-                console.log('[Share Target] Received shared data:', data)
-                // TODO: Pre-fill expense form with shared data
-                // For now, just show the add expense view
-                setActiveView('expenses')
-                setShowForm(true)
+          const cache = await caches.open(dynamicCache)
+          const response = await cache.match('/shared-data')
+          if (!response) return
 
-                // Clean up the URL
-                const url = new URL(window.location.href)
-                url.searchParams.delete('source')
-                url.searchParams.delete('action')
-                window.history.replaceState({}, '', url.pathname + url.search)
-              }).catch(err => {
-                console.error('[Share Target] Error parsing shared data:', err)
-              })
-            }
-          }).catch(err => {
-            console.error('[Share Target] Error retrieving shared data:', err)
-          })
-        }).catch(err => {
-          console.error('[Share Target] Error opening cache:', err)
-        })
+          const data = await response.json()
+          console.log('[Share Target] Received shared data:', data)
+          setActiveView('expenses')
+          setShowForm(true)
+
+          const url = new URL(window.location.href)
+          url.searchParams.delete('source')
+          url.searchParams.delete('action')
+          window.history.replaceState({}, '', url.pathname + url.search)
+        } catch (error) {
+          console.error('[Share Target] Error handling shared data:', error)
+          toast.error('Failed to process shared data')
+        }
       }
+      handleShare()
     }
   }, [searchParams])
 
@@ -382,7 +346,6 @@ function HomeContent() {
 
   return (
     <>
-      {/* Navbar */}
       <Navbar
         onSyncEmails={handleSync}
         isSyncing={isSyncing}
@@ -720,28 +683,32 @@ function HomeContent() {
               template={activeWorkout}
               exercises={exercises}
               onComplete={async (workoutData) => {
-                const now = new Date().toISOString()
-                const apiData: WorkoutCompletionData = {
-                  template_id: workoutData.template_id ?? undefined,
-                  started_at: now,
-                  completed_at: now,
-                  duration_minutes: workoutData.duration_minutes ?? 0,
-                  exerciseLogs: (workoutData.exercises_completed ?? []).map((log) => ({
-                    exercise_id: log.exercise_id,
-                    sets: log.sets,
-                    notes: log.exercise_name,
-                  })),
+                try {
+                  const now = new Date().toISOString()
+                  const apiData: WorkoutCompletionData = {
+                    template_id: workoutData.template_id ?? undefined,
+                    started_at: now,
+                    completed_at: now,
+                    duration_minutes: workoutData.duration_minutes ?? 0,
+                    exerciseLogs: (workoutData.exercises_completed ?? []).map((log) => ({
+                      exercise_id: log.exercise_id,
+                      sets: log.sets,
+                      notes: log.exercise_name,
+                    })),
+                  }
+                  await createWorkout(apiData)
+                  setActiveWorkout(undefined)
+                  setExerciseLogs([])
+                } catch (error) {
+                  console.error('Failed to save workout:', error)
+                  toast.error('Failed to save workout. Your data is preserved — please try again.')
                 }
-                await createWorkout(apiData)
-                setActiveWorkout(undefined)
-                setExerciseLogs([])
               }}
               onCancel={() => {
                 setActiveWorkout(undefined)
                 setExerciseLogs([])
               }}
               onEditExercises={() => {
-                console.log('onEditExercises called - switching to workouts view, activeWorkout:', activeWorkout?.name)
                 setEditingWorkoutExercises(true)
                 setActiveView('workouts')
               }}

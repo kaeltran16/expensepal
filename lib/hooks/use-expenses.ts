@@ -10,9 +10,6 @@ type Expense = Tables<'expenses'>
 type ExpenseInsert = TablesInsert<'expenses'>
 type ExpenseUpdate = TablesUpdate<'expenses'>
 
-/**
- * Fetch expenses with optional filters
- */
 async function fetchExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
   const params = new URLSearchParams()
 
@@ -33,22 +30,6 @@ async function fetchExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
   return data.expenses || []
 }
 
-/**
- * Hook to fetch expenses with optional filters
- *
- * @param filters - Optional filters for expenses
- * @param options - React Query options
- *
- * @example
- * const { data: expenses, isLoading } = useExpenses()
- *
- * @example
- * const { data: expenses } = useExpenses({
- *   category: 'Food',
- *   startDate: '2025-11-01',
- *   limit: 50
- * })
- */
 export function useExpenses(
   filters?: ExpenseFilters,
   options?: {
@@ -59,17 +40,12 @@ export function useExpenses(
   return useQuery({
     queryKey: queryKeys.expenses.list(filters),
     queryFn: () => fetchExpenses(filters),
-    // Cache for 12 hours - expenses rarely change
     staleTime: 12 * 60 * 60 * 1000,
-    // Keep previous data while fetching new data (prevents loading flicker)
     placeholderData: (previousData) => previousData,
     ...options,
   })
 }
 
-/**
- * Create expense mutation
- */
 async function createExpense(expense: ExpenseInsert): Promise<Expense> {
   const response = await fetch('/api/expenses', {
     method: 'POST',
@@ -85,27 +61,12 @@ async function createExpense(expense: ExpenseInsert): Promise<Expense> {
   return response.json()
 }
 
-/**
- * Hook to create a new expense
- *
- * @example
- * const { mutate: createExpense, isPending } = useCreateExpense()
- *
- * createExpense({
- *   amount: 50000,
- *   merchant: 'Starbucks',
- *   currency: 'VND',
- *   transaction_date: new Date().toISOString(),
- *   source: 'manual'
- * })
- */
 export function useCreateExpense() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: createExpense,
     onSuccess: () => {
-      // Invalidate all expense queries to refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all })
       toast.success('Expense created successfully')
@@ -116,31 +77,14 @@ export function useCreateExpense() {
   })
 }
 
-/**
- * Hook with optimistic update for creating expenses
- * Provides better UX by immediately updating the UI
- *
- * @example
- * const { mutate: createExpense } = useCreateExpenseOptimistic()
- *
- * createExpense({
- *   amount: 50000,
- *   merchant: 'Starbucks',
- *   currency: 'VND',
- *   transaction_date: new Date().toISOString(),
- *   source: 'manual'
- * })
- */
 export function useCreateExpenseOptimistic() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: createExpense,
     onMutate: async (newExpense) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.expenses.all })
 
-      // Snapshot previous value
       const previousExpenses = queryClient.getQueryData(queryKeys.expenses.lists())
 
       // Create optimistic expense with temporary ID
@@ -159,7 +103,6 @@ export function useCreateExpenseOptimistic() {
         updated_at: new Date().toISOString(),
       } as Expense
 
-      // Optimistically update all expense lists
       queryClient.setQueriesData({ queryKey: queryKeys.expenses.lists() }, (old: Expense[] | undefined) => {
         if (!old) return [optimisticExpense]
         return [optimisticExpense, ...old]
@@ -168,7 +111,6 @@ export function useCreateExpenseOptimistic() {
       return { previousExpenses }
     },
     onError: (error, _, context) => {
-      // Rollback on error
       if (context?.previousExpenses) {
         queryClient.setQueryData(queryKeys.expenses.lists(), context.previousExpenses)
       }
@@ -178,19 +120,14 @@ export function useCreateExpenseOptimistic() {
       toast.success('Expense added!')
     },
     onSettled: () => {
-      // Always refetch after error or success to sync with server
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all })
-      // Invalidate meals queries since Food expenses auto-create meals
       queryClient.invalidateQueries({ queryKey: queryKeys.meals.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.calorieStats.all })
     },
   })
 }
 
-/**
- * Update expense mutation
- */
 async function updateExpense({
   id,
   updates,
@@ -212,17 +149,6 @@ async function updateExpense({
   return response.json()
 }
 
-/**
- * Hook to update an existing expense
- *
- * @example
- * const { mutate: updateExpense } = useUpdateExpense()
- *
- * updateExpense({
- *   id: 'expense-id',
- *   updates: { category: 'Food', notes: 'Updated note' }
- * })
- */
 export function useUpdateExpense() {
   const queryClient = useQueryClient()
 
@@ -231,7 +157,6 @@ export function useUpdateExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all })
-      toast.success('Expense updated successfully')
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update expense')
@@ -239,23 +164,16 @@ export function useUpdateExpense() {
   })
 }
 
-/**
- * Hook with optimistic update for updating expenses
- * Provides better UX by immediately updating the UI
- */
 export function useUpdateExpenseOptimistic() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: updateExpense,
     onMutate: async ({ id, updates }) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.expenses.all })
 
-      // Snapshot previous value
       const previousExpenses = queryClient.getQueryData(queryKeys.expenses.lists())
 
-      // Optimistically update all expense lists
       queryClient.setQueriesData({ queryKey: queryKeys.expenses.lists() }, (old: Expense[] | undefined) => {
         if (!old) return []
         return old.map((expense) =>
@@ -276,16 +194,12 @@ export function useUpdateExpenseOptimistic() {
       toast.success('Expense updated')
     },
     onSettled: () => {
-      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all })
     },
   })
 }
 
-/**
- * Delete expense mutation
- */
 async function deleteExpense(id: string): Promise<void> {
   const response = await fetch(`/api/expenses/${id}`, {
     method: 'DELETE',
@@ -297,14 +211,6 @@ async function deleteExpense(id: string): Promise<void> {
   }
 }
 
-/**
- * Hook to delete an expense
- *
- * @example
- * const { mutate: deleteExpense } = useDeleteExpense()
- *
- * deleteExpense('expense-id')
- */
 export function useDeleteExpense() {
   const queryClient = useQueryClient()
 
@@ -321,28 +227,16 @@ export function useDeleteExpense() {
   })
 }
 
-/**
- * Hook with optimistic update for deleting expenses
- * Provides better UX by immediately updating the UI
- *
- * @example
- * const { mutate: deleteExpense } = useDeleteExpenseOptimistic()
- *
- * deleteExpense('expense-id')
- */
 export function useDeleteExpenseOptimistic() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: deleteExpense,
     onMutate: async (expenseId) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.expenses.all })
 
-      // Snapshot previous value
       const previousExpenses = queryClient.getQueryData(queryKeys.expenses.lists())
 
-      // Optimistically update all expense lists
       queryClient.setQueriesData({ queryKey: queryKeys.expenses.lists() }, (old: Expense[] | undefined) => {
         if (!old) return []
         return old.filter((expense) => expense.id !== expenseId)
@@ -357,11 +251,7 @@ export function useDeleteExpenseOptimistic() {
       }
       toast.error('Failed to delete expense')
     },
-    onSuccess: () => {
-      toast.success('Expense deleted')
-    },
     onSettled: () => {
-      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all })
     },

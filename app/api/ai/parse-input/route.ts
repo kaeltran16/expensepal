@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { llmService } from '@/lib/llm-service'
-import { createClient } from '@/lib/supabase/server'
+import { withAuthAndValidation } from '@/lib/api/middleware'
+import { ParseInputSchema } from '@/lib/api/schemas'
 
 const SYSTEM_PROMPT = `You are an input classifier for a personal finance and fitness app. Given a natural language input, classify it into one of these intents and extract structured data.
 
@@ -44,52 +45,44 @@ Routine example: {"intent":"routine","confidence":0.9,"data":{"routine_name":"mo
 Current date/time: {{now}}
 `
 
-export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export const POST = withAuthAndValidation(
+  ParseInputSchema,
+  async (request, user, validatedData) => {
+    const input = validatedData.input.trim()
+
+    if (!llmService.isConfigured()) {
+      return NextResponse.json({ error: 'AI service not configured' }, { status: 503 })
+    }
+
+    const now = new Date().toISOString()
+    const systemPrompt = SYSTEM_PROMPT.replace('{{now}}', now)
+
+    const response = await llmService.completion({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: input },
+      ],
+      temperature: 0.1,
+      maxTokens: 500,
+      cacheKey: `parse:${input.toLowerCase()}`,
+      cacheTTL: 5 * 60 * 1000,
+    })
+
+    if (!response) {
+      return NextResponse.json({ error: 'AI service unavailable' }, { status: 503 })
+    }
+
+    const parsed = llmService.parseJSON<{
+      intent: string
+      confidence: number
+      data: Record<string, unknown>
+      display_text: string
+    }>(response.content)
+
+    if (!parsed) {
+      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 502 })
+    }
+
+    return NextResponse.json(parsed)
   }
-
-  const body = await request.json()
-  const input = body.input?.trim()
-
-  if (!input) {
-    return NextResponse.json({ error: 'Input is required' }, { status: 400 })
-  }
-
-  if (!llmService.isConfigured()) {
-    return NextResponse.json({ error: 'AI service not configured' }, { status: 503 })
-  }
-
-  const now = new Date().toISOString()
-  const systemPrompt = SYSTEM_PROMPT.replace('{{now}}', now)
-
-  const response = await llmService.completion({
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: input },
-    ],
-    temperature: 0.1,
-    maxTokens: 500,
-    cacheKey: `parse:${input.toLowerCase()}`,
-    cacheTTL: 5 * 60 * 1000, // 5 minutes
-  })
-
-  if (!response) {
-    return NextResponse.json({ error: 'AI service unavailable' }, { status: 503 })
-  }
-
-  const parsed = llmService.parseJSON<{
-    intent: string
-    confidence: number
-    data: Record<string, unknown>
-    display_text: string
-  }>(response.content)
-
-  if (!parsed) {
-    return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 502 })
-  }
-
-  return NextResponse.json(parsed)
-}
+)
