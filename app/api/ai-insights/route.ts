@@ -3,6 +3,8 @@ import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { AIInsightsSchema } from '@/lib/api/schemas'
 import { llmService } from '@/lib/llm-service'
 
+export const runtime = 'edge'
+
 interface Expense {
   transaction_date: string
   amount: number

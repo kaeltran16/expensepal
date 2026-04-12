@@ -4,6 +4,8 @@ import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateCustomExerciseSchema, UpdateCustomExerciseSchema } from '@/lib/api/schemas'
 import type { Database } from '@/lib/supabase/database.types'
 
+export const runtime = 'edge'
+
 type CustomExerciseUpdate = Partial<Database['public']['Tables']['custom_exercises']['Update']>
 
 export const GET = withAuth(async (_request, user) => {

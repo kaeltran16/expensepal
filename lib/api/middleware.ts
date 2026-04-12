@@ -3,28 +3,14 @@ import type { User } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-/**
- * Higher-order function that wraps API route handlers with authentication
- * Reduces boilerplate code and ensures consistent error handling across all routes
- *
- * @example
- * ```typescript
- * // Before (with boilerplate):
- * export async function GET(request: NextRequest) {
- *   const supabase = createClient()
- *   const { data: { user }, error } = await supabase.auth.getUser()
- *   if (error || !user) {
- *     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
- *   }
- *   // ... handler logic
- * }
- *
- * // After (with middleware):
- * export const GET = withAuth(async (request, user) => {
- *   // ... handler logic (user is guaranteed to exist)
- * })
- * ```
- */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String((error as { message: unknown }).message)
+  }
+  return 'Internal server error'
+}
+
 export function withAuth(
   handler: (request: NextRequest, user: User) => Promise<Response>
 ) {
@@ -40,39 +26,17 @@ export function withAuth(
         )
       }
 
-      // Call the actual handler with authenticated user
       return await handler(request, user)
     } catch (error) {
       console.error('API Error:', error)
-
-      const message = error instanceof Error
-        ? error.message
-        : (typeof error === 'object' && error !== null && 'message' in error)
-          ? String((error as { message: unknown }).message)
-          : 'Internal server error'
       return NextResponse.json(
-        { error: message },
+        { error: getErrorMessage(error) },
         { status: 500 }
       )
     }
   }
 }
 
-/**
- * Alternative middleware that allows optional authentication
- * Passes null for user if not authenticated, allowing public + private routes
- *
- * @example
- * ```typescript
- * export const GET = withOptionalAuth(async (request, user) => {
- *   if (user) {
- *     // Return personalized data
- *   } else {
- *     // Return public data
- *   }
- * })
- * ```
- */
 export function withOptionalAuth(
   handler: (request: NextRequest, user: User | null) => Promise<Response>
 ) {
@@ -81,40 +45,17 @@ export function withOptionalAuth(
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      // Call handler regardless of auth status
       return await handler(request, user)
     } catch (error) {
       console.error('API Error:', error)
-
-      const message = error instanceof Error
-        ? error.message
-        : (typeof error === 'object' && error !== null && 'message' in error)
-          ? String((error as { message: unknown }).message)
-          : 'Internal server error'
       return NextResponse.json(
-        { error: message },
+        { error: getErrorMessage(error) },
         { status: 500 }
       )
     }
   }
 }
 
-/**
- * Middleware for handling common HTTP methods with auth
- * Automatically returns 405 Method Not Allowed for unsupported methods
- *
- * @example
- * ```typescript
- * export const { GET, POST } = withMethods({
- *   GET: async (request, user) => {
- *     // Handle GET
- *   },
- *   POST: async (request, user) => {
- *     // Handle POST
- *   }
- * })
- * ```
- */
 export function withMethods(handlers: {
   GET?: (request: NextRequest, user: User) => Promise<Response>
   POST?: (request: NextRequest, user: User) => Promise<Response>
@@ -133,100 +74,47 @@ export function withMethods(handlers: {
   return wrapped
 }
 
-/**
- * Middleware that combines authentication with request body validation
- * Validates request body against a Zod schema before calling the handler
- *
- * @example
- * ```typescript
- * export const POST = withAuthAndValidation(
- *   CreateExpenseSchema,
- *   async (request, user, validatedData) => {
- *     // validatedData is type-safe and validated
- *     const expense = await createExpense(user.id, validatedData)
- *     return NextResponse.json({ expense })
- *   }
- * )
- * ```
- */
+function formatZodError(error: z.ZodError, label: string) {
+  return NextResponse.json(
+    {
+      error: label,
+      details: error.issues.map(err => ({
+        path: err.path.join('.'),
+        message: err.message,
+      })),
+    },
+    { status: 400 }
+  )
+}
+
 export function withAuthAndValidation<T extends z.ZodType>(
   schema: T,
   handler: (request: NextRequest, user: User, validatedData: z.infer<T>) => Promise<Response>
 ) {
   return withAuth(async (request, user) => {
     try {
-      // Parse and validate request body
       const body = await request.json()
       const validatedData = schema.parse(body)
-
-      // Call handler with validated data
       return await handler(request, user, validatedData)
     } catch (error) {
-      // Handle Zod validation errors
-      if (error instanceof z.ZodError) {
-        return NextResponse.json(
-          {
-            error: 'Validation failed',
-            details: error.issues.map(err => ({
-              path: err.path.join('.'),
-              message: err.message,
-            })),
-          },
-          { status: 400 }
-        )
-      }
-
-      // Re-throw other errors to be caught by withAuth
+      if (error instanceof z.ZodError) return formatZodError(error, 'Validation failed')
       throw error
     }
   })
 }
 
-/**
- * Middleware for validating query parameters
- * Validates URL search params against a Zod schema
- *
- * @example
- * ```typescript
- * export const GET = withAuthAndQueryValidation(
- *   ExpenseFiltersSchema,
- *   async (request, user, filters) => {
- *     // filters are type-safe and validated
- *     const expenses = await getExpenses(user.id, filters)
- *     return NextResponse.json({ expenses })
- *   }
- * )
- * ```
- */
 export function withAuthAndQueryValidation<T extends z.ZodType>(
   schema: T,
   handler: (request: NextRequest, user: User, validatedParams: z.infer<T>) => Promise<Response>
 ) {
   return withAuth(async (request, user) => {
     try {
-      // Extract and validate query parameters
       const { searchParams } = new URL(request.url)
       const params = Object.fromEntries(searchParams.entries())
       const validatedParams = schema.parse(params)
-
-      // Call handler with validated params
       return await handler(request, user, validatedParams)
     } catch (error) {
-      // Handle Zod validation errors
-      if (error instanceof z.ZodError) {
-        return NextResponse.json(
-          {
-            error: 'Invalid query parameters',
-            details: error.issues.map(err => ({
-              path: err.path.join('.'),
-              message: err.message,
-            })),
-          },
-          { status: 400 }
-        )
-      }
-
-      // Re-throw other errors to be caught by withAuth
+      if (error instanceof z.ZodError) return formatZodError(error, 'Invalid query parameters')
       throw error
     }
   })
@@ -261,22 +149,5 @@ export function withAuthParams<TParams>(
   ) => {
     const resolvedParams = await context.params
     return withAuth((req, user) => handler(req, user, resolvedParams))(request)
-  }
-}
-
-/**
- * Helper function to safely parse JSON from request
- * Handles empty bodies and malformed JSON gracefully
- */
-export async function safeParseJSON(request: NextRequest): Promise<any> {
-  try {
-    const text = await request.text()
-    if (!text || text.trim() === '') {
-      return {}
-    }
-    return JSON.parse(text)
-  } catch (error) {
-    console.error('Failed to parse request body:', error)
-    throw new Error('Invalid JSON in request body')
   }
 }

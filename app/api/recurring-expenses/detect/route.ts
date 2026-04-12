@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { detectRecurringExpenses } from '@/lib/analytics/detect-recurring'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()

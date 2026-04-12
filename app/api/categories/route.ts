@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateCategorySchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 const DEFAULT_CATEGORIES = [
   { name: 'Food', icon: '🍔', color: '#FF6B35', is_default: true },
   { name: 'Transport', icon: '🚗', color: '#4ECDC4', is_default: true },

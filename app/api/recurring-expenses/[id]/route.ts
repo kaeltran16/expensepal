@@ -3,6 +3,8 @@ import { withAuth, withAuthParamsAndValidation, withAuthParams } from '@/lib/api
 import { createClient } from '@/lib/supabase/server'
 import { UpdateRecurringExpenseSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

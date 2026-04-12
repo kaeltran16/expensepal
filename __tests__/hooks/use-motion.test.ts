@@ -16,15 +16,15 @@ import {
 
 describe('motion-system', () => {
   describe('getStaggerDelay', () => {
-    it('should return index * 10ms', () => {
+    it('should return index * 40ms', () => {
       expect(getStaggerDelay(0)).toBe(0)
-      expect(getStaggerDelay(1)).toBe(0.01)
-      expect(getStaggerDelay(5)).toBe(0.05)
+      expect(getStaggerDelay(1)).toBeCloseTo(0.04)
+      expect(getStaggerDelay(5)).toBeCloseTo(0.2)
     })
 
-    it('should cap at max items (10)', () => {
-      expect(getStaggerDelay(10)).toBe(0.1)
-      expect(getStaggerDelay(20)).toBe(0.1)
+    it('should cap at max items (12)', () => {
+      expect(getStaggerDelay(12)).toBeCloseTo(0.48)
+      expect(getStaggerDelay(20)).toBeCloseTo(0.48)
     })
   })
 
@@ -105,7 +105,8 @@ describe('motion-system', () => {
 
     it('should add stagger delay', () => {
       const props = getMotionProps('slideUp', { stagger: 3 })
-      expect(props.transition).toHaveProperty('delay', 0.03)
+      expect(props.transition).toHaveProperty('delay')
+      expect((props.transition as { delay: number }).delay).toBeCloseTo(0.12)
     })
 
     it('should return reduced variants when prefers-reduced-motion', () => {
@@ -203,7 +204,7 @@ describe('useMotion', () => {
   it('should support stagger option', () => {
     const { result } = renderHook(() => useMotion('slideUp', { stagger: 2 }))
     const props = result.current as { transition: { delay?: number } }
-    expect(props.transition.delay).toBe(0.02)
+    expect(props.transition.delay).toBeCloseTo(0.08)
   })
 
   it('should return minimal press props when reduced motion', () => {

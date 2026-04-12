@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { llmService } from '@/lib/llm-service'
 import { createClient } from '@/lib/supabase/server'
 
+export const runtime = 'edge'
+
 const SYSTEM_PROMPT = `You are a personal assistant providing brief, contextual annotations for a daily dashboard. Given the user's current data snapshot, generate one short annotation per card.
 
 Return JSON:

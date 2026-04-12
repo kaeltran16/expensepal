@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateScheduledWorkoutSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const searchParams = request.nextUrl.searchParams

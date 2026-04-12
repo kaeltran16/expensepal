@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 /**
  * GET /api/recurring-expenses/upcoming

@@ -4,6 +4,7 @@ import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateBudgetSchema } from '@/lib/api/schemas'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()

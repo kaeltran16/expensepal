@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuthParamsAndValidation, withAuthParams } from '@/lib/api/middleware'
 import { UpdateBudgetAmountSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

@@ -3,6 +3,8 @@ import { withAuthAndValidation } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 import { SaveDetectedExpensesSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export const POST = withAuthAndValidation(
   SaveDetectedExpensesSchema,
   async (request, user, validatedData) => {

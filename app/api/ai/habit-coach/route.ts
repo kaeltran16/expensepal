@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { llmService } from '@/lib/llm-service'
 import { createClient } from '@/lib/supabase/server'
 
+export const runtime = 'edge'
+
 const SYSTEM_PROMPT = `You are a friendly habit coach for a personal productivity app. Analyze the user's routine completion data and provide actionable suggestions.
 
 Given the data, identify:

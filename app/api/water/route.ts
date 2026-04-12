@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { UpdateWaterLogSchema, AddWaterSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 // Helper to get today's date in user's timezone
 function getTodayDate(timezoneOffset?: number): string {
   const now = new Date()

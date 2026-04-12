@@ -7,6 +7,7 @@ import type { Database } from '@/lib/supabase/database.types'
 type Meal = Database['public']['Tables']['meals']['Row']
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 export const GET = withAuth(async (request: NextRequest, user) => {
   const supabase = createClient()

@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth } from '@/lib/api/middleware'
 import { checkAchievements, getAchievementById } from '@/lib/achievements'
 
+export const runtime = 'edge'
+
 // POST /api/achievements/check - check and unlock new achievements
 export const POST = withAuth(async (_request, user) => {
   const supabase = createClient()

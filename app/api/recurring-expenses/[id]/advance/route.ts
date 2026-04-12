@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 
+export const runtime = 'edge'
+
 /**
  * POST /api/recurring-expenses/[id]/advance
  * Advance the next due date to the next occurrence

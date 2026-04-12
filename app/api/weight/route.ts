@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation, withAuthAndQueryValidation } from '@/lib/api/middleware'
 import { CreateWeightLogSchema, WeightLogFiltersSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 /**
  * GET /api/weight
  * Get weight logs with optional date range filter

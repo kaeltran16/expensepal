@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateSavedFoodSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 /**
  * GET /api/saved-foods
  * Get saved foods, optionally filtered by favorites

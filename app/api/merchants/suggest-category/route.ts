@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { withOptionalAuth } from '@/lib/api/middleware'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 // GET suggested category for a merchant
 export const GET = withOptionalAuth(async (request, user) => {

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { generateAIBudgetRecommendations, type AIBudgetRecommendation } from '@/lib/analytics/budget-recommendations'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 /**
  * GET /api/budgets/ai-recommendations

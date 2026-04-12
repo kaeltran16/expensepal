@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuthParamsAndValidation, withAuthParams } from '@/lib/api/middleware'
 import { UpdateScheduledWorkoutSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

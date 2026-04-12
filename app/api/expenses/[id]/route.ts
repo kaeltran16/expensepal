@@ -6,6 +6,7 @@ import { withAuth, withAuthParamsAndValidation, withAuthParams } from '@/lib/api
 import { UpdateExpenseSchema } from '@/lib/api/schemas'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 export async function GET(
   request: NextRequest,

@@ -6,6 +6,7 @@ import { createSuccessResponse } from '@/lib/api/types'
 import type { ExpenseStats, GetExpenseStatsResponse } from '@/lib/api/types'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()

@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuthAndValidation } from '@/lib/api/middleware'
 import { PushSubscriptionSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export const POST = withAuthAndValidation(
   PushSubscriptionSchema,
   async (request, user, subscription) => {

@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { withAuthParams } from '@/lib/api/middleware'
 
+export const runtime = 'edge'
+
 interface ExerciseSet {
   reps?: number
   weight?: number

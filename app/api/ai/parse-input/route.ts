@@ -3,6 +3,8 @@ import { llmService } from '@/lib/llm-service'
 import { withAuthAndValidation } from '@/lib/api/middleware'
 import { ParseInputSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 const SYSTEM_PROMPT = `You are an input classifier for a personal finance and fitness app. Given a natural language input, classify it into one of these intents and extract structured data.
 
 Intents and their EXACT required fields:

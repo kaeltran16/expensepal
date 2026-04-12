@@ -9,6 +9,7 @@ import {
 } from '@/lib/analytics/budget-predictions'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 // GET budget predictions and alerts for current month
 export const GET = withAuth(async (request: NextRequest, user) => {

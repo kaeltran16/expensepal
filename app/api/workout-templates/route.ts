@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateWorkoutTemplateSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export const GET = withAuth(async (request: NextRequest, user) => {
   const supabase = createClient()
 

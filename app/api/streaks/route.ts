@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { UpdateStreakSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export const GET = withAuth(async (_request, user) => {
   const supabase = createClient()
 

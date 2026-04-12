@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { withOptionalAuth } from '@/lib/api/middleware'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
+export const runtime = 'edge'
 
 export const GET = withOptionalAuth(async (request: NextRequest, _user) => {
   const supabase = createClient()

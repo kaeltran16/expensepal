@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthParamsAndValidation, withAuthParams } from '@/lib/api/middleware'
-import { UpdateWorkoutSchemaNew } from '@/lib/api/schemas'
+import { UpdateWorkoutSchema } from '@/lib/api/schemas'
+
+export const runtime = 'edge'
 
 export async function GET(
   request: NextRequest,
@@ -42,7 +44,7 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   return withAuthParamsAndValidation(
-    UpdateWorkoutSchemaNew,
+    UpdateWorkoutSchema,
     async (req, user, params: { id: string }, validatedData) => {
       const supabase = createClient()
 

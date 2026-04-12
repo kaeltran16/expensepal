@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
+export const runtime = 'edge'
+
 const CreateCardioPlanSchema = z.object({
   exercise_type: z.enum(['treadmill', 'cycling', 'rowing']).default('treadmill'),
   name: z.string().min(1),

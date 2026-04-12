@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { UpdateRoutineTemplateSchema } from '@/lib/api/schemas'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 export async function GET(
   request: NextRequest,

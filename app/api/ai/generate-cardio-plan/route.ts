@@ -3,6 +3,8 @@ import { withAuthAndValidation } from '@/lib/api/middleware'
 import { llmService } from '@/lib/llm-service'
 import { z } from 'zod'
 
+export const runtime = 'edge'
+
 const GenerateCardioPlanSchema = z.object({
   goal: z.string().min(1),
   fitness_level: z.enum(['beginner', 'intermediate', 'advanced']),

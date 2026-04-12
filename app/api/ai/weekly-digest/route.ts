@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { llmService } from '@/lib/llm-service'
 import { createClient } from '@/lib/supabase/server'
 
+export const runtime = 'edge'
+
 const SYSTEM_PROMPT = `You are a personal assistant summarizing a user's week across finances, fitness, and habits. Write a concise, friendly weekly digest.
 
 Given the raw data, produce a JSON response with these sections:

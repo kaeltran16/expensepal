@@ -3,6 +3,8 @@ import { CreateWorkoutSchema } from '@/lib/api/schemas'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+export const runtime = 'edge'
+
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)

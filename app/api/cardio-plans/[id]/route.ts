@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { UpdateCardioPlanSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

@@ -4,6 +4,8 @@ import { llmService } from '@/lib/llm-service'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+export const runtime = 'edge'
+
 interface GeneratedExercise {
   exercise_id: string
   name: string

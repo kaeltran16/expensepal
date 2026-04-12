@@ -5,6 +5,8 @@ import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateMealInputSchema } from '@/lib/api/schemas'
 import type { Database } from '@/lib/supabase/database.types'
 
+export const runtime = 'edge'
+
 type MealInsert = Database['public']['Tables']['meals']['Insert']
 
 export const GET = withAuth(async (request, user) => {

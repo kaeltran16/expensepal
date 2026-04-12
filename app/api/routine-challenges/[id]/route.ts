@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ChallengeActionSchema } from '@/lib/api/schemas'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 export async function POST(
   request: NextRequest,

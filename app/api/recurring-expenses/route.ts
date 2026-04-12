@@ -3,6 +3,8 @@ import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateRecurringExpenseSchema } from '@/lib/api/schemas'
 import { createClient } from '@/lib/supabase/server'
 
+export const runtime = 'edge'
+
 export const GET = withAuth(async (request, user) => {
   const supabase = createClient()
   const { searchParams } = new URL(request.url)

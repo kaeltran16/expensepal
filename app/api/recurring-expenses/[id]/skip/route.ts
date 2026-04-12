@@ -3,6 +3,8 @@ import { withAuthParamsAndValidation } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 import { SkipRecurringExpenseSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

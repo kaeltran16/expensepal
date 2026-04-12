@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
+export const runtime = 'edge'
+
 const CardioSegmentInputSchema = z.object({
   segment_order: z.number().int().nonnegative(),
   segment_type: z.enum(['warm_up', 'main', 'cool_down', 'interval']),

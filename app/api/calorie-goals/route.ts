@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { CreateCalorieGoalSchema, UpdateCalorieGoalSchema } from '@/lib/api/schemas'
 
+export const runtime = 'edge'
+
 export const GET = withAuth(async (_request, user) => {
   const supabase = createClient()
   const today = new Date().toISOString().split('T')[0]

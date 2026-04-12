@@ -4,6 +4,7 @@ import { withAuth, withAuthAndValidation } from '@/lib/api/middleware'
 import { UpdateProfileSchema } from '@/lib/api/schemas'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 // GET /api/profile - Get current user's profile
 export const GET = withAuth(async (request, user) => {
